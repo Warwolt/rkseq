@@ -1,14 +1,24 @@
+#include "logging.h"
+#include "timer.h"
+
+#include <avr/interrupt.h>
 #include <avr/io.h>
+#include <stdbool.h>
 #include <util/delay.h>
 
+void globally_enable_interrupts() {
+	sei();
+}
+
 int main(void) {
-	DDRB = 0b00100000; // PB5 output
+	globally_enable_interrupts();
+	timer_initialize();
+	logging_initialize();
 
-	while (1) {
-		PORTB = 0b00100000; // PB5
-		_delay_ms(1000);
+	LOG_INFO("Program Start\n");
 
-		PORTB = 0b00000000; // PB5
+	while (true) {
+		LOG_INFO("Tick\n");
 		_delay_ms(1000);
 	}
 }
