@@ -98,7 +98,7 @@ static void serial_printf(const char* fmt, ...) {
 	vsnprintf(str, 128, fmt, args);
 	va_end(args);
 
-	serial_print(str);
+	hw_serial_print(str);
 }
 
 void logging_initialize() {
@@ -109,7 +109,7 @@ void logging_initialize() {
 	const unsigned long start_ms = timer_now_ms();
 	while (true) {
 		/* Read input, look for clock time */
-		serial_read_string(input_buf, 64);
+		hw_serial_read_string(input_buf, 64);
 		if (string_starts_with(input_buf, "TIMENOW")) {
 			/* Received clock time */
 			int offset = strlen("TIMENOW ");
@@ -143,5 +143,5 @@ void logging_printf(log_level_t level, const char* file, int line, const char* f
 	vsnprintf(str + offset, 128 - offset, fmt, args);
 	va_end(args);
 
-	serial_print(str);
+	hw_serial_print(str);
 }

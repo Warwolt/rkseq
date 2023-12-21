@@ -64,7 +64,7 @@ ISR(USART_UDRE_vect) {
 	tx_udr_empty_irq();
 }
 
-static int serial_read_byte(void) {
+static int hw_serial_read_byte(void) {
 	// if the head isn't ahead of the tail, we don't have any characters
 	if (g_serial.rx.head == g_serial.rx.tail) {
 		return -1;
@@ -75,12 +75,12 @@ static int serial_read_byte(void) {
 	return byte;
 }
 
-static int serial_read_byte_with_timeout() {
+static int hw_serial_read_byte_with_timeout() {
 	const unsigned long timeout_ms = 1000;
 	const unsigned long start_ms = timer_now_ms();
 	int byte;
 	do {
-		byte = serial_read_byte();
+		byte = hw_serial_read_byte();
 		if (byte >= 0) {
 			return byte;
 		}
@@ -88,16 +88,16 @@ static int serial_read_byte_with_timeout() {
 	return -1; // timed out
 }
 
-void serial_read_string(char* str_buf, size_t str_buf_len) {
+void hw_serial_read_string(char* str_buf, size_t str_buf_len) {
 	int index = 0;
-	int byte = serial_read_byte_with_timeout();
+	int byte = hw_serial_read_byte_with_timeout();
 	while (byte >= 0 && index < str_buf_len) {
 		str_buf[index++] = (char)byte;
-		byte = serial_read_byte_with_timeout();
+		byte = hw_serial_read_byte_with_timeout();
 	}
 }
 
-static void serial_write(uint8_t byte) {
+static void hw_serial_write(uint8_t byte) {
 	uint8_t next_index = (g_serial.tx.head + 1) % SERIAL_RING_BUFFER_SIZE;
 	g_serial.tx.buffer[g_serial.tx.head] = byte;
 
@@ -126,7 +126,7 @@ static void serial_write(uint8_t byte) {
 	}
 }
 
-void serial_initialize(int baud) {
+void hw_serial_initialize(int baud) {
 	// enable "double the USART transmission speed"
 	UCSR0A = 1 << U2X0;
 
@@ -141,13 +141,13 @@ void serial_initialize(int baud) {
 	clear_bit(UCSR0B, UDRIE0); // disable data register empty interrupts
 }
 
-void serial_print(const char* str) {
+void hw_serial_print(const char* str) {
 	while (*str) {
-		serial_write(*str);
+		hw_serial_write(*str);
 		str++;
 	}
 }
 
-uint8_t serial_num_available_bytes(void) {
+uint8_t hw_serial_num_available_bytes(void) {
 	return (SERIAL_RING_BUFFER_SIZE + g_serial.rx.head - g_serial.rx.tail) % SERIAL_RING_BUFFER_SIZE;
 }
