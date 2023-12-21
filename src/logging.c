@@ -230,7 +230,6 @@ static void serial_printf(const char* fmt, ...) {
 }
 
 void logging_initialize() {
-	serial_initialize(9600);
 	serial_printf("[ Logging ] Logging initialized, waiting for wall clock time.\n");
 
 	char input_buf[64] = { 0 };
