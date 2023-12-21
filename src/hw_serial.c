@@ -18,12 +18,8 @@ typedef struct {
 	uint8_t buffer[SERIAL_RING_BUFFER_SIZE];
 } ringbuffer_t;
 
-typedef struct {
-	ringbuffer_t rx;
-	ringbuffer_t tx;
-} serial_t;
-
-static serial_t g_serial = { 0 };
+static ringbuffer_t g_rx;
+static ringbuffer_t g_tx;
 
 static void rx_complete_irq(void) {
 	const uint8_t byte = UDR0;
@@ -32,14 +28,14 @@ static void rx_complete_irq(void) {
 		return; // Parity error, discard read byte
 	}
 
-	uint8_t next_index = (g_serial.rx.head + 1) % SERIAL_RING_BUFFER_SIZE;
-	if (next_index == g_serial.rx.tail) {
+	uint8_t next_index = (g_rx.head + 1) % SERIAL_RING_BUFFER_SIZE;
+	if (next_index == g_rx.tail) {
 		return; // About to overflow, discard read byte
 	}
 
 	// Write read byte to buffer
-	g_serial.rx.buffer[g_serial.rx.head] = byte;
-	g_serial.rx.head = next_index;
+	g_rx.buffer[g_rx.head] = byte;
+	g_rx.head = next_index;
 }
 
 ISR(USART_RX_vect) {
@@ -49,12 +45,12 @@ ISR(USART_RX_vect) {
 static void tx_udr_empty_irq(void) {
 	// If interrupts are enabled, there must be more data in the output
 	// buffer. Send the next byte
-	unsigned char byte = g_serial.tx.buffer[g_serial.tx.tail];
-	g_serial.tx.tail = (g_serial.tx.tail + 1) % SERIAL_RING_BUFFER_SIZE;
+	unsigned char byte = g_tx.buffer[g_tx.tail];
+	g_tx.tail = (g_tx.tail + 1) % SERIAL_RING_BUFFER_SIZE;
 
 	UDR0 = byte;
 
-	if (g_serial.tx.head == g_serial.tx.tail) {
+	if (g_tx.head == g_tx.tail) {
 		// Buffer empty, so disable interrupts
 		clear_bit(UCSR0B, UDRIE0);
 	}
@@ -66,12 +62,12 @@ ISR(USART_UDRE_vect) {
 
 static int hw_serial_read_byte(void) {
 	// if the head isn't ahead of the tail, we don't have any characters
-	if (g_serial.rx.head == g_serial.rx.tail) {
+	if (g_rx.head == g_rx.tail) {
 		return -1;
 	}
 
-	uint8_t byte = g_serial.rx.buffer[g_serial.rx.tail];
-	g_serial.rx.tail = (g_serial.rx.tail + 1) % SERIAL_RING_BUFFER_SIZE;
+	uint8_t byte = g_rx.buffer[g_rx.tail];
+	g_rx.tail = (g_rx.tail + 1) % SERIAL_RING_BUFFER_SIZE;
 	return byte;
 }
 
@@ -98,12 +94,12 @@ void hw_serial_read_string(char* str_buf, size_t str_buf_len) {
 }
 
 static void hw_serial_write(uint8_t byte) {
-	uint8_t next_index = (g_serial.tx.head + 1) % SERIAL_RING_BUFFER_SIZE;
-	g_serial.tx.buffer[g_serial.tx.head] = byte;
+	uint8_t next_index = (g_tx.head + 1) % SERIAL_RING_BUFFER_SIZE;
+	g_tx.buffer[g_tx.head] = byte;
 
 	// If the output buffer is full, there's nothing for it other than to
 	// wait for the interrupt handler to empty it a bit
-	while (next_index == g_serial.tx.tail) {
+	while (next_index == g_tx.tail) {
 		if (bit_is_clear(SREG, SREG_I)) {
 			// Interrupts are disabled, so we'll have to poll the data
 			// register empty flag ourselves. If it is set, pretend an
@@ -121,7 +117,7 @@ static void hw_serial_write(uint8_t byte) {
 	// head pointer and setting the interrupt flag resulting in buffer
 	// retransmission
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		g_serial.tx.head = next_index;
+		g_tx.head = next_index;
 		set_bit(UCSR0B, UDRIE0);
 	}
 }
@@ -149,5 +145,5 @@ void hw_serial_print(const char* str) {
 }
 
 uint8_t hw_serial_num_available_bytes(void) {
-	return (SERIAL_RING_BUFFER_SIZE + g_serial.rx.head - g_serial.rx.tail) % SERIAL_RING_BUFFER_SIZE;
+	return (SERIAL_RING_BUFFER_SIZE + g_rx.head - g_rx.tail) % SERIAL_RING_BUFFER_SIZE;
 }
