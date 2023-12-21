@@ -116,23 +116,23 @@ ISR(USART_UDRE_vect) {
 	tx_udr_empty_irq();
 }
 
-static int serial_read_byte(serial_t* serial) {
+static int serial_read_byte(void) {
 	// if the head isn't ahead of the tail, we don't have any characters
-	if (serial->rx.head == serial->rx.tail) {
+	if (g_serial.rx.head == g_serial.rx.tail) {
 		return -1;
 	}
 
-	uint8_t byte = serial->rx.buffer[serial->rx.tail];
-	serial->rx.tail = (serial->rx.tail + 1) % SERIAL_RING_BUFFER_SIZE;
+	uint8_t byte = g_serial.rx.buffer[g_serial.rx.tail];
+	g_serial.rx.tail = (g_serial.rx.tail + 1) % SERIAL_RING_BUFFER_SIZE;
 	return byte;
 }
 
-static int serial_read_byte_with_timeout(serial_t* serial) {
+static int serial_read_byte_with_timeout() {
 	const unsigned long timeout_ms = 1000;
 	const unsigned long start_ms = timer_now_ms();
 	int byte;
 	do {
-		byte = serial_read_byte(serial);
+		byte = serial_read_byte();
 		if (byte >= 0) {
 			return byte;
 		}
@@ -140,22 +140,22 @@ static int serial_read_byte_with_timeout(serial_t* serial) {
 	return -1; // timed out
 }
 
-static void serial_read_string(serial_t* serial, char* str_buf, size_t str_buf_len) {
+static void serial_read_string(char* str_buf, size_t str_buf_len) {
 	int index = 0;
-	int byte = serial_read_byte_with_timeout(serial);
+	int byte = serial_read_byte_with_timeout();
 	while (byte >= 0 && index < str_buf_len) {
 		str_buf[index++] = (char)byte;
-		byte = serial_read_byte_with_timeout(serial);
+		byte = serial_read_byte_with_timeout();
 	}
 }
 
-static void serial_write(serial_t* serial, uint8_t byte) {
-	uint8_t next_index = (serial->tx.head + 1) % SERIAL_RING_BUFFER_SIZE;
-	serial->tx.buffer[serial->tx.head] = byte;
+static void serial_write(uint8_t byte) {
+	uint8_t next_index = (g_serial.tx.head + 1) % SERIAL_RING_BUFFER_SIZE;
+	g_serial.tx.buffer[g_serial.tx.head] = byte;
 
 	// If the output buffer is full, there's nothing for it other than to
 	// wait for the interrupt handler to empty it a bit
-	while (next_index == serial->tx.tail) {
+	while (next_index == g_serial.tx.tail) {
 		if (bit_is_clear(SREG, SREG_I)) {
 			// Interrupts are disabled, so we'll have to poll the data
 			// register empty flag ourselves. If it is set, pretend an
@@ -173,20 +173,20 @@ static void serial_write(serial_t* serial, uint8_t byte) {
 	// head pointer and setting the interrupt flag resulting in buffer
 	// retransmission
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		serial->tx.head = next_index;
+		g_serial.tx.head = next_index;
 		set_bit(UCSR0B, UDRIE0);
 	}
 }
 
-static void serial_print(serial_t* serial, const char* str) {
+static void serial_print(const char* str) {
 	while (*str) {
-		serial_write(serial, *str);
+		serial_write(*str);
 		str++;
 	}
 }
 
-static uint8_t serial_num_available_bytes(serial_t* serial) {
-	return (SERIAL_RING_BUFFER_SIZE + serial->rx.head - serial->rx.tail) % SERIAL_RING_BUFFER_SIZE;
+static uint8_t serial_num_available_bytes(void) {
+	return (SERIAL_RING_BUFFER_SIZE + g_serial.rx.head - g_serial.rx.tail) % SERIAL_RING_BUFFER_SIZE;
 }
 
 /* ------------------------------- Public API ------------------------------- */
@@ -226,7 +226,7 @@ static void serial_printf(const char* fmt, ...) {
 	vsnprintf(str, 128, fmt, args);
 	va_end(args);
 
-	serial_print(&g_serial, str);
+	serial_print(str);
 }
 
 void logging_initialize() {
@@ -237,7 +237,7 @@ void logging_initialize() {
 	const unsigned long start_ms = timer_now_ms();
 	while (true) {
 		/* Read input, look for clock time */
-		serial_read_string(&g_serial, input_buf, 64);
+		serial_read_string(input_buf, 64);
 		if (string_starts_with(input_buf, "TIMENOW")) {
 			/* Received clock time */
 			int offset = strlen("TIMENOW ");
@@ -271,5 +271,5 @@ void logging_printf(log_level_t level, const char* file, int line, const char* f
 	vsnprintf(str + offset, 128 - offset, fmt, args);
 	va_end(args);
 
-	serial_print(&g_serial, str);
+	serial_print(str);
 }
