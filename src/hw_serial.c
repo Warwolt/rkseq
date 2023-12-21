@@ -1,4 +1,4 @@
-#include "serial.h"
+#include "hw_serial.h"
 
 #include "timer.h"
 
@@ -9,21 +9,6 @@
 
 #define clear_bit(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
 #define set_bit(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
-
-void serial_initialize(int baud) {
-	// enable "double the USART transmission speed"
-	UCSR0A = 1 << U2X0;
-
-	// set the baud rate
-	const uint16_t baud_setting = (F_CPU / 4 / baud - 1) / 2;
-	UBRR0L = baud_setting;
-	UBRR0H = baud_setting >> 8;
-
-	set_bit(UCSR0B, RXEN0); // enable UART Rx
-	set_bit(UCSR0B, TXEN0); // enable UART Tx
-	set_bit(UCSR0B, RXCIE0); // enable receive interrupts
-	clear_bit(UCSR0B, UDRIE0); // disable data register empty interrupts
-}
 
 #define SERIAL_RING_BUFFER_SIZE 64
 
@@ -141,6 +126,21 @@ static void serial_write(uint8_t byte) {
 	}
 }
 
+void serial_initialize(int baud) {
+	// enable "double the USART transmission speed"
+	UCSR0A = 1 << U2X0;
+
+	// set the baud rate
+	const uint16_t baud_setting = (F_CPU / 4 / baud - 1) / 2;
+	UBRR0L = baud_setting;
+	UBRR0H = baud_setting >> 8;
+
+	set_bit(UCSR0B, RXEN0); // enable UART Rx
+	set_bit(UCSR0B, TXEN0); // enable UART Tx
+	set_bit(UCSR0B, RXCIE0); // enable receive interrupts
+	clear_bit(UCSR0B, UDRIE0); // disable data register empty interrupts
+}
+
 void serial_print(const char* str) {
 	while (*str) {
 		serial_write(*str);
@@ -148,6 +148,6 @@ void serial_print(const char* str) {
 	}
 }
 
-static uint8_t serial_num_available_bytes(void) {
+uint8_t serial_num_available_bytes(void) {
 	return (SERIAL_RING_BUFFER_SIZE + g_serial.rx.head - g_serial.rx.tail) % SERIAL_RING_BUFFER_SIZE;
 }

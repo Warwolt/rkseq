@@ -33,7 +33,7 @@
 
 #include "logging.h"
 
-#include "serial.h"
+#include "hw_serial.h"
 #include "timer.h"
 
 #include <avr/io.h>

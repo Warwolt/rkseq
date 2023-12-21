@@ -1,5 +1,5 @@
+#include "hw_serial.h"
 #include "logging.h"
-#include "serial.h"
 #include "timer.h"
 
 #include <avr/interrupt.h>
