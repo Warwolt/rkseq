@@ -1,14 +1,12 @@
 #include "hw_serial.h"
 
+#include "bits.h"
 #include "timer.h"
 
 #include <avr/io.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <util/atomic.h>
-
-#define clear_bit(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
-#define set_bit(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 
 #define SERIAL_RING_BUFFER_SIZE 64
 
