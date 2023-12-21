@@ -1,39 +1,6 @@
-/*
-  logging.c - Serial logging for the Arduino Uno in C
-  Copyright (c) 2006 Rasmus Källqvist.  All right reserved.
-
-  logging.c is heavily based on HardwareSerial.cpp and
-  HardwareSerial0.cpp by Nicholas Zambetti.
-
-  ------------------------------------------------------------
-
-  HardwareSerial.cpp - Hardware serial library for Wiring
-  Copyright (c) 2006 Nicholas Zambetti.  All right reserved.
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-
-  Modified 23 November 2006 by David A. Mellis
-  Modified 28 September 2010 by Mark Sproul
-  Modified 14 August 2012 by Alarus
-  Modified 3 December 2013 by Matthijs Kooijman
-  Modified 18 December 2023 by Rasmus Källqvist
-*/
-
 #include "logging.h"
 
-#include "hw_serial.h"
+#include "bits.h"
 #include "timer.h"
 
 #include <avr/io.h>
@@ -42,9 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <util/atomic.h>
-
-#define clear_bit(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
-#define set_bit(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 
 /* ----------------------------- String utility ----------------------------- */
 static bool string_starts_with(const char* str, const char* prefix) {
@@ -67,6 +31,7 @@ static const char* file_name_from_path(const char* path) {
 #define COLOR_YELLOW "\033[33m"
 #define COLOR_RESET "\033[0m"
 
+static serial_t g_serial;
 static unsigned long g_ms_since_midnight = 0;
 
 static const char* log_level_str[] = {
@@ -98,10 +63,12 @@ static void serial_printf(const char* fmt, ...) {
 	vsnprintf(str, 128, fmt, args);
 	va_end(args);
 
-	hw_serial_print(str);
+	g_serial.print(str);
 }
 
-void logging_initialize() {
+void logging_initialize(serial_t serial) {
+	g_serial = serial;
+
 	serial_printf("[ Logging ] Logging initialized, waiting for wall clock time.\n");
 
 	char input_buf[64] = { 0 };
@@ -109,7 +76,7 @@ void logging_initialize() {
 	const unsigned long start_ms = timer_now_ms();
 	while (true) {
 		/* Read input, look for clock time */
-		hw_serial_read_string(input_buf, 64);
+		g_serial.read_string(input_buf, 64);
 		if (string_starts_with(input_buf, "TIMENOW")) {
 			/* Received clock time */
 			int offset = strlen("TIMENOW ");
@@ -143,5 +110,5 @@ void logging_printf(log_level_t level, const char* file, int line, const char* f
 	vsnprintf(str + offset, 128 - offset, fmt, args);
 	va_end(args);
 
-	hw_serial_print(str);
+	g_serial.print(str);
 }

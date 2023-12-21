@@ -1,6 +1,7 @@
 #include "bits.h"
 #include "hw_serial.h"
 #include "logging.h"
+#include "serial.h"
 #include "timer.h"
 
 #include <avr/interrupt.h>
@@ -10,15 +11,15 @@
 
 #define ONBOARD_LED 5
 
-void globally_enable_interrupts() {
+void globally_enable_interrupts(void) {
 	sei();
 }
 
 int main(void) {
 	globally_enable_interrupts();
 	timer_initialize();
-	hw_serial_initialize(9600);
-	logging_initialize();
+	serial_t serial = hw_serial_initialize(9600);
+	logging_initialize(serial);
 
 	set_bit(DDRB, ONBOARD_LED);
 	clear_bit(PORTB, ONBOARD_LED);
