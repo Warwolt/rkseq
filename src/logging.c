@@ -1,7 +1,7 @@
 #include "logging.h"
 
 #include "bits.h"
-#include "timer.h"
+#include "timer0.h"
 
 #include <avr/io.h>
 #include <stdbool.h>
@@ -47,7 +47,7 @@ static const char* log_level_color[] = {
 };
 
 static int snprintf_time(char* str_buf, size_t str_buf_len) {
-	unsigned long now_ms = g_ms_since_midnight + timer_now_ms();
+	unsigned long now_ms = g_ms_since_midnight + timer0_now_ms();
 	unsigned long hour = (now_ms / (1000L * 60L * 60L)) % 24L;
 	unsigned long minutes = (now_ms / (1000L * 60L)) % 60L;
 	unsigned long seconds = (now_ms / 1000L) % 60L;
@@ -73,7 +73,7 @@ void logging_initialize(serial_t serial) {
 
 	char input_buf[64] = { 0 };
 	const unsigned long timeout_ms = 100;
-	const unsigned long start_ms = timer_now_ms();
+	const unsigned long start_ms = timer0_now_ms();
 	while (true) {
 		/* Read input, look for clock time */
 		g_serial.read_string(input_buf, 64);
@@ -86,7 +86,7 @@ void logging_initialize(serial_t serial) {
 		}
 
 		/* Timed out, abort */
-		const unsigned long now_ms = timer_now_ms();
+		const unsigned long now_ms = timer0_now_ms();
 		if (now_ms - start_ms > timeout_ms) {
 			serial_printf("[ Logging ] Timed out on getting wall clock time (waited %lu milliseconds).\n", timeout_ms);
 			break;

@@ -2,7 +2,7 @@
 
 #include "bits.h"
 #include "serial.h"
-#include "timer.h"
+#include "timer0.h"
 
 #include <avr/io.h>
 #include <stdbool.h>
@@ -72,14 +72,14 @@ static int hw_serial_read_byte(void) {
 
 static int hw_serial_read_byte_with_timeout() {
 	const unsigned long timeout_ms = 1000;
-	const unsigned long start_ms = timer_now_ms();
+	const unsigned long start_ms = timer0_now_ms();
 	int byte;
 	do {
 		byte = hw_serial_read_byte();
 		if (byte >= 0) {
 			return byte;
 		}
-	} while (timer_now_ms() - start_ms < timeout_ms);
+	} while (timer0_now_ms() - start_ms < timeout_ms);
 	return -1; // timed out
 }
 

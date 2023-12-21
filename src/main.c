@@ -2,7 +2,7 @@
 #include "hw_serial.h"
 #include "logging.h"
 #include "serial.h"
-#include "timer.h"
+#include "timer0.h"
 
 #include <avr/interrupt.h>
 #include <avr/io.h>
@@ -17,7 +17,7 @@ void globally_enable_interrupts(void) {
 
 int main(void) {
 	globally_enable_interrupts();
-	timer_initialize();
+	timer0_initialize();
 	serial_t serial = hw_serial_initialize(9600);
 	logging_initialize(serial);
 

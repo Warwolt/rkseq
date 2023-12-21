@@ -1,4 +1,4 @@
-#include "timer.h"
+#include "timer0.h"
 
 #include <avr/io.h>
 #include <util/atomic.h>
@@ -45,7 +45,7 @@ ISR(TIMER0_OVF_vect) {
 }
 
 // Configures Timer 0 to be used for counting elapsed milliseconds
-void timer_initialize() {
+void timer0_initialize() {
 	// Set prescale factor to be 64
 	set_bit(TCCR0B, CS01);
 	set_bit(TCCR0B, CS00);
@@ -55,7 +55,7 @@ void timer_initialize() {
 }
 
 // returns num elapsed milliseconds since program start
-unsigned long timer_now_ms() {
+unsigned long timer0_now_ms() {
 	unsigned long now_ms;
 	uint8_t old_SREG = SREG;
 

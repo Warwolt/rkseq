@@ -64,7 +64,7 @@ endif(AVR)
 add_avr_library(${PROJECT_NAME}
     src/logging.c
     src/hw_serial.c
-    src/timer.c
+    src/timer0.c
 )
 add_avr_executable("${PROJECT_NAME}_main"
    src/main.c
