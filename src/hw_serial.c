@@ -37,10 +37,6 @@ static void rx_complete_irq(void) {
 	g_rx.head = next_index;
 }
 
-ISR(USART_RX_vect) {
-	rx_complete_irq();
-}
-
 static void tx_udr_empty_irq(void) {
 	// If interrupts are enabled, there must be more data in the output
 	// buffer. Send the next byte
@@ -53,6 +49,10 @@ static void tx_udr_empty_irq(void) {
 		// Buffer empty, so disable interrupts
 		clear_bit(UCSR0B, UDRIE0);
 	}
+}
+
+ISR(USART_RX_vect) {
+	rx_complete_irq();
 }
 
 ISR(USART_UDRE_vect) {

@@ -20,8 +20,8 @@ void globally_enable_interrupts(void) {
 int main(void) {
 	globally_enable_interrupts();
 	timer0_initialize();
-	serial_t serial = hw_serial_initialize(9600);
-	logging_initialize(serial);
+	serial_t hw_serial = hw_serial_initialize(9600);
+	logging_initialize(hw_serial);
 
 	pin_configure(ONBOARD_LED, PIN_MODE_OUTPUT);
 	LOG_INFO("Program Start\n");
