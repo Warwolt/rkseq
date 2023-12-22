@@ -65,6 +65,7 @@ add_avr_library(${PROJECT_NAME}
     src/logging.c
     src/hw_serial.c
     src/timer0.c
+    src/gpio.c
 )
 add_avr_executable("${PROJECT_NAME}_main"
    src/main.c
