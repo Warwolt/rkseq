@@ -61,10 +61,12 @@ if(AVR)
 endif(AVR)
 
 # ---------------------------- Program executable ---------------------------- #
+if(AVR)
 add_avr_library(${PROJECT_NAME}
     src/logging.c
-    src/serial.c
-    src/timer.c
+    src/hw_serial.c
+    src/timer0.c
+    src/gpio.c
 )
 add_avr_executable("${PROJECT_NAME}_main"
    src/main.c
@@ -72,4 +74,11 @@ add_avr_executable("${PROJECT_NAME}_main"
 avr_target_link_libraries("${PROJECT_NAME}_main" PRIVATE ${PROJECT_NAME})
 add_definitions("-DF_CPU=${MCU_SPEED}")
 add_compile_options(-Os -Wall -Werror -Wextra)
-
+else()
+# -------------------------------- Unit tests -------------------------------- #
+add_subdirectory(external/rktest)
+add_executable(tests
+    tests/hw_serial_tests.c
+)
+target_link_libraries(tests rktest)
+endif()

@@ -1,3 +1,6 @@
 [submodule "external/cmake-avr"]
 	path = external/cmake-avr
 	url = https://github.com/mkleemann/cmake-avr.git
+[submodule "external/rktest"]
+	path = external/rktest
+	url = https://github.com/Warwolt/rktest.git
