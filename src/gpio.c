@@ -34,6 +34,14 @@ void pin_configure(pin_t pin, pin_mode_t mode) {
 	}
 }
 
+void pin_write(pin_t pin, bool state) {
+	if (state) {
+		pin_set(pin);
+	} else {
+		pin_clear(pin);
+	}
+}
+
 void pin_set(pin_t pin) {
 	switch (pin.port) {
 		case PORT_B:

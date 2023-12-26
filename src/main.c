@@ -26,13 +26,17 @@ int main(void) {
 	pin_configure(ONBOARD_LED, PIN_MODE_OUTPUT);
 	LOG_INFO("Program Start\n");
 
+	bool pin_state = false;
+	uint32_t last_tick = timer0_now_ms();
 	while (true) {
-		pin_set(ONBOARD_LED);
-		LOG_INFO("Tick\n");
-		_delay_ms(1000);
+		uint32_t now = timer0_now_ms();
 
-		pin_clear(ONBOARD_LED);
-		LOG_INFO("Tick\n");
-		_delay_ms(1000);
+		if (now - last_tick >= 1000) {
+			last_tick = now;
+			LOG_INFO("Tick\n");
+		}
+
+		pin_write(ONBOARD_LED, pin_state);
+		pin_state = !pin_state;
 	}
 }

@@ -1,3 +1,5 @@
+// based on the Arduino Core `Serial` C++ class
+
 #include "hw_serial.h"
 
 #include "bits.h"
