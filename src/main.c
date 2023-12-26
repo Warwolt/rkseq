@@ -11,7 +11,7 @@
 #include <util/delay.h>
 
 #define ONBOARD_LED \
-	(pin_t) { .port = PORT_B, .num = 5 }
+	(pin_t) { .port = &PORTB, .num = 5 }
 
 void globally_enable_interrupts(void) {
 	sei();

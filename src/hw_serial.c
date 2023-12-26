@@ -3,6 +3,7 @@
 #include "hw_serial.h"
 
 #include "bits.h"
+#include "gpio.h"
 #include "serial.h"
 #include "timer0.h"
 

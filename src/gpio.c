@@ -3,73 +3,38 @@
 #include "bits.h"
 
 #include <avr/io.h>
+#include <stddef.h>
+
+static volatile uint8_t* port_to_pin_direction_reg(volatile uint8_t* port) {
+	switch ((intptr_t)port) {
+		case (intptr_t)&PORTB:
+			return &DDRB;
+		case (intptr_t)&PORTC:
+			return &DDRC;
+		case (intptr_t)&PORTD:
+			return &DDRD;
+	}
+	return NULL;
+}
 
 void pin_configure(pin_t pin, pin_mode_t mode) {
+	volatile uint8_t* pin_dir_reg = port_to_pin_direction_reg(pin.port);
+	if (!pin_dir_reg) {
+		return;
+	}
 	if (mode == PIN_MODE_INPUT) {
-		switch (pin.port) {
-			case PORT_B:
-				clear_bit(DDRB, pin.num);
-				break;
-			case PORT_C:
-				clear_bit(DDRC, pin.num);
-				break;
-			case PORT_D:
-				clear_bit(DDRD, pin.num);
-				break;
-		}
+		clear_bit(*pin_dir_reg, pin.num);
 	}
-
 	if (mode == PIN_MODE_OUTPUT) {
-		switch (pin.port) {
-			case PORT_B:
-				set_bit(DDRB, pin.num);
-				break;
-			case PORT_C:
-				set_bit(DDRC, pin.num);
-				break;
-			case PORT_D:
-				set_bit(DDRD, pin.num);
-				break;
-		}
+		set_bit(*pin_dir_reg, pin.num);
 	}
 }
 
-void pin_write(pin_t pin, bool state) {
-	if (state) {
-		pin_set(pin);
-	} else {
-		pin_clear(pin);
+void pin_write(pin_t pin, pin_state_t state) {
+	if (state == PIN_STATE_CLEAR) {
+		clear_bit(*pin.port, pin.num);
 	}
-}
-
-void pin_set(pin_t pin) {
-	switch (pin.port) {
-		case PORT_B:
-			set_bit(PORTB, pin.num);
-			break;
-
-		case PORT_C:
-			set_bit(PORTC, pin.num);
-			break;
-
-		case PORT_D:
-			set_bit(PORTD, pin.num);
-			break;
-	}
-}
-
-void pin_clear(pin_t pin) {
-	switch (pin.port) {
-		case PORT_B:
-			clear_bit(PORTB, pin.num);
-			break;
-
-		case PORT_C:
-			clear_bit(PORTC, pin.num);
-			break;
-
-		case PORT_D:
-			clear_bit(PORTD, pin.num);
-			break;
+	if (state == PIN_STATE_SET) {
+		set_bit(*pin.port, pin.num);
 	}
 }
