@@ -21,6 +21,19 @@ ISR(PCINT2_vect) {
 	static pin_state_t pin_state = 0;
 	pin_state = !pin_state;
 	gpio_pin_write(LED_PIN, pin_state);
+
+	// TODO: Trigger timer1 interrupts here at 2 * 9600 Khz on start bit
+	//
+	// The timer should then later be used to sample the state of the Rx pin
+	// in the middle of the baud rate clock period and use this for software uart.
+	//
+	// ___     ____      ________
+	//   |    |    |    |   :   |
+	//   |____|    |____|   :   |____
+	//   ^      ^    ^    ^   ^
+	//   |      |    |    |   |
+	// start    |  data1  | data3
+	//        data0     data2
 }
 
 ISR(USART_RX_vect) {
