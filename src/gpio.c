@@ -17,7 +17,7 @@ static volatile uint8_t* port_to_pin_direction_reg(volatile uint8_t* port) {
 	return NULL;
 }
 
-void pin_configure(pin_t pin, pin_mode_t mode) {
+void gpio_pin_configure(gpio_pin_t pin, pin_mode_t mode) {
 	volatile uint8_t* pin_dir_reg = port_to_pin_direction_reg(pin.port);
 	if (!pin_dir_reg) {
 		return;
@@ -30,7 +30,7 @@ void pin_configure(pin_t pin, pin_mode_t mode) {
 	}
 }
 
-void pin_write(pin_t pin, pin_state_t state) {
+void gpio_pin_write(gpio_pin_t pin, pin_state_t state) {
 	if (state == PIN_STATE_CLEAR) {
 		clear_bit(*pin.port, pin.num);
 	}
@@ -39,6 +39,6 @@ void pin_write(pin_t pin, pin_state_t state) {
 	}
 }
 
-pin_state_t pin_read(pin_t pin) {
+pin_state_t gpio_pin_read(gpio_pin_t pin) {
 	return bit_is_set(pin.port, pin.num);
 }

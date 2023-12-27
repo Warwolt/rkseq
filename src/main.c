@@ -10,7 +10,7 @@
 #include <util/delay.h>
 
 #define LED_PIN \
-	(pin_t) { .port = &PORTB, .num = 5 }
+	(gpio_pin_t) { .port = &PORTB, .num = 5 }
 
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
@@ -18,7 +18,7 @@ ISR(TIMER0_OVF_vect) {
 }
 
 ISR(PCINT2_vect) {
-	pin_write(LED_PIN, 0);
+	gpio_pin_write(LED_PIN, 0);
 }
 
 ISR(USART_RX_vect) {
@@ -41,7 +41,7 @@ int main(void) {
 	// hw_serial_initialize(9600);
 	// logging_initialize();
 
-	pin_configure(LED_PIN, PIN_MODE_OUTPUT);
+	gpio_pin_configure(LED_PIN, PIN_MODE_OUTPUT);
 	LOG_INFO("Program Start\n");
 
 	// Setup pin change interrupts
@@ -63,7 +63,7 @@ int main(void) {
 	// 		LOG_INFO("Tick\n");
 	// 	}
 
-	// 	pin_write(LED_PIN, pin_state);
+	// 	gpio_pin_write(LED_PIN, pin_state);
 	// 	pin_state = !pin_state;
 	// }
 }
