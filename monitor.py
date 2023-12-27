@@ -43,14 +43,18 @@ if __name__ == "__main__":
     print("[ Monitor ] Serial port opened (close with Ctrl+C).")
 
     while True:
-        # Wait until receive a line
-        ser_in = ser.readline().decode('utf-8').strip('\n')
-        if ser_in:
-            print(ser_in)
+        print("[ Monitor ] Ping")
+        ser.write("Ping".encode())
 
-        # If not yet sent current time, send it
-        if ser_in and not has_sent_time:
-            has_sent_time = True
-            time_str = "TIMENOW {}".format(timestamp_now())
-            print("[ Monitor ] Sending wall clock time.")
-            ser.write(time_str.encode())
+    # while True:
+    #     # Wait until receive a line
+    #     ser_in = ser.readline().decode('utf-8').strip('\n')
+    #     if ser_in:
+    #         print(ser_in)
+
+    #     # If not yet sent current time, send it
+    #     if ser_in and not has_sent_time:
+    #         has_sent_time = True
+    #         time_str = "TIMENOW {}".format(timestamp_now())
+    #         print("[ Monitor ] Sending wall clock time.")
+    #         ser.write(time_str.encode())
