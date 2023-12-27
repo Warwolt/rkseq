@@ -14,7 +14,7 @@
 
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
-	timer0_on_timer_overflow();
+	timer0_timer_overflow_irq();
 }
 
 ISR(PCINT2_vect) {
@@ -24,11 +24,11 @@ ISR(PCINT2_vect) {
 }
 
 ISR(USART_RX_vect) {
-	hw_serial_on_rx_complete();
+	hw_serial_rx_complete_irq();
 }
 
 ISR(USART_UDRE_vect) {
-	hw_serial_on_tx_udr_empty();
+	hw_serial_tx_udr_empty_irq();
 }
 
 /* ------------------------------ Program Main ------------------------------ */
