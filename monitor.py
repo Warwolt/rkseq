@@ -42,8 +42,8 @@ if __name__ == "__main__":
 
     print("[ Monitor ] Serial port opened (close with Ctrl+C).")
 
+    print("[ Monitor ] Begin repeatedly pinging.")
     while True:
-        print("[ Monitor ] Ping")
         ser.write("Ping".encode())
 
     # while True:
