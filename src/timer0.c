@@ -1,69 +1,53 @@
 #include "timer0.h"
 
+#include "bits.h"
+
 #include <avr/io.h>
 #include <util/atomic.h>
 
-#define clear_bit(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
-#define set_bit(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
+#define CLOCK_PRESCALER 8
+#define TIMER0_FREQ (F_CPU / CLOCK_PRESCALER)
+#define TICKS_PER_MICROSECOND (TIMER0_FREQ / 1000000L) // TODO double check this calculation
+#define TICKS_TO_MICROSECONDS(ticks) ((ticks) / TICKS_PER_MICROSECOND)
+#define MICROSECONDS_PER_TIMER0_OVERFLOW (TICKS_TO_MICROSECONDS(256))
 
-#define CLOCK_CYCLES_PER_MICROSECOND() (F_CPU / 1000000L)
-#define CLOCK_CYCLES_TO_MICROSECONDS(a) ((a) / CLOCK_CYCLES_PER_MICROSECOND())
-
-// the prescaler is set so that timer0 ticks every 64 clock cycles, and the
-// the overflow handler is called every 256 ticks.
-#define MICROSECONDS_PER_TIMER0_OVERFLOW (CLOCK_CYCLES_TO_MICROSECONDS(64 * 256))
-
-// the whole number of milliseconds per timer0 overflow
-#define MILLIS_INC (MICROSECONDS_PER_TIMER0_OVERFLOW / 1000)
-
-// the fractional number of milliseconds per timer0 overflow. we shift right
-// by three to fit these numbers into a byte. (for the clock speeds we care
-// about - 8 and 16 MHz - this doesn't lose precision.)
-#define FRACT_INC ((MICROSECONDS_PER_TIMER0_OVERFLOW % 1000) >> 3)
-#define FRACT_MAX (1000 >> 3)
-
-static volatile unsigned long g_timer0_overflow_count = 0;
-static volatile unsigned long g_timer0_millis = 0;
-static unsigned char g_timer0_fract = 0;
+static volatile uint16_t g_us = 0;
+static volatile uint32_t g_ms = 0;
 
 ISR(TIMER0_OVF_vect) {
 	// copy these to local variables so they can be stored in registers
 	// (volatile variables must be read from memory on every access)
-	unsigned long m = g_timer0_millis;
-	unsigned char f = g_timer0_fract;
+	uint16_t us = g_us;
+	uint32_t ms = g_ms;
 
-	m += MILLIS_INC;
-	f += FRACT_INC;
-	if (f >= FRACT_MAX) {
-		f -= FRACT_MAX;
-		m += 1;
+	us += MICROSECONDS_PER_TIMER0_OVERFLOW;
+	if (us >= 1000) {
+		us -= 1000;
+		ms += 1;
 	}
 
-	g_timer0_fract = f;
-	g_timer0_millis = m;
-	g_timer0_overflow_count++;
+	g_us = us;
+	g_ms = ms;
 }
 
 // Configures Timer 0 to be used for counting elapsed milliseconds
 void timer0_initialize() {
 	// Set prescale factor to be 64
 	set_bit(TCCR0B, CS01);
-	set_bit(TCCR0B, CS00);
+	clear_bit(TCCR0B, CS00);
 
 	// Enable timer 0 overflow interrupt
 	set_bit(TIMSK0, TOIE0);
 }
 
-// returns num elapsed milliseconds since program start
-unsigned long timer0_now_ms() {
-	unsigned long now_ms;
-	uint8_t old_SREG = SREG;
+// Number of elapsed milliseconds since program start
+uint32_t timer0_now_ms() {
+	uint32_t now_ms;
 
-	// disable interrupts while we read g_timer0_millis or we might get an
-	// inconsistent value (e.g. in the middle of a write to g_timer0_millis)
-	cli();
-	now_ms = g_timer0_millis;
-	SREG = old_SREG;
+	// read atomically so g_ms doesn't change due to timer0 interrupt
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		now_ms = g_ms;
+	}
 
 	return now_ms;
 }
