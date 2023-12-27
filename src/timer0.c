@@ -7,7 +7,7 @@
 
 #define CLOCK_PRESCALER 8
 #define TIMER0_FREQ (F_CPU / CLOCK_PRESCALER)
-#define TICKS_PER_MICROSECOND (TIMER0_FREQ / 1000000L) // TODO double check this calculation
+#define TICKS_PER_MICROSECOND (TIMER0_FREQ / 1000000L)
 #define TICKS_TO_MICROSECONDS(ticks) ((ticks) / TICKS_PER_MICROSECOND)
 #define MICROSECONDS_PER_TIMER0_OVERFLOW (TICKS_TO_MICROSECONDS(256))
 
@@ -32,7 +32,7 @@ ISR(TIMER0_OVF_vect) {
 
 // Configures Timer 0 to be used for counting elapsed milliseconds
 void timer0_initialize() {
-	// Set prescale factor to be 64
+	// Set prescaler to 8
 	set_bit(TCCR0B, CS01);
 	clear_bit(TCCR0B, CS00);
 
