@@ -1,4 +1,4 @@
 #include <avr/io.h>
 
-#define clear_bit(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
-#define set_bit(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
+#define clear_bit(reg, bit) (_SFR_BYTE(reg) &= ~_BV(bit))
+#define set_bit(reg, bit) (_SFR_BYTE(reg) |= _BV(bit))

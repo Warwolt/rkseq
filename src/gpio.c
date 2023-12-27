@@ -38,3 +38,7 @@ void pin_write(pin_t pin, pin_state_t state) {
 		set_bit(*pin.port, pin.num);
 	}
 }
+
+pin_state_t pin_read(pin_t pin) {
+	return bit_is_set(pin.port, pin.num);
+}

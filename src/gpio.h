@@ -20,5 +20,6 @@ typedef enum {
 
 void pin_configure(pin_t pin, pin_mode_t mode);
 void pin_write(pin_t pin, pin_state_t state);
+pin_state_t pin_read(pin_t pin);
 
 #endif /* GPIO_H */
