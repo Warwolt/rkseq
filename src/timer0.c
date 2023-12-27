@@ -26,7 +26,7 @@ static volatile unsigned long g_timer0_overflow_count = 0;
 static volatile unsigned long g_timer0_millis = 0;
 static unsigned char g_timer0_fract = 0;
 
-ISR(TIMER0_OVF_vect) {
+void timer0_on_timer_overflow(void) {
 	// copy these to local variables so they can be stored in registers
 	// (volatile variables must be read from memory on every access)
 	unsigned long m = g_timer0_millis;

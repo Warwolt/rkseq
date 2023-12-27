@@ -22,7 +22,7 @@ typedef struct {
 static ringbuffer_t g_rx;
 static ringbuffer_t g_tx;
 
-static void rx_complete_irq(void) {
+void hw_serial_on_rx_complete(void) {
 	const uint8_t byte = UDR0;
 	const bool parity_error = bit_is_set(UCSR0A, UPE0);
 	if (parity_error) {
@@ -39,7 +39,7 @@ static void rx_complete_irq(void) {
 	g_rx.head = next_index;
 }
 
-static void tx_udr_empty_irq(void) {
+void hw_serial_on_tx_udr_empty(void) {
 	// If interrupts are enabled, there must be more data in the output
 	// buffer. Send the next byte
 	unsigned char byte = g_tx.buffer[g_tx.tail];
@@ -51,14 +51,6 @@ static void tx_udr_empty_irq(void) {
 		// Buffer empty, so disable interrupts
 		clear_bit(UCSR0B, UDRIE0);
 	}
-}
-
-ISR(USART_RX_vect) {
-	rx_complete_irq();
-}
-
-ISR(USART_UDRE_vect) {
-	tx_udr_empty_irq();
 }
 
 static int hw_serial_read_byte(void) {
@@ -98,7 +90,7 @@ static void hw_serial_write(uint8_t byte) {
 			// interrupt has happened and call the handler to free up
 			// space for us.
 			if (bit_is_set(UCSR0A, UDRE0)) {
-				tx_udr_empty_irq();
+				hw_serial_on_tx_udr_empty();
 			}
 		} else {
 			// nop, the interrupt handler will free up space for us

@@ -12,14 +12,29 @@
 #define ONBOARD_LED \
 	(pin_t) { .port = &PORTB, .num = 5 }
 
-void globally_enable_interrupts(void) {
-	sei();
+/* ----------------------- Interrupt service routines ----------------------- */
+ISR(TIMER0_OVF_vect) {
+	timer0_on_timer_overflow();
 }
 
 ISR(PCINT2_vect) {
 	static pin_state_t pin_state = 0;
 	pin_write(ONBOARD_LED, pin_state);
 	pin_state = !pin_state;
+}
+
+ISR(USART_RX_vect) {
+	hw_serial_on_rx_complete();
+}
+
+ISR(USART_UDRE_vect) {
+	hw_serial_on_tx_udr_empty();
+}
+
+/* ------------------------------ Program Main ------------------------------ */
+
+void globally_enable_interrupts(void) {
+	sei();
 }
 
 int main(void) {
