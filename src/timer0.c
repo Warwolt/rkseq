@@ -44,10 +44,19 @@ void timer0_initialize() {
 uint32_t timer0_now_ms() {
 	uint32_t now_ms;
 
-	// read atomically so g_ms doesn't change due to timer0 interrupt
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		now_ms = g_ms;
 	}
 
 	return now_ms;
+}
+
+uint64_t timer0_now_us(void) {
+	uint64_t now_us;
+
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		now_us = TICKS_TO_MICROSECONDS(TCNT0) + g_us + g_ms * 1000;
+	}
+
+	return now_us;
 }

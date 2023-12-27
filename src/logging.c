@@ -32,7 +32,7 @@ static const char* file_name_from_path(const char* path) {
 #define COLOR_RESET "\033[0m"
 
 static serial_t g_serial;
-static unsigned long g_ms_since_midnight = 0;
+static uint32_t g_ms_since_midnight = 0;
 
 static const char* log_level_str[] = {
 	"INFO",
@@ -47,11 +47,11 @@ static const char* log_level_color[] = {
 };
 
 static int snprintf_time(char* str_buf, size_t str_buf_len) {
-	unsigned long now_ms = g_ms_since_midnight + timer0_now_ms();
-	unsigned long hour = (now_ms / (1000L * 60L * 60L)) % 24L;
-	unsigned long minutes = (now_ms / (1000L * 60L)) % 60L;
-	unsigned long seconds = (now_ms / 1000L) % 60L;
-	unsigned long milliseconds = now_ms % 1000L;
+	uint32_t now_ms = g_ms_since_midnight + timer0_now_ms();
+	uint32_t hour = (now_ms / (1000L * 60L * 60L)) % 24L;
+	uint32_t minutes = (now_ms / (1000L * 60L)) % 60L;
+	uint32_t seconds = (now_ms / 1000L) % 60L;
+	uint32_t milliseconds = now_ms % 1000L;
 
 	return snprintf(str_buf, str_buf_len, "%02lu:%02lu:%02lu:%03lu", hour, minutes, seconds, milliseconds);
 }
@@ -72,8 +72,8 @@ void logging_initialize(serial_t serial) {
 	serial_printf("[ Logging ] Logging initialized, waiting for wall clock time.\n");
 
 	char input_buf[64] = { 0 };
-	const unsigned long timeout_ms = 100;
-	const unsigned long start_ms = timer0_now_ms();
+	const uint32_t timeout_ms = 100;
+	const uint32_t start_ms = timer0_now_ms();
 	while (true) {
 		/* Read input, look for clock time */
 		g_serial.read_string(input_buf, 64);
@@ -86,7 +86,7 @@ void logging_initialize(serial_t serial) {
 		}
 
 		/* Timed out, abort */
-		const unsigned long now_ms = timer0_now_ms();
+		const uint32_t now_ms = timer0_now_ms();
 		if (now_ms - start_ms > timeout_ms) {
 			serial_printf("[ Logging ] Timed out on getting wall clock time (waited %lu milliseconds).\n", timeout_ms);
 			break;
