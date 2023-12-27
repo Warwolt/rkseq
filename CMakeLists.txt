@@ -63,10 +63,11 @@ endif(AVR)
 # ---------------------------- Program executable ---------------------------- #
 if(AVR)
 add_avr_library(${PROJECT_NAME}
-    src/logging.c
-    src/hw_serial.c
-    src/timer0.c
     src/gpio.c
+    src/hw_serial.c
+    src/logging.c
+    src/sw_serial.c
+    src/timer0.c
 )
 add_avr_executable("${PROJECT_NAME}_main"
    src/main.c
