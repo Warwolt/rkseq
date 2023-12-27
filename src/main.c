@@ -18,7 +18,9 @@ ISR(TIMER0_OVF_vect) {
 }
 
 ISR(PCINT2_vect) {
-	gpio_pin_write(LED_PIN, 0);
+	static pin_state_t pin_state = 0;
+	pin_state = !pin_state;
+	gpio_pin_write(LED_PIN, pin_state);
 }
 
 ISR(USART_RX_vect) {
