@@ -10,7 +10,7 @@
 #include <stdbool.h>
 #include <util/delay.h>
 
-#define ONBOARD_LED \
+#define LED_PIN \
 	(gpio_pin_t) { .port = &PORTB, .num = 5 }
 
 /* ----------------------- Interrupt service routines ----------------------- */
@@ -31,12 +31,11 @@ int main(void) {
 	globally_enable_interrupts();
 	timer0_initialize();
 	hw_serial_initialize(9600);
-	logging_initialize();
 
-	gpio_pin_configure(ONBOARD_LED, PIN_MODE_OUTPUT);
+	gpio_pin_configure(LED_PIN, PIN_MODE_OUTPUT);
 	LOG_INFO("Program Start\n");
 
-	// pin_state_t pin_state = 0;
+	pin_state_t pin_state = 0;
 	uint32_t last_tick = timer0_now_ms();
 	while (true) {
 		uint32_t now = timer0_now_ms();
@@ -46,7 +45,7 @@ int main(void) {
 			LOG_INFO("Tick\n");
 		}
 
-		// gpio_pin_write(ONBOARD_LED, pin_state);
-		// pin_state = !pin_state;
+		gpio_pin_write(LED_PIN, pin_state);
+		pin_state = !pin_state;
 	}
 }
