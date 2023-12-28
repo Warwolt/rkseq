@@ -77,7 +77,7 @@ static int hw_serial_read_byte_with_timeout() {
 	return -1; // timed out
 }
 
-static void hw_serial_write(uint8_t byte) {
+void hw_serial_putc(uint8_t byte) {
 	uint8_t next_index = (g_tx.head + 1) % SERIAL_RING_BUFFER_SIZE;
 	g_tx.buffer[g_tx.head] = byte;
 
@@ -108,7 +108,7 @@ static void hw_serial_write(uint8_t byte) {
 
 void hw_serial_print(const char* str) {
 	while (*str) {
-		hw_serial_write(*str);
+		hw_serial_putc(*str);
 		str++;
 	}
 }

@@ -30,8 +30,7 @@ ISR(USART_UDRE_vect) {
 	hw_serial_tx_udr_empty_irq();
 }
 
-/* ------------------------------ Program Main ------------------------------ */
-
+/* ------------------------------ Main Program ------------------------------ */
 void globally_enable_interrupts(void) {
 	sei();
 }
@@ -40,7 +39,6 @@ int main(void) {
 	globally_enable_interrupts();
 	timer0_initialize();
 	hw_serial_initialize(9600);
-	logging_initialize();
 
 	gpio_pin_configure(LED_PIN, PIN_MODE_OUTPUT);
 	LOG_INFO("Program Start\n");

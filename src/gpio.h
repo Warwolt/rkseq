@@ -14,8 +14,8 @@ typedef enum {
 } pin_mode_t;
 
 typedef enum {
-	PIN_STATE_SET = 0,
-	PIN_STATE_CLEAR = 1,
+	PIN_STATE_CLEAR = 0,
+	PIN_STATE_SET = 1,
 } pin_state_t;
 
 void gpio_pin_configure(gpio_pin_t pin, pin_mode_t mode);
