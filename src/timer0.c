@@ -51,6 +51,7 @@ uint32_t timer0_now_ms() {
 	return now_ms;
 }
 
+// Number of elapsed microseconds since program start
 uint64_t timer0_now_us(void) {
 	uint64_t now_us;
 
