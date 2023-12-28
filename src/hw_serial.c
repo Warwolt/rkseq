@@ -4,7 +4,6 @@
 
 #include "bits.h"
 #include "gpio.h"
-#include "serial.h"
 #include "timer0.h"
 
 #include <avr/io.h>
@@ -23,7 +22,7 @@ typedef struct {
 static ringbuffer_t g_rx;
 static ringbuffer_t g_tx;
 
-static void rx_complete_irq(void) {
+void hw_serial_rx_complete_irq(void) {
 	const uint8_t byte = UDR0;
 	const bool parity_error = bit_is_set(UCSR0A, UPE0);
 	if (parity_error) {
@@ -40,7 +39,7 @@ static void rx_complete_irq(void) {
 	g_rx.head = next_index;
 }
 
-static void tx_udr_empty_irq(void) {
+void hw_serial_tx_udr_empty_irq(void) {
 	// If interrupts are enabled, there must be more data in the output
 	// buffer. Send the next byte
 	unsigned char byte = g_tx.buffer[g_tx.tail];
@@ -52,14 +51,6 @@ static void tx_udr_empty_irq(void) {
 		// Buffer empty, so disable interrupts
 		clear_bit(UCSR0B, UDRIE0);
 	}
-}
-
-ISR(USART_RX_vect) {
-	rx_complete_irq();
-}
-
-ISR(USART_UDRE_vect) {
-	tx_udr_empty_irq();
 }
 
 static int hw_serial_read_byte(void) {
@@ -86,16 +77,7 @@ static int hw_serial_read_byte_with_timeout() {
 	return -1; // timed out
 }
 
-static void hw_serial_read_string(char* str_buf, size_t str_buf_len) {
-	int index = 0;
-	int byte = hw_serial_read_byte_with_timeout();
-	while (byte >= 0 && index < str_buf_len) {
-		str_buf[index++] = (char)byte;
-		byte = hw_serial_read_byte_with_timeout();
-	}
-}
-
-static void hw_serial_write(uint8_t byte) {
+void hw_serial_putc(uint8_t byte) {
 	uint8_t next_index = (g_tx.head + 1) % SERIAL_RING_BUFFER_SIZE;
 	g_tx.buffer[g_tx.head] = byte;
 
@@ -108,7 +90,7 @@ static void hw_serial_write(uint8_t byte) {
 			// interrupt has happened and call the handler to free up
 			// space for us.
 			if (bit_is_set(UCSR0A, UDRE0)) {
-				tx_udr_empty_irq();
+				hw_serial_tx_udr_empty_irq();
 			}
 		} else {
 			// nop, the interrupt handler will free up space for us
@@ -124,18 +106,27 @@ static void hw_serial_write(uint8_t byte) {
 	}
 }
 
-static void hw_serial_print(const char* str) {
+void hw_serial_print(const char* str) {
 	while (*str) {
-		hw_serial_write(*str);
+		hw_serial_putc(*str);
 		str++;
 	}
 }
 
-static uint8_t hw_serial_num_available_bytes(void) {
+void hw_serial_read_string(char* str_buf, size_t str_buf_len) {
+	int index = 0;
+	int byte = hw_serial_read_byte_with_timeout();
+	while (byte >= 0 && index < str_buf_len) {
+		str_buf[index++] = (char)byte;
+		byte = hw_serial_read_byte_with_timeout();
+	}
+}
+
+uint8_t hw_serial_num_available_bytes(void) {
 	return (SERIAL_RING_BUFFER_SIZE + g_rx.head - g_rx.tail) % SERIAL_RING_BUFFER_SIZE;
 }
 
-serial_t hw_serial_initialize(int baud) {
+void hw_serial_initialize(int baud) {
 	// enable "double the USART transmission speed"
 	UCSR0A = 1 << U2X0;
 
@@ -148,10 +139,4 @@ serial_t hw_serial_initialize(int baud) {
 	set_bit(UCSR0B, TXEN0); // enable UART Tx
 	set_bit(UCSR0B, RXCIE0); // enable receive interrupts
 	clear_bit(UCSR0B, UDRIE0); // disable data register empty interrupts
-
-	return (serial_t) {
-		.read_string = &hw_serial_read_string,
-		.print = &hw_serial_print,
-		.num_available_bytes = &hw_serial_num_available_bytes,
-	};
 }
