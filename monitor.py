@@ -4,19 +4,27 @@ import serial.tools.list_ports
 import signal
 from datetime import datetime
 
-def timestamp_now():
-    '''
-    Returns the current time as milliseconds since 00:00
-    '''
-    midnight = datetime.now().replace(
-        hour=0, minute=0, second=0, microsecond=0)
-    delta = datetime.now() - midnight
-    return delta.seconds * 1000 + delta.microseconds // 1000
+COLOR_GREEN = "\033[32m"
+COLOR_RED = "\033[31m"
+COLOR_YELLOW = "\033[33m"
+COLOR_RESET = "\033[0m"
+
+log_level_str = {
+    "I": "{}INFO{}".format(COLOR_GREEN, COLOR_RESET),
+    "W": "{}WARNING{}".format(COLOR_YELLOW, COLOR_RESET),
+    "E": "{}ERROR{}".format(COLOR_RED, COLOR_RESET),
+}
 
 
 def signal_handler(sig, frame):
     print("[ Monitor ] Serial port closed.")
     sys.exit(0)
+
+
+def timestamp_str():
+    now = datetime.now()
+    return "%02d:%02d:%02d:%03d" % (
+        now.hour, now.minute, now.second, (now.microsecond / 1000) % 1000)
 
 
 if __name__ == "__main__":
@@ -35,22 +43,12 @@ if __name__ == "__main__":
     baud = 9600
     port = sys.argv[1]
     ser = serial.Serial(port, baud, timeout=0.5)
-    # We use a quirk where opening serial communication with the Arduino Uno will
-    # reset it, and therefore send the time stamp message after we receive the first
-    # message from the Arduino.
-    has_sent_time = False
 
     print("[ Monitor ] Serial port opened (close with Ctrl+C).")
 
     while True:
-        # Wait until receive a line
-        ser_in = ser.readline().decode('utf-8').strip('\n')
-        if ser_in:
-            print(ser_in)
-
-        # If not yet sent current time, send it
-        if ser_in and not has_sent_time:
-            has_sent_time = True
-            time_str = "TIMENOW {}".format(timestamp_now())
-            print("[ Monitor ] Sending wall clock time.")
-            ser.write(time_str.encode())
+        serial_input = ser.readline().decode('utf-8').strip('\n')
+        if serial_input:
+            [level, file, text] = serial_input.split(" ", 2)
+            print("[%s %s %s] %s" %
+                  (timestamp_str(), log_level_str[level], file, text))

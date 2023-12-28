@@ -1,4 +1,7 @@
-#include "serial.h"
+#ifndef LOGGING_H
+#define LOGGING_H
+
+#include <stdint.h>
 
 typedef enum {
 	LOG_LEVEL_INFO,
@@ -16,5 +19,6 @@ typedef enum {
 #define LOG_ERROR(...) logging_printf(LOG_LEVEL_ERROR, __FILE__, __LINE__, __VA_ARGS__)
 #endif
 
-void logging_initialize(serial_t serial);
-void logging_printf(log_level_t level, const char* file, int line, const char* fmt, ...);
+void logging_printf(log_level_t level, const char* file, uint16_t line, const char* fmt, ...);
+
+#endif /* LOGGING_H */
