@@ -36,7 +36,7 @@ int main(void) {
 	gpio_pin_configure(ONBOARD_LED, PIN_MODE_OUTPUT);
 	LOG_INFO("Program Start\n");
 
-	pin_state_t pin_state = 0;
+	// pin_state_t pin_state = 0;
 	uint32_t last_tick = timer0_now_ms();
 	while (true) {
 		uint32_t now = timer0_now_ms();
@@ -46,7 +46,7 @@ int main(void) {
 			LOG_INFO("Tick\n");
 		}
 
-		gpio_pin_write(ONBOARD_LED, pin_state);
-		pin_state = !pin_state;
+		// gpio_pin_write(ONBOARD_LED, pin_state);
+		// pin_state = !pin_state;
 	}
 }
