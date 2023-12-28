@@ -13,6 +13,16 @@
 #define ONBOARD_LED \
 	(gpio_pin_t) { .port = &PORTB, .num = 5 }
 
+/* ----------------------- Interrupt service routines ----------------------- */
+ISR(USART_RX_vect) {
+	hw_serial_rx_complete_irq();
+}
+
+ISR(USART_UDRE_vect) {
+	hw_serial_tx_udr_empty_irq();
+}
+
+/* ------------------------------ Main Program ------------------------------ */
 void globally_enable_interrupts(void) {
 	sei();
 }
@@ -20,8 +30,8 @@ void globally_enable_interrupts(void) {
 int main(void) {
 	globally_enable_interrupts();
 	timer0_initialize();
-	serial_t hw_serial = hw_serial_initialize(9600);
-	logging_initialize(hw_serial);
+	hw_serial_initialize(9600);
+	logging_initialize();
 
 	gpio_pin_configure(ONBOARD_LED, PIN_MODE_OUTPUT);
 	LOG_INFO("Program Start\n");

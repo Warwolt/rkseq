@@ -31,7 +31,6 @@ static const char* file_name_from_path(const char* path) {
 #define COLOR_YELLOW "\033[33m"
 #define COLOR_RESET "\033[0m"
 
-static serial_t g_serial;
 static uint32_t g_ms_since_midnight = 0;
 
 static const char* log_level_str[] = {
@@ -63,12 +62,10 @@ static void serial_printf(const char* fmt, ...) {
 	vsnprintf(str, 128, fmt, args);
 	va_end(args);
 
-	g_serial.print(str);
+	hw_serial_print(str);
 }
 
-void logging_initialize(serial_t serial) {
-	g_serial = serial;
-
+void logging_initialize(void) {
 	serial_printf("[ Logging ] Logging initialized, waiting for wall clock time.\n");
 
 	char input_buf[64] = { 0 };
@@ -76,7 +73,7 @@ void logging_initialize(serial_t serial) {
 	const uint32_t start_ms = timer0_now_ms();
 	while (true) {
 		/* Read input, look for clock time */
-		g_serial.read_string(input_buf, 64);
+		hw_serial_read_string(input_buf, 64);
 		if (string_starts_with(input_buf, "TIMENOW")) {
 			/* Received clock time */
 			int offset = strlen("TIMENOW ");
@@ -110,5 +107,5 @@ void logging_printf(log_level_t level, const char* file, int line, const char* f
 	vsnprintf(str + offset, 128 - offset, fmt, args);
 	va_end(args);
 
-	g_serial.print(str);
+	hw_serial_print(str);
 }
