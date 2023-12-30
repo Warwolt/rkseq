@@ -13,6 +13,9 @@
 #define LED_PIN \
 	(gpio_pin_t) { .port = &PORTB, .num = 5 }
 
+#define RX_PIN \
+	(gpio_pin_t) { .port = &PORTD, .num = 0 }
+
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
 	timer0_timer_overflow_irq();
@@ -20,6 +23,8 @@ ISR(TIMER0_OVF_vect) {
 
 ISR(PCINT2_vect) {
 	// sw_serial_pin_change_irq();
+	// read state of RX_PIN
+	gpio_pin_write(LED_PIN, gpio_pin_read(RX_PIN));
 }
 
 ISR(USART_RX_vect) {
@@ -39,22 +44,18 @@ void globally_enable_interrupts(void) {
 
 int main(void) {
 	globally_enable_interrupts();
-	timer0_initialize();
-	hw_serial_initialize(9600);
-
-	gpio_pin_t pd2_pin = { .port = &PORTD, .num = 2 };
-	gpio_pin_configure(pd2_pin, PIN_MODE_INPUT);
-
-	// {
-	// 	set_bit(PCICR, PCIE2); // enable pin change interrupts
-	// 	set_bit(PCMSK2, PCINT16); // configure PD0-pin (Rx) to trigger interrupts
-	// }
-
-	// clear_bit(DDRD, PIN2);
+	// timer0_initialize();
+	// hw_serial_initialize(9600);
 	gpio_pin_configure(LED_PIN, PIN_MODE_OUTPUT);
+	gpio_pin_configure(RX_PIN, PIN_MODE_INPUT);
+
+	// Enable interrupts on RX_PIN
+	{
+		set_bit(PCICR, PCIE2); // enable pin change interrupts
+		set_bit(PCMSK2, PCINT16); // configure PD0-pin (Rx) to trigger interrupts
+	}
+
 	while (true) {
-		pin_state_t state = gpio_pin_read(pd2_pin);
-		gpio_pin_write(LED_PIN, state);
 	}
 
 	// LOG_INFO("Program Start\n");

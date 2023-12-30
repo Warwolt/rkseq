@@ -46,13 +46,13 @@ if __name__ == "__main__":
 
     print("[ Monitor ] Serial port opened (close with Ctrl+C).")
 
-    # print("[ Monitor ] Begin repeatedly pinging.")
-    # while True:
-    #     ser.write("Ping".encode())
-
+    print("[ Monitor ] Begin repeatedly pinging.")
     while True:
-        serial_input = ser.readline().decode('utf-8').strip('\n')
-        if serial_input:
-            [level, file, text] = serial_input.split(" ", 2)
-            print("[%s %s %s] %s" %
-                  (timestamp_str(), log_level_str[level], file, text))
+        ser.write("Ping".encode())
+
+    # while True:
+    #     serial_input = ser.readline().decode('utf-8').strip('\n')
+    #     if serial_input:
+    #         [level, file, text] = serial_input.split(" ", 2)
+    #         print("[%s %s %s] %s" %
+    #               (timestamp_str(), log_level_str[level], file, text))
