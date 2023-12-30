@@ -24,7 +24,14 @@ ISR(TIMER0_OVF_vect) {
 ISR(PCINT2_vect) {
 	// sw_serial_pin_change_irq();
 	// read state of RX_PIN
-	gpio_pin_write(LED_PIN, gpio_pin_read(RX_PIN));
+	// gpio_pin_write(LED_PIN, gpio_pin_read(RX_PIN));
+	// _delay_loop_2(0);
+
+	// if RX_PIN low:
+	//     delay 1.5 bit period
+	//     for _ in 0..8:
+	//         read bit
+	//         delay 1 bit period
 }
 
 ISR(USART_RX_vect) {
