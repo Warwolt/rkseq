@@ -17,7 +17,8 @@ TEST(ringbuffer_tests, reading_after_writing_gives_back_written_byte) {
 	ringbuffer_t buffer = { 0 };
 
 	ringbuffer_write(&buffer, 123);
-	const uint8_t byte = ringbuffer_read(&buffer);
+	uint8_t byte;
+	ringbuffer_read(&buffer, &byte);
 
 	EXPECT_EQ(byte, 123);
 }
@@ -49,7 +50,7 @@ TEST(ringbuffer_tests, all_bytes_written_until_full_can_be_read) {
 	}
 
 	for (uint8_t i = 0; i < RING_BUFFER_SIZE; i++) {
-		output[i] = ringbuffer_read(&buffer);
+		ringbuffer_read(&buffer, &output[i]);
 	}
 
 	for (uint8_t i = 0; i < RING_BUFFER_SIZE; i++) {
@@ -57,4 +58,29 @@ TEST(ringbuffer_tests, all_bytes_written_until_full_can_be_read) {
 	}
 }
 
-// writing past buffer discards bytes
+TEST(ringbuffer_tests, writing_past_buffer_discards_bytes) {
+	ringbuffer_t buffer = { 0 };
+
+	for (uint8_t i = 0; i < RING_BUFFER_SIZE; i++) {
+		ringbuffer_write(&buffer, i);
+	}
+	ringbuffer_write(&buffer, 123); // byte should be discarded
+
+	uint8_t byte;
+	for (uint8_t i = 0; i < RING_BUFFER_SIZE; i++) {
+		ringbuffer_read(&buffer, &byte);
+		ASSERT_EQ(byte, i);
+	}
+	ringbuffer_read(&buffer, &byte); // byte should not be updated
+
+	EXPECT_EQ_INFO(byte, RING_BUFFER_SIZE - 1, "Expected last write to have been discarded");
+}
+
+TEST(ringbuffer_tests, reading_from_empty_buffer_gives_nothing) {
+	ringbuffer_t buffer = { 0 };
+
+	uint8_t byte = 123;
+	ringbuffer_read(&buffer, &byte);
+
+	EXPECT_EQ_INFO(byte, 123, "Byte should not have been written to");
+}

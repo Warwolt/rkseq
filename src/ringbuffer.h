@@ -26,15 +26,19 @@ static inline bool ringbuffer_is_full(const ringbuffer_t* rb) {
 }
 
 static inline void ringbuffer_write(ringbuffer_t* rb, uint8_t byte) {
-	rb->buffer[rb->head] = byte;
-	rb->head = (rb->head + 1) % RING_BUFFER_SIZE;
-	rb->size += 1;
+	if (!ringbuffer_is_full(rb)) {
+		rb->buffer[rb->head] = byte;
+		rb->head = (rb->head + 1) % RING_BUFFER_SIZE;
+		rb->size += 1;
+	}
 }
 
-static inline uint8_t ringbuffer_read(ringbuffer_t* rb) {
-	uint8_t byte = rb->buffer[rb->tail];
-	rb->tail = (rb->tail + 1) % RING_BUFFER_SIZE;
-	return byte;
+static inline void ringbuffer_read(ringbuffer_t* rb, uint8_t* byte) {
+	if (!ringbuffer_is_empty(rb)) {
+		*byte = rb->buffer[rb->tail];
+		rb->tail = (rb->tail + 1) % RING_BUFFER_SIZE;
+		rb->size -= 1;
+	}
 }
 
 #endif /* RING_BUFFER_H */
