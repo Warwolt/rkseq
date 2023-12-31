@@ -6,18 +6,13 @@
 #include "gpio.h"
 #include "timer0.h"
 
+#define RING_BUFFER_SIZE 64
+#include "ringbuffer.h"
+
 #include <avr/io.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <util/atomic.h>
-
-#define SERIAL_RING_BUFFER_SIZE 64
-
-typedef struct {
-	volatile uint8_t head;
-	volatile uint8_t tail;
-	uint8_t buffer[SERIAL_RING_BUFFER_SIZE];
-} ringbuffer_t;
 
 static ringbuffer_t g_rx;
 static ringbuffer_t g_tx;
