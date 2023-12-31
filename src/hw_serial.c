@@ -14,8 +14,8 @@
 #include <stdint.h>
 #include <util/atomic.h>
 
-static ringbuffer_t g_rx;
-static ringbuffer_t g_tx;
+static ringbuffer_t g_rx_buffer;
+static ringbuffer_t g_tx_buffer;
 
 void hw_serial_rx_complete_irq(void) {
 	const uint8_t byte = UDR0;
@@ -24,25 +24,15 @@ void hw_serial_rx_complete_irq(void) {
 		return; // Parity error, discard read byte
 	}
 
-	uint8_t next_index = (g_rx.head + 1) % SERIAL_RING_BUFFER_SIZE;
-	if (next_index == g_rx.tail) {
-		return; // About to overflow, discard read byte
-	}
-
-	// Write read byte to buffer
-	g_rx.buffer[g_rx.head] = byte;
-	g_rx.head = next_index;
+	ringbuffer_write(&g_rx_buffer, byte);
 }
 
 void hw_serial_tx_udr_empty_irq(void) {
 	// If interrupts are enabled, there must be more data in the output
 	// buffer. Send the next byte
-	unsigned char byte = g_tx.buffer[g_tx.tail];
-	g_tx.tail = (g_tx.tail + 1) % SERIAL_RING_BUFFER_SIZE;
+	ringbuffer_read(&g_tx_buffer, (uint8_t*)&UDR0);
 
-	UDR0 = byte;
-
-	if (g_tx.head == g_tx.tail) {
+	if (ringbuffer_is_empty(&g_tx_buffer)) {
 		// Buffer empty, so disable interrupts
 		clear_bit(UCSR0B, UDRIE0);
 	}
@@ -50,12 +40,12 @@ void hw_serial_tx_udr_empty_irq(void) {
 
 static int hw_serial_read_byte(void) {
 	// if the head isn't ahead of the tail, we don't have any characters
-	if (g_rx.head == g_rx.tail) {
+	if (ringbuffer_is_empty(&g_rx_buffer)) {
 		return -1;
 	}
 
-	uint8_t byte = g_rx.buffer[g_rx.tail];
-	g_rx.tail = (g_rx.tail + 1) % SERIAL_RING_BUFFER_SIZE;
+	uint8_t byte;
+	ringbuffer_read(&g_rx_buffer, &byte);
 	return byte;
 }
 
@@ -73,12 +63,11 @@ static int hw_serial_read_byte_with_timeout() {
 }
 
 void hw_serial_putc(uint8_t byte) {
-	uint8_t next_index = (g_tx.head + 1) % SERIAL_RING_BUFFER_SIZE;
-	g_tx.buffer[g_tx.head] = byte;
+	ringbuffer_write(&g_tx_buffer, byte);
 
 	// If the output buffer is full, there's nothing for it other than to
 	// wait for the interrupt handler to empty it a bit
-	while (next_index == g_tx.tail) {
+	while (ringbuffer_is_full(&g_tx_buffer)) {
 		if (bit_is_clear(SREG, SREG_I)) {
 			// Interrupts are disabled, so we'll have to poll the data
 			// register empty flag ourselves. If it is set, pretend an
@@ -92,11 +81,7 @@ void hw_serial_putc(uint8_t byte) {
 		}
 	}
 
-	// Make atomic to prevent execution of ISR between setting the
-	// head pointer and setting the interrupt flag resulting in buffer
-	// retransmission
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		g_tx.head = next_index;
 		set_bit(UCSR0B, UDRIE0);
 	}
 }
@@ -118,7 +103,7 @@ void hw_serial_read_string(char* str_buf, size_t str_buf_len) {
 }
 
 uint8_t hw_serial_num_available_bytes(void) {
-	return (SERIAL_RING_BUFFER_SIZE + g_rx.head - g_rx.tail) % SERIAL_RING_BUFFER_SIZE;
+	return (RING_BUFFER_SIZE + g_rx_buffer.head - g_rx_buffer.tail) % RING_BUFFER_SIZE;
 }
 
 void hw_serial_initialize(int baud) {
