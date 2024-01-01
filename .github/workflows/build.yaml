@@ -8,13 +8,18 @@ jobs:
       - name: Install AVR GCC
         run: sudo apt-get install -y binutils-avr gcc-avr avr-libc
 
-      # - name: Checkout
-      #   uses: actions/checkout@v4.1.1
-      #   with:
-      #       submodules: true
+      - name: Checkout
+        uses: actions/checkout@v4.1.1
+        with:
+          submodules: true
 
-      # - name: Setup CMake
-      #   uses: threeal/cmake-action@v1.3.0
+      - name: Setup CMake
+        uses: threeal/cmake-action@v1.3.0
+        with:
+          generator: "Unix Makefiles"
+          options: >
+            "CMAKE_TOOLCHAIN_FILE=./external/cmake-avr/generic-gcc-avr.cmake"
+            "AVR_UPLOADTOOL_PORT=n/a"
 
       # - name: Build
       #   run: cmake --build build
