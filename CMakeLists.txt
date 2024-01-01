@@ -78,7 +78,8 @@ else()
 # -------------------------------- Unit tests -------------------------------- #
 add_subdirectory(external/rktest)
 add_executable(tests
-    tests/hw_serial_tests.c
+    tests/ringbuffer_tests.c
 )
 target_link_libraries(tests rktest)
+target_include_directories(tests PRIVATE src)
 endif()
