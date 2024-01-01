@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install AVR GCC
-        run: apt update && apt install avr-binutils avr-gcc avr-libc
+        run: sudo apt-get install -y avr-binutils avr-gcc avr-libc
 
       # - name: Checkout
       #   uses: actions/checkout@v4.1.1
