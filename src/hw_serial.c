@@ -38,24 +38,12 @@ void hw_serial_tx_udr_empty_irq(void) {
 	}
 }
 
-static int hw_serial_read_byte(void) {
-	// if the head isn't ahead of the tail, we don't have any characters
-	if (ringbuffer_is_empty(&g_rx_buffer)) {
-		return -1;
-	}
-
-	uint8_t byte;
-	ringbuffer_read(&g_rx_buffer, &byte);
-	return byte;
-}
-
 static int hw_serial_read_byte_with_timeout() {
 	const unsigned long timeout_ms = 1000;
 	const unsigned long start_ms = timer0_now_ms();
-	int byte;
+	uint8_t byte;
 	do {
-		byte = hw_serial_read_byte();
-		if (byte >= 0) {
+		if (ringbuffer_read(&g_rx_buffer, &byte) == 0) {
 			return byte;
 		}
 	} while (timer0_now_ms() - start_ms < timeout_ms);
