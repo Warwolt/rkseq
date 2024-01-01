@@ -21,7 +21,17 @@ if(AVR)
     if(DEFINED ENV{AVR_FIND_ROOT_PATH})
         set(CMAKE_FIND_ROOT_PATH $ENV{AVR_FIND_ROOT_PATH})
     else(DEFINED ENV{AVR_FIND_ROOT_PATH})
-        message(FATAL_ERROR "Please set AVR_FIND_ROOT_PATH in your environment.")
+        if(EXISTS "/opt/local/avr")
+          set(CMAKE_FIND_ROOT_PATH "/opt/local/avr")
+        elseif(EXISTS "/usr/avr")
+          set(CMAKE_FIND_ROOT_PATH "/usr/avr")
+        elseif(EXISTS "/usr/lib/avr")
+          set(CMAKE_FIND_ROOT_PATH "/usr/lib/avr")
+        elseif(EXISTS "/usr/local/CrossPack-AVR")
+          set(CMAKE_FIND_ROOT_PATH "/usr/local/CrossPack-AVR")
+        else(EXISTS "/opt/local/avr")
+          message(FATAL_ERROR "Please set AVR_FIND_ROOT_PATH in your environment.")
+        endif(EXISTS "/opt/local/avr")
     endif(DEFINED ENV{AVR_FIND_ROOT_PATH})
 
     set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
@@ -79,7 +89,8 @@ else()
 # -------------------------------- Unit tests -------------------------------- #
 add_subdirectory(external/rktest)
 add_executable(tests
-    tests/hw_serial_tests.c
+    tests/ringbuffer_tests.c
 )
 target_link_libraries(tests rktest)
+target_include_directories(tests PRIVATE src)
 endif()
