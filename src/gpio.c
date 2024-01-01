@@ -49,10 +49,14 @@ void gpio_pin_write(gpio_pin_t pin, pin_state_t state) {
 	}
 }
 
+void gpio_pin_toggle(gpio_pin_t pin) {
+	toggle_bit(*pin.port, pin.num);
+}
+
 pin_state_t gpio_pin_read(gpio_pin_t pin) {
 	volatile uint8_t* input_reg = port_to_input_reg(pin.port);
 	if (!input_reg) {
 		return PIN_STATE_LOW;
 	}
-	return bit_is_set(*input_reg, pin.num);
+	return bit_is_set(*input_reg, pin.num) ? PIN_STATE_HIGH : PIN_STATE_LOW;
 }

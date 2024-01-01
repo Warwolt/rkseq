@@ -3,6 +3,7 @@ import serial
 import serial.tools.list_ports
 import signal
 from datetime import datetime
+import time
 
 COLOR_GREEN = "\033[32m"
 COLOR_RED = "\033[31m"
@@ -46,9 +47,12 @@ if __name__ == "__main__":
 
     print("[ Monitor ] Serial port opened (close with Ctrl+C).")
 
-    print("[ Monitor ] Begin repeatedly pinging.")
+    char = 'w'
+    print("[ Monitor ] Begin repeatedly pinging '%s' (%x)." % (char, ord(list(char)[0])))
     while True:
-        ser.write("Ping".encode())
+        ser.write(char.encode())
+        time.sleep(0.050) # sleep 50 ms
+
 
     # while True:
     #     serial_input = ser.readline().decode('utf-8').strip('\n')

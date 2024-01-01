@@ -2,6 +2,7 @@
 #include "gpio.h"
 #include "hw_serial.h"
 #include "logging.h"
+#include "ringbuffer.h"
 #include "sw_serial.h"
 #include "timer0.h"
 
@@ -21,17 +22,33 @@ ISR(TIMER0_OVF_vect) {
 	timer0_timer_overflow_irq();
 }
 
-ISR(PCINT2_vect) {
-	// sw_serial_pin_change_irq();
-	// read state of RX_PIN
-	// gpio_pin_write(LED_PIN, gpio_pin_read(RX_PIN));
-	// _delay_loop_2(0);
+#define BAUD 9600
+#define BIT_PERIOD_NS (1e9 / BAUD)
+#define NS_PER_4_INSTRUCTIONS (4 * 1e9 / F_CPU)
+#define BIT_PERIOD_DELAY (BIT_PERIOD_NS / NS_PER_4_INSTRUCTIONS) // delay in units of 4 instructions
 
-	// if RX_PIN low:
-	//     delay 1.5 bit period
-	//     for _ in 0..8:
-	//         read bit
-	//         delay 1 bit period
+static ringbuffer_t g_rx_buffer = { 0 };
+
+ISR(PCINT2_vect) {
+	if (gpio_pin_read(RX_PIN) == 0) {
+		uint8_t byte = 0;
+
+		_delay_loop_2(BIT_PERIOD_DELAY * 1.5);
+		for (int i = 0; i < 8; i++) {
+			const uint8_t bit = gpio_pin_read(RX_PIN);
+			byte |= bit << i;
+
+			// debug begin
+			gpio_pin_toggle(LED_PIN);
+			gpio_pin_toggle(LED_PIN);
+			_delay_loop_2(BIT_PERIOD_DELAY * 0.90);
+			// debug end
+
+			// _delay_loop_2(BIT_PERIOD_DELAY);
+		}
+
+		ringbuffer_write(&g_rx_buffer, byte);
+	}
 }
 
 ISR(USART_RX_vect) {
@@ -63,6 +80,24 @@ int main(void) {
 	}
 
 	while (true) {
+		if (!ringbuffer_is_empty(&g_rx_buffer)) {
+			uint8_t byte;
+			ringbuffer_read(&g_rx_buffer, &byte);
+
+			_delay_us(100);
+
+			// byte
+			for (int i = 0; i < 8; i++) {
+				const uint8_t bit = (byte >> (8 - 1 - i)) & 0x1;
+				gpio_pin_toggle(LED_PIN);
+				gpio_pin_toggle(LED_PIN);
+				gpio_pin_write(LED_PIN, bit);
+				_delay_loop_2(BIT_PERIOD_DELAY * 0.90);
+			}
+			gpio_pin_toggle(LED_PIN);
+			gpio_pin_toggle(LED_PIN);
+		}
+		gpio_pin_write(LED_PIN, 0);
 	}
 
 	// LOG_INFO("Program Start\n");
