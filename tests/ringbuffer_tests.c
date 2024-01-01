@@ -84,3 +84,29 @@ TEST(ringbuffer_tests, reading_from_empty_buffer_gives_nothing) {
 
 	EXPECT_EQ_INFO(byte, 123, "Byte should not have been written to");
 }
+
+TEST(ringbuffer_tests, writing_increases_available_bytes) {
+	ringbuffer_t buffer = { 0 };
+
+	ringbuffer_write(&buffer, 11);
+	ringbuffer_write(&buffer, 22);
+	ringbuffer_write(&buffer, 33);
+	uint16_t available_bytes = ringbuffer_available_bytes(&buffer);
+
+	EXPECT_EQ(available_bytes, 3);
+}
+
+TEST(ringbuffer_tests, reading_decreases_available_bytes) {
+	ringbuffer_t buffer = { 0 };
+
+	uint8_t byte;
+	ringbuffer_write(&buffer, 11);
+	ringbuffer_write(&buffer, 22);
+	ringbuffer_write(&buffer, 33);
+	ringbuffer_write(&buffer, 44);
+	ringbuffer_read(&buffer, NULL);
+	ringbuffer_read(&buffer, NULL);
+	uint16_t available_bytes = ringbuffer_available_bytes(&buffer);
+
+	EXPECT_EQ(available_bytes, 2);
+}
