@@ -41,22 +41,15 @@ if __name__ == "__main__":
             print(" - %s" % name)
         exit(1)
 
-    baud = 31250
+    baud = 9600
     port = sys.argv[1]
     ser = serial.Serial(port, baud, timeout=0.5)
 
     print("[ Monitor ] Serial port opened (close with Ctrl+C).")
 
-    # char = 'w'
-    # print("[ Monitor ] Begin repeatedly pinging '%s' (%x)." % (char, ord(list(char)[0])))
-    # while True:
-    #     ser.write(char.encode())
-    #     time.sleep(0.050) # sleep 50 ms
-
     while True:
         serial_input = ser.readline().decode('utf-8').strip('\n')
         if serial_input:
-            print(serial_input)
-            # [level, file, text] = serial_input.split(" ", 2)
-            # print("[%s %s %s] %s" %
-            #       (timestamp_str(), log_level_str[level], file, text))
+            [level, file, text] = serial_input.split(" ", 2)
+            print("[%s %s %s] %s" %
+                  (timestamp_str(), log_level_str[level], file, text))
