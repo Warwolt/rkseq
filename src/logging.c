@@ -27,16 +27,23 @@ static const char* file_name_from_path(const char* path) {
 	return file_name;
 }
 
+static void print_string(const char* str) {
+	while (*str) {
+		hw_serial_write(*str);
+		str++;
+	}
+}
+
 void logging_printf(log_level_t level, const char* file, uint16_t line, const char* fmt, ...) {
 	/* Print prefix */
-	hw_serial_putc(log_level_char[level]);
-	hw_serial_putc(' ');
-	hw_serial_print(file_name_from_path(file));
-	hw_serial_putc(':');
+	hw_serial_write(log_level_char[level]);
+	hw_serial_write(' ');
+	print_string(file_name_from_path(file));
+	hw_serial_write(':');
 	char line_str[5];
 	snprintf(line_str, 5, "%d", line);
-	hw_serial_print(line_str);
-	hw_serial_putc(' ');
+	print_string(line_str);
+	hw_serial_write(' ');
 
 	/* Print user string */
 	char str[128];
@@ -44,5 +51,5 @@ void logging_printf(log_level_t level, const char* file, uint16_t line, const ch
 	va_start(args, fmt);
 	vsnprintf(str, 128, fmt, args);
 	va_end(args);
-	hw_serial_print(str);
+	print_string(str);
 }

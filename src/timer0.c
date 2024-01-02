@@ -14,7 +14,7 @@
 static volatile uint16_t g_us = 0;
 static volatile uint32_t g_ms = 0;
 
-ISR(TIMER0_OVF_vect) {
+void timer0_timer_overflow_irq(void) {
 	// copy these to local variables so they can be stored in registers
 	// (volatile variables must be read from memory on every access)
 	uint16_t us = g_us;
@@ -51,6 +51,7 @@ uint32_t timer0_now_ms() {
 	return now_ms;
 }
 
+// Number of elapsed microseconds since program start
 uint64_t timer0_now_us(void) {
 	uint64_t now_us;
 
