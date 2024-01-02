@@ -5,39 +5,52 @@
 #include "ringbuffer.h"
 #include "util_math.h"
 
+#include <avr/interrupt.h>
 #include <avr/io.h>
 #include <util/delay.h>
 
-#define BIT_PERIOD_NS(baud) (1e9 / baud)
-#define NS_PER_4_INSTRUCTIONS (4 * 1e9 / F_CPU)
-#define BIT_PERIOD_DELAY(baud) (BIT_PERIOD_NS(baud) / NS_PER_4_INSTRUCTIONS) // delay in units of 4 instructions
-
-#define IRQ_DELAY_NS 6920 // measured with oscilloscope, the time from RX signal change to ISR being called
-#define IRQ_DELAY 6920 / NS_PER_4_INSTRUCTIONS // delay in units of 4 instructions
-
 static gpio_pin_t g_rx_pin;
-static uint16_t g_bit_period_delay;
 static ringbuffer_t g_rx_buffer;
+
+static uint16_t g_start_bit_delay;
+static uint16_t g_data_bit_delay;
+static uint16_t g_stop_bit_delay;
 
 void sw_serial_pin_change_irq(void) {
 	if (gpio_pin_read(g_rx_pin) == 0) {
+		clear_bit(PCICR, PCIE2); // disable interrupts while receiving
 		uint8_t byte = 0;
 
-		_delay_loop_2(g_bit_period_delay * 1.5 - IRQ_DELAY);
+		_delay_loop_2(g_start_bit_delay);
 		for (int i = 0; i < 8; i++) {
+			// subtract to compensate for loop and function calls
+			_delay_loop_2(g_data_bit_delay - 23);
+
 			const uint8_t bit = gpio_pin_read(g_rx_pin);
 			byte |= bit << i;
-			// subtract 8 to compensate for loop and function calls
-			_delay_loop_2(g_bit_period_delay - 8);
+			// debug toggle
+			{
+				toggle_bit(PORTB, 5);
+				toggle_bit(PORTB, 5);
+			}
 		}
 
 		ringbuffer_write(&g_rx_buffer, byte);
+
+		_delay_loop_2(g_stop_bit_delay);
+		set_bit(PCICR, PCIE2); // re-enable pin change interrupts
 	}
 }
 
+// This borrows the delay compensations from
+// https://github.com/arduino/ArduinoCore-avr/blob/master/libraries/SoftwareSerial/src/SoftwareSerial.cpp#L304
 void sw_serial_initialize(uint16_t baud, gpio_pin_t rx_pin) {
 	g_rx_pin = rx_pin;
-	g_bit_period_delay = BIT_PERIOD_DELAY(baud);
+
+	g_data_bit_delay = (F_CPU / baud) / 4;
+	g_start_bit_delay = clamped_subtract(g_data_bit_delay / 2, (4 + 4 + 75 + 17 - 23) / 4);
+	g_stop_bit_delay = g_data_bit_delay;
+
 	gpio_pin_configure(g_rx_pin, PIN_MODE_INPUT);
 	set_bit(PCICR, PCIE2); // enable pin change interrupts
 	set_bit(PCMSK2, PCINT16); // configure PD0-pin (Rx) to trigger interrupts

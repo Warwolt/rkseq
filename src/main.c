@@ -43,10 +43,14 @@ int main(void) {
 	globally_enable_interrupts();
 	// timer0_initialize();
 	// hw_serial_initialize(9600);
-	sw_serial_initialize(9600, RX_PIN);
+	sw_serial_initialize(31250, RX_PIN);
 	gpio_pin_configure(LED_PIN, PIN_MODE_OUTPUT);
 
 	while (true) {
+		// if (sw_serial_available_bytes() > 0) {
+		// 	sw_serial_read_bytes(NULL, 1);
+		// }
+
 		if (sw_serial_available_bytes() > 0) {
 			uint8_t byte;
 			sw_serial_read_bytes(&byte, 1);
@@ -59,7 +63,7 @@ int main(void) {
 				gpio_pin_toggle(LED_PIN);
 				gpio_pin_toggle(LED_PIN);
 				gpio_pin_write(LED_PIN, bit);
-				_delay_us(104);
+				_delay_us(32);
 			}
 			gpio_pin_toggle(LED_PIN);
 			gpio_pin_toggle(LED_PIN);

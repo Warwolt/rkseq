@@ -41,7 +41,7 @@ if __name__ == "__main__":
             print(" - %s" % name)
         exit(1)
 
-    baud = 9600
+    baud = 31250
     port = sys.argv[1]
     ser = serial.Serial(port, baud, timeout=0.5)
 
