@@ -70,14 +70,8 @@ int main(void) {
 	globally_enable_interrupts();
 	// timer0_initialize();
 	// hw_serial_initialize(9600);
+	sw_serial_initialize(9600);
 	gpio_pin_configure(LED_PIN, PIN_MODE_OUTPUT);
-	gpio_pin_configure(RX_PIN, PIN_MODE_INPUT);
-
-	// Enable interrupts on RX_PIN
-	{
-		set_bit(PCICR, PCIE2); // enable pin change interrupts
-		set_bit(PCMSK2, PCINT16); // configure PD0-pin (Rx) to trigger interrupts
-	}
 
 	while (true) {
 		if (!ringbuffer_is_empty(&g_rx_buffer)) {
