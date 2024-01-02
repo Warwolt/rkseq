@@ -24,8 +24,6 @@ ISR(TIMER0_OVF_vect) {
 #define NS_PER_4_INSTRUCTIONS (4 * 1e9 / F_CPU)
 #define BIT_PERIOD_DELAY (BIT_PERIOD_NS / NS_PER_4_INSTRUCTIONS) // delay in units of 4 instructions
 
-extern ringbuffer_t g_rx_buffer;
-
 ISR(PCINT2_vect) {
 	sw_serial_pin_change_irq();
 }
@@ -51,9 +49,9 @@ int main(void) {
 	gpio_pin_configure(LED_PIN, PIN_MODE_OUTPUT);
 
 	while (true) {
-		if (!ringbuffer_is_empty(&g_rx_buffer)) {
+		if (sw_serial_available_bytes() > 0) {
 			uint8_t byte;
-			ringbuffer_read(&g_rx_buffer, &byte);
+			sw_serial_read_bytes(&byte, 1);
 
 			_delay_us(100);
 

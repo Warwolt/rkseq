@@ -7,6 +7,8 @@
 #include <avr/io.h>
 #include <util/delay.h>
 
+#define min(x, y) ((x) < (y) ? (x) : (y))
+
 #define BIT_PERIOD_NS(baud) (1e9 / baud)
 #define NS_PER_4_INSTRUCTIONS (4 * 1e9 / F_CPU)
 #define BIT_PERIOD_DELAY(baud) (BIT_PERIOD_NS(baud) / NS_PER_4_INSTRUCTIONS) // delay in units of 4 instructions
@@ -18,8 +20,7 @@
 	(gpio_pin_t) { .port = &PORTD, .num = 0 }
 
 static uint16_t g_bit_period_delay;
-// static ringbuffer_t g_rx_buffer;
-ringbuffer_t g_rx_buffer;
+static ringbuffer_t g_rx_buffer;
 
 void sw_serial_pin_change_irq(void) {
 	if (gpio_pin_read(RX_PIN) == 0) {
@@ -43,4 +44,15 @@ void sw_serial_initialize(uint16_t baud) {
 	gpio_pin_configure(RX_PIN, PIN_MODE_INPUT);
 	set_bit(PCICR, PCIE2); // enable pin change interrupts
 	set_bit(PCMSK2, PCINT16); // configure PD0-pin (Rx) to trigger interrupts
+}
+
+uint16_t sw_serial_available_bytes(void) {
+	return ringbuffer_available_bytes(&g_rx_buffer);
+}
+
+void sw_serial_read_bytes(uint8_t* byte_buf, uint16_t byte_buf_len) {
+	uint16_t bytes_to_read = min(sw_serial_available_bytes, byte_buf_len);
+	for (uint16_t i = 0; i < bytes_to_read; i++) {
+		ringbuffer_read(&g_rx_buffer, &byte_buf[i]);
+	}
 }
