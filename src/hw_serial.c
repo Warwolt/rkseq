@@ -82,7 +82,7 @@ void hw_serial_print(const char* str) {
 }
 
 void hw_serial_read_string(char* str_buf, size_t str_buf_len) {
-	int index = 0;
+	size_t index = 0;
 	int byte = hw_serial_read_byte_with_timeout();
 	while (byte >= 0 && index < str_buf_len) {
 		str_buf[index++] = (char)byte;

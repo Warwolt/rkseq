@@ -3,11 +3,10 @@
 #include "bits.h"
 #include "gpio.h"
 #include "ringbuffer.h"
+#include "util_math.h"
 
 #include <avr/io.h>
 #include <util/delay.h>
-
-#define min(x, y) ((x) < (y) ? (x) : (y))
 
 #define BIT_PERIOD_NS(baud) (1e9 / baud)
 #define NS_PER_4_INSTRUCTIONS (4 * 1e9 / F_CPU)
@@ -30,7 +29,6 @@ void sw_serial_pin_change_irq(void) {
 		for (int i = 0; i < 8; i++) {
 			const uint8_t bit = gpio_pin_read(RX_PIN);
 			byte |= bit << i;
-
 			// subtract 8 to compensate for loop and function calls
 			_delay_loop_2(g_bit_period_delay - 8);
 		}
@@ -51,7 +49,7 @@ uint16_t sw_serial_available_bytes(void) {
 }
 
 void sw_serial_read_bytes(uint8_t* byte_buf, uint16_t byte_buf_len) {
-	uint16_t bytes_to_read = min(sw_serial_available_bytes, byte_buf_len);
+	uint16_t bytes_to_read = min(sw_serial_available_bytes(), byte_buf_len);
 	for (uint16_t i = 0; i < bytes_to_read; i++) {
 		ringbuffer_read(&g_rx_buffer, &byte_buf[i]);
 	}
