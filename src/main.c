@@ -14,9 +14,6 @@
 #define LED_PIN \
 	(gpio_pin_t) { .port = &PORTB, .num = 5 }
 
-#define RX_PIN \
-	(gpio_pin_t) { .port = &PORTD, .num = 0 }
-
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
 	timer0_timer_overflow_irq();
@@ -27,28 +24,10 @@ ISR(TIMER0_OVF_vect) {
 #define NS_PER_4_INSTRUCTIONS (4 * 1e9 / F_CPU)
 #define BIT_PERIOD_DELAY (BIT_PERIOD_NS / NS_PER_4_INSTRUCTIONS) // delay in units of 4 instructions
 
-static ringbuffer_t g_rx_buffer = { 0 };
+extern ringbuffer_t g_rx_buffer;
 
 ISR(PCINT2_vect) {
-	if (gpio_pin_read(RX_PIN) == 0) {
-		uint8_t byte = 0;
-
-		_delay_loop_2(BIT_PERIOD_DELAY * 1.5);
-		for (int i = 0; i < 8; i++) {
-			const uint8_t bit = gpio_pin_read(RX_PIN);
-			byte |= bit << i;
-
-			// debug begin
-			gpio_pin_toggle(LED_PIN);
-			gpio_pin_toggle(LED_PIN);
-			_delay_loop_2(BIT_PERIOD_DELAY * 0.90);
-			// debug end
-
-			// _delay_loop_2(BIT_PERIOD_DELAY);
-		}
-
-		ringbuffer_write(&g_rx_buffer, byte);
-	}
+	sw_serial_pin_change_irq();
 }
 
 ISR(USART_RX_vect) {
@@ -58,8 +37,6 @@ ISR(USART_RX_vect) {
 ISR(USART_UDRE_vect) {
 	hw_serial_tx_udr_empty_irq();
 }
-
-// TODO: add an interrupt for timer1/timer2 here and connect it to the software UART code
 
 /* ------------------------------ Main Program ------------------------------ */
 void globally_enable_interrupts(void) {
