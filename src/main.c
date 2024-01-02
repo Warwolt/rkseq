@@ -14,15 +14,13 @@
 #define LED_PIN \
 	(gpio_pin_t) { .port = &PORTB, .num = 5 }
 
+#define RX_PIN \
+	(gpio_pin_t) { .port = &PORTD, .num = 0 }
+
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
 	timer0_timer_overflow_irq();
 }
-
-#define BAUD 9600
-#define BIT_PERIOD_NS (1e9 / BAUD)
-#define NS_PER_4_INSTRUCTIONS (4 * 1e9 / F_CPU)
-#define BIT_PERIOD_DELAY (BIT_PERIOD_NS / NS_PER_4_INSTRUCTIONS) // delay in units of 4 instructions
 
 ISR(PCINT2_vect) {
 	sw_serial_pin_change_irq();
@@ -45,7 +43,7 @@ int main(void) {
 	globally_enable_interrupts();
 	// timer0_initialize();
 	// hw_serial_initialize(9600);
-	sw_serial_initialize(9600);
+	sw_serial_initialize(9600, RX_PIN);
 	gpio_pin_configure(LED_PIN, PIN_MODE_OUTPUT);
 
 	while (true) {
@@ -61,7 +59,7 @@ int main(void) {
 				gpio_pin_toggle(LED_PIN);
 				gpio_pin_toggle(LED_PIN);
 				gpio_pin_write(LED_PIN, bit);
-				_delay_loop_2(BIT_PERIOD_DELAY * 0.90);
+				_delay_us(104);
 			}
 			gpio_pin_toggle(LED_PIN);
 			gpio_pin_toggle(LED_PIN);

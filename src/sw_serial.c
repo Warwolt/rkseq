@@ -15,19 +15,17 @@
 #define IRQ_DELAY_NS 6920 // measured with oscilloscope, the time from RX signal change to ISR being called
 #define IRQ_DELAY 6920 / NS_PER_4_INSTRUCTIONS // delay in units of 4 instructions
 
-#define RX_PIN \
-	(gpio_pin_t) { .port = &PORTD, .num = 0 }
-
+static gpio_pin_t g_rx_pin;
 static uint16_t g_bit_period_delay;
 static ringbuffer_t g_rx_buffer;
 
 void sw_serial_pin_change_irq(void) {
-	if (gpio_pin_read(RX_PIN) == 0) {
+	if (gpio_pin_read(g_rx_pin) == 0) {
 		uint8_t byte = 0;
 
 		_delay_loop_2(g_bit_period_delay * 1.5 - IRQ_DELAY);
 		for (int i = 0; i < 8; i++) {
-			const uint8_t bit = gpio_pin_read(RX_PIN);
+			const uint8_t bit = gpio_pin_read(g_rx_pin);
 			byte |= bit << i;
 			// subtract 8 to compensate for loop and function calls
 			_delay_loop_2(g_bit_period_delay - 8);
@@ -37,9 +35,10 @@ void sw_serial_pin_change_irq(void) {
 	}
 }
 
-void sw_serial_initialize(uint16_t baud) {
+void sw_serial_initialize(uint16_t baud, gpio_pin_t rx_pin) {
+	g_rx_pin = rx_pin;
 	g_bit_period_delay = BIT_PERIOD_DELAY(baud);
-	gpio_pin_configure(RX_PIN, PIN_MODE_INPUT);
+	gpio_pin_configure(g_rx_pin, PIN_MODE_INPUT);
 	set_bit(PCICR, PCIE2); // enable pin change interrupts
 	set_bit(PCMSK2, PCINT16); // configure PD0-pin (Rx) to trigger interrupts
 }
