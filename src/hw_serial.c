@@ -50,7 +50,7 @@ static int hw_serial_read_byte_with_timeout() {
 	return -1; // timed out
 }
 
-void hw_serial_putc(uint8_t byte) {
+void hw_serial_write(uint8_t byte) {
 	ringbuffer_write(&g_tx_buffer, byte);
 
 	// If the output buffer is full, there's nothing for it other than to
@@ -74,18 +74,11 @@ void hw_serial_putc(uint8_t byte) {
 	}
 }
 
-void hw_serial_print(const char* str) {
-	while (*str) {
-		hw_serial_putc(*str);
-		str++;
-	}
-}
-
-void hw_serial_read_string(char* str_buf, size_t str_buf_len) {
+void hw_serial_read_buf(uint8_t* buf, size_t buf_len) {
 	size_t index = 0;
 	int byte = hw_serial_read_byte_with_timeout();
-	while (byte >= 0 && index < str_buf_len) {
-		str_buf[index++] = (char)byte;
+	while (byte >= 0 && index < buf_len) {
+		buf[index++] = (uint8_t)byte;
 		byte = hw_serial_read_byte_with_timeout();
 	}
 }
