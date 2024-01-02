@@ -3,7 +3,6 @@ import serial
 import serial.tools.list_ports
 import signal
 from datetime import datetime
-import time
 
 COLOR_GREEN = "\033[32m"
 COLOR_RED = "\033[31m"
