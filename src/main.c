@@ -1,5 +1,5 @@
 #include "bits.h"
-#include "gpio.h"
+#include "hardware/gpio.h"
 #include "hw_serial.h"
 #include "logging.h"
 #include "ringbuffer.h"

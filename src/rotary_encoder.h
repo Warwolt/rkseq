@@ -1,7 +1,7 @@
 #ifndef ROTARY_ENCODER_H
 #define ROTARY_ENCODER_H
 
-#include "gpio.h"
+#include "hardware/gpio.h"
 
 #include <stdint.h>
 

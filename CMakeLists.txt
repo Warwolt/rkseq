@@ -73,18 +73,16 @@ endif(AVR)
 # ---------------------------- Program executable ---------------------------- #
 if(AVR)
 add_compile_options(-Os -Wall -Werror -Wextra)
-add_avr_library(${PROJECT_NAME}
-    src/gpio.c
-    src/hw_serial.c
-    src/logging.c
-    src/rotary_encoder.c
-    src/sw_serial.c
-    src/timer0.c
-)
-add_avr_executable("${PROJECT_NAME}_main"
+add_avr_executable("${PROJECT_NAME}"
    src/main.c
+   src/hardware/gpio.c
+   src/hw_serial.c
+   src/logging.c
+   src/rotary_encoder.c
+   src/sw_serial.c
+   src/timer0.c
 )
-avr_target_link_libraries("${PROJECT_NAME}_main" PRIVATE ${PROJECT_NAME})
+avr_target_include_directories("${PROJECT_NAME}" PRIVATE src)
 add_definitions("-DF_CPU=${MCU_SPEED}")
 else()
 # -------------------------------- Unit tests -------------------------------- #

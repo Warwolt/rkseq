@@ -3,7 +3,7 @@
 #include "hw_serial.h"
 
 #include "bits.h"
-#include "gpio.h"
+#include "hardware/gpio.h"
 #include "timer0.h"
 
 #define RING_BUFFER_SIZE 64
