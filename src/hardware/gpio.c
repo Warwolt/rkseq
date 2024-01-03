@@ -1,6 +1,6 @@
 #include "hardware/gpio.h"
 
-#include "bits.h"
+#include "util/bits.h"
 
 #include <avr/io.h>
 #include <stddef.h>
