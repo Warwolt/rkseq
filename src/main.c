@@ -1,11 +1,11 @@
-#include "util/bits.h"
+#include "data/ring_buffer.h"
 #include "hardware/gpio.h"
 #include "hardware/hw_serial.h"
-#include "logging.h"
-#include "data/ring_buffer.h"
 #include "hardware/rotary_encoder.h"
 #include "hardware/sw_serial.h"
 #include "hardware/timer0.h"
+#include "logging.h"
+#include "util/bits.h"
 
 #include <avr/interrupt.h>
 #include <avr/io.h>

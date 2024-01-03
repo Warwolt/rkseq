@@ -2,9 +2,9 @@
 
 #include "hardware/hw_serial.h"
 
-#include "util/bits.h"
 #include "hardware/gpio.h"
 #include "hardware/timer0.h"
+#include "util/bits.h"
 
 #define RING_BUFFER_SIZE 64
 #include "data/ring_buffer.h"

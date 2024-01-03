@@ -1,8 +1,8 @@
 #include "hardware/sw_serial.h"
 
-#include "util/bits.h"
-#include "hardware/gpio.h"
 #include "data/ring_buffer.h"
+#include "hardware/gpio.h"
+#include "util/bits.h"
 #include "util/math.h"
 
 #include <avr/interrupt.h>
