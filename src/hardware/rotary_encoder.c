@@ -1,4 +1,4 @@
-#include "rotary_encoder.h"
+#include "hardware/rotary_encoder.h"
 
 rotary_encoder_t rotary_encoder_init(gpio_pin_t pin_a, gpio_pin_t pin_b) {
 	gpio_pin_configure(pin_a, PIN_MODE_INPUT);

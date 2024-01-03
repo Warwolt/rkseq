@@ -74,13 +74,13 @@ endif(AVR)
 if(AVR)
 add_compile_options(-Os -Wall -Werror -Wextra)
 add_avr_executable("${PROJECT_NAME}"
-   src/main.c
-   src/hardware/gpio.c
-   src/hw_serial.c
-   src/logging.c
-   src/rotary_encoder.c
-   src/sw_serial.c
-   src/timer0.c
+  src/main.c
+  src/hardware/gpio.c
+  src/hardware/hw_serial.c
+  src/hardware/rotary_encoder.c
+  src/logging.c
+  src/sw_serial.c
+  src/timer0.c
 )
 avr_target_include_directories("${PROJECT_NAME}" PRIVATE src)
 add_definitions("-DF_CPU=${MCU_SPEED}")

@@ -1,9 +1,9 @@
 #include "bits.h"
 #include "hardware/gpio.h"
-#include "hw_serial.h"
+#include "hardware/hw_serial.h"
 #include "logging.h"
 #include "ringbuffer.h"
-#include "rotary_encoder.h"
+#include "hardware/rotary_encoder.h"
 #include "sw_serial.h"
 #include "timer0.h"
 

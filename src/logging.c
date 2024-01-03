@@ -1,7 +1,7 @@
 #include "logging.h"
 
 #include "bits.h"
-#include "hw_serial.h"
+#include "hardware/hw_serial.h"
 #include "timer0.h"
 
 #include <avr/io.h>
