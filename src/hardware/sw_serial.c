@@ -1,7 +1,7 @@
-#include "sw_serial.h"
+#include "hardware/sw_serial.h"
 
 #include "bits.h"
-#include "gpio.h"
+#include "hardware/gpio.h"
 #include "ringbuffer.h"
 #include "util_math.h"
 

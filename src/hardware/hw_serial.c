@@ -1,10 +1,10 @@
 // based on the Arduino Core `Serial` C++ class
 
-#include "hw_serial.h"
+#include "hardware/hw_serial.h"
 
 #include "bits.h"
-#include "gpio.h"
-#include "timer0.h"
+#include "hardware/gpio.h"
+#include "hardware/timer0.h"
 
 #define RING_BUFFER_SIZE 64
 #include "ringbuffer.h"

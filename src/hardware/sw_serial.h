@@ -1,7 +1,7 @@
 #ifndef SW_SERIAL_H
 #define SW_SERIAL_H
 
-#include "gpio.h"
+#include "hardware/gpio.h"
 
 #include <stdint.h>
 
