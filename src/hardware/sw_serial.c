@@ -19,7 +19,7 @@ static uint16_t g_stop_bit_delay;
 static uint16_t g_tx_bit_delay;
 
 void sw_serial_pin_change_irq(void) {
-	if (gpio_pin_read(g_rx_pin) == 0) {
+	if (gpio_pin_read(g_rx_pin) == 0) { // check if start bit is present
 		clear_bit(PCICR, PCIE2); // disable interrupts while receiving
 		uint8_t byte = 0;
 

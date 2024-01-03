@@ -46,6 +46,14 @@ int main(void) {
 	hw_serial_initialize(9600); // uses PD0 and PD1 for logging
 	sw_serial_initialize(31250, midi_rx_pin, midi_tx_pin);
 
+	// segment display
+	const gpio_pin_t display_clock_pin = gpio_pin_init(&PORTD, 6);
+	const gpio_pin_t display_latch_pin = gpio_pin_init(&PORTD, 7);
+	const gpio_pin_t display_data_pin = gpio_pin_init(&PORTB, 0);
+	gpio_pin_configure(display_clock_pin, PIN_MODE_OUTPUT);
+	gpio_pin_configure(display_latch_pin, PIN_MODE_OUTPUT);
+	gpio_pin_configure(display_data_pin, PIN_MODE_OUTPUT);
+
 	gpio_pin_configure(led_pin, PIN_MODE_OUTPUT);
 	rotary_encoder_t tempo_knob = rotary_encoder_init(tempo_knob_a_pin, tempo_knob_b_pin);
 
@@ -56,13 +64,38 @@ int main(void) {
 		if (now - last_tick >= 1000) {
 			last_tick = now;
 			gpio_pin_set(led_pin);
-			LOG_INFO("Tick\n");
+			// LOG_INFO("Tick\n");
 			gpio_pin_clear(led_pin);
 		}
 
 		int rotary_diff = rotary_encoder_read(&tempo_knob);
 		if (rotary_diff != 0) {
 			LOG_INFO("%d\n", rotary_diff);
+		}
+
+		// test write a single digit
+		{
+			// write segments
+			const int8_t byte = (int8_t)~0b00000000;
+			for (uint8_t i = 0; i < 8; i++) {
+				const uint8_t bit = (byte >> ((8 - 1) - i)) & 1;
+				gpio_pin_write(display_data_pin, bit);
+				gpio_pin_set(display_clock_pin);
+				gpio_pin_clear(display_clock_pin);
+			}
+			// select digit
+			const uint8_t digit = 1;
+			for (uint8_t i = 0; i < 8; i++) {
+				const uint8_t bit = (digit >> ((8 - 1) - i)) & 1;
+				gpio_pin_write(display_data_pin, bit);
+				gpio_pin_set(display_clock_pin);
+				gpio_pin_clear(display_clock_pin);
+			}
+			// output digit
+			gpio_pin_set(display_latch_pin);
+			gpio_pin_clear(display_latch_pin);
+
+			_delay_ms(10); // sleep to separate stuff on oscillscope
 		}
 	}
 }
