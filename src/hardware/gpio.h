@@ -5,7 +5,8 @@
 
 typedef struct {
 	volatile uint8_t* port;
-	int num;
+	volatile uint8_t* in_reg;
+	uint8_t num;
 } gpio_pin_t;
 
 typedef enum {
@@ -18,6 +19,7 @@ typedef enum {
 	PIN_STATE_HIGH = 1,
 } pin_state_t;
 
+gpio_pin_t gpio_pin_init(volatile uint8_t* port, uint8_t pin_num);
 void gpio_pin_configure(gpio_pin_t pin, pin_mode_t mode);
 void gpio_pin_write(gpio_pin_t pin, pin_state_t state);
 void gpio_pin_toggle(gpio_pin_t pin);
