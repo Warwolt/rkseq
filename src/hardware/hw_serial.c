@@ -4,7 +4,7 @@
 
 #include "bits.h"
 #include "hardware/gpio.h"
-#include "timer0.h"
+#include "hardware/timer0.h"
 
 #define RING_BUFFER_SIZE 64
 #include "ringbuffer.h"

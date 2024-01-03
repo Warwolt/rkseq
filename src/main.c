@@ -4,8 +4,8 @@
 #include "logging.h"
 #include "ringbuffer.h"
 #include "hardware/rotary_encoder.h"
-#include "sw_serial.h"
-#include "timer0.h"
+#include "hardware/sw_serial.h"
+#include "hardware/timer0.h"
 
 #include <avr/interrupt.h>
 #include <avr/io.h>

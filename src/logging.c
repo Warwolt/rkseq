@@ -2,7 +2,7 @@
 
 #include "bits.h"
 #include "hardware/hw_serial.h"
-#include "timer0.h"
+#include "hardware/timer0.h"
 
 #include <avr/io.h>
 #include <stdbool.h>
