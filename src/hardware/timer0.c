@@ -1,6 +1,6 @@
 #include "hardware/timer0.h"
 
-#include "bits.h"
+#include "util/bits.h"
 
 #include <avr/io.h>
 #include <util/atomic.h>

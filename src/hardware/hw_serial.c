@@ -2,20 +2,20 @@
 
 #include "hardware/hw_serial.h"
 
-#include "bits.h"
+#include "util/bits.h"
 #include "hardware/gpio.h"
 #include "hardware/timer0.h"
 
 #define RING_BUFFER_SIZE 64
-#include "ringbuffer.h"
+#include "data/ring_buffer.h"
 
 #include <avr/io.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <util/atomic.h>
 
-static ringbuffer_t g_rx_buffer;
-static ringbuffer_t g_tx_buffer;
+static ring_buffer_t g_rx_buffer;
+static ring_buffer_t g_tx_buffer;
 
 void hw_serial_rx_complete_irq(void) {
 	const uint8_t byte = UDR0;
@@ -24,15 +24,15 @@ void hw_serial_rx_complete_irq(void) {
 		return; // Parity error, discard read byte
 	}
 
-	ringbuffer_write(&g_rx_buffer, byte);
+	ring_buffer_write(&g_rx_buffer, byte);
 }
 
 void hw_serial_tx_udr_empty_irq(void) {
 	// If interrupts are enabled, there must be more data in the output
 	// buffer. Send the next byte
-	ringbuffer_read(&g_tx_buffer, (uint8_t*)&UDR0);
+	ring_buffer_read(&g_tx_buffer, (uint8_t*)&UDR0);
 
-	if (ringbuffer_is_empty(&g_tx_buffer)) {
+	if (ring_buffer_is_empty(&g_tx_buffer)) {
 		// Buffer empty, so disable interrupts
 		clear_bit(UCSR0B, UDRIE0);
 	}
@@ -43,7 +43,7 @@ static int hw_serial_read_byte_with_timeout() {
 	const unsigned long start_ms = timer0_now_ms();
 	uint8_t byte;
 	do {
-		if (ringbuffer_read(&g_rx_buffer, &byte) == 0) {
+		if (ring_buffer_read(&g_rx_buffer, &byte) == 0) {
 			return byte;
 		}
 	} while (timer0_now_ms() - start_ms < timeout_ms);
@@ -51,11 +51,11 @@ static int hw_serial_read_byte_with_timeout() {
 }
 
 void hw_serial_write(uint8_t byte) {
-	ringbuffer_write(&g_tx_buffer, byte);
+	ring_buffer_write(&g_tx_buffer, byte);
 
 	// If the output buffer is full, there's nothing for it other than to
 	// wait for the interrupt handler to empty it a bit
-	while (ringbuffer_is_full(&g_tx_buffer)) {
+	while (ring_buffer_is_full(&g_tx_buffer)) {
 		if (bit_is_clear(SREG, SREG_I)) {
 			// Interrupts are disabled, so we'll have to poll the data
 			// register empty flag ourselves. If it is set, pretend an

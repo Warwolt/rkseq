@@ -1,6 +1,6 @@
 #include "logging.h"
 
-#include "bits.h"
+#include "util/bits.h"
 #include "hardware/hw_serial.h"
 #include "hardware/timer0.h"
 

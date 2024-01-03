@@ -1,9 +1,9 @@
 #include "hardware/sw_serial.h"
 
-#include "bits.h"
+#include "util/bits.h"
 #include "hardware/gpio.h"
-#include "ringbuffer.h"
-#include "util_math.h"
+#include "data/ring_buffer.h"
+#include "util/math.h"
 
 #include <avr/interrupt.h>
 #include <avr/io.h>
@@ -11,7 +11,7 @@
 
 static gpio_pin_t g_rx_pin;
 static gpio_pin_t g_tx_pin;
-static ringbuffer_t g_rx_buffer;
+static ring_buffer_t g_rx_buffer;
 
 static uint16_t g_start_bit_delay;
 static uint16_t g_data_bit_delay;
@@ -37,7 +37,7 @@ void sw_serial_pin_change_irq(void) {
 			}
 		}
 
-		ringbuffer_write(&g_rx_buffer, byte);
+		ring_buffer_write(&g_rx_buffer, byte);
 
 		_delay_loop_2(g_stop_bit_delay);
 		set_bit(PCICR, PCIE2); // re-enable pin change interrupts
@@ -62,17 +62,17 @@ void sw_serial_initialize(uint16_t baud, gpio_pin_t rx_pin, gpio_pin_t tx_pin) {
 }
 
 uint16_t sw_serial_available_bytes(void) {
-	return ringbuffer_available_bytes(&g_rx_buffer);
+	return ring_buffer_available_bytes(&g_rx_buffer);
 }
 
 void sw_serial_read(uint8_t* byte) {
-	ringbuffer_read(&g_rx_buffer, byte);
+	ring_buffer_read(&g_rx_buffer, byte);
 }
 
 void sw_serial_read_bytes(uint8_t* byte_buf, uint16_t byte_buf_len) {
 	uint16_t bytes_to_read = min(sw_serial_available_bytes(), byte_buf_len);
 	for (uint16_t i = 0; i < bytes_to_read; i++) {
-		ringbuffer_read(&g_rx_buffer, &byte_buf[i]);
+		ring_buffer_read(&g_rx_buffer, &byte_buf[i]);
 	}
 }
 
