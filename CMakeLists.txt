@@ -77,6 +77,7 @@ add_avr_library(${PROJECT_NAME}
     src/gpio.c
     src/hw_serial.c
     src/logging.c
+    src/rotary_encoder.c
     src/sw_serial.c
     src/timer0.c
 )
