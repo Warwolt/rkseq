@@ -6,6 +6,7 @@
 #include "hardware/timer0.h"
 #include "logging.h"
 #include "util/bits.h"
+#include "util/math.h"
 
 #include <avr/interrupt.h>
 #include <avr/io.h>
@@ -15,14 +16,14 @@
 static int8_t digit_segments[10] = {
 	0b00111111, // 0
 	0b00000110, // 1
-	0b11101101, // 2
-	0b11001111, // 3
-	0b11110010, // 4
-	0b00000000, // 5
-	0b00000000, // 6
-	0b00000000, // 7
-	0b00000000, // 8
-	0b00000000, // 9
+	0b01011011, // 2
+	0b01001111, // 3
+	0b01100110, // 4
+	0b01101101, // 5
+	0b01111101, // 6
+	0b00000111, // 7
+	0b01111111, // 8
+	0b01100111, // 9
 };
 
 typedef struct {
@@ -122,9 +123,7 @@ int main(void) {
 
 	LOG_INFO("Program Start\n");
 	uint32_t last_tick = timer0_now_ms();
-
-	segment_display_set_number(&tempo_display, 0);
-
+	uint8_t tempo_bpm = 120;
 	while (true) {
 		uint32_t now = timer0_now_ms();
 		if (now - last_tick >= 1000) {
@@ -134,8 +133,10 @@ int main(void) {
 		}
 
 		int rotary_diff = rotary_encoder_read(&tempo_knob);
+		tempo_bpm = max(tempo_bpm + rotary_diff, 1);
+		segment_display_set_number(&tempo_display, tempo_bpm);
 		if (rotary_diff != 0) {
-			LOG_INFO("%d\n", rotary_diff);
+			LOG_INFO("%d\n", tempo_bpm);
 		}
 
 		// test segment display
