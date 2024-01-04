@@ -31,7 +31,7 @@ segment_display_t segment_display_init(gpio_pin_t clock_pin, gpio_pin_t latch_pi
 		.latch_pin = latch_pin,
 		.data_pin = data_pin,
 		.digits = { 0 },
-		.current_digit = 0,
+		.digits_index = 0,
 	};
 }
 
@@ -57,16 +57,18 @@ void segment_display_set_number(segment_display_t* display, uint16_t number) {
 void segment_display_update(segment_display_t* display) {
 	// write segments
 	int8_t segments = 0;
-	if (display->current_digit < 4) {
-		segments = ~digit_segments[display->digits[display->current_digit]];
-		segments &= ~(display->period[display->current_digit] << (8 - 1));
+	if (display->digits_index < 4) {
+		segments = ~digit_segments[display->digits[display->digits_index]];
+		segments &= ~(display->period[display->digits_index] << (8 - 1));
 	}
 	segment_display_output_byte(display, segments);
-	segment_display_output_byte(display, 0x1 << display->current_digit);
+	segment_display_output_byte(display, 0x1 << display->digits_index);
 
 	// output digit
 	gpio_pin_set(display->latch_pin);
 	gpio_pin_clear(display->latch_pin);
 
-	display->current_digit = (display->current_digit + 1) % 16;
+	// cycle next index, index > 7 outputs no digit which dims the display
+	// since the digits now have a duty cycle less than 100 %
+	display->digits_index = (display->digits_index + 1) % 16;
 }
