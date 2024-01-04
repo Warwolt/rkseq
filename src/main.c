@@ -12,6 +12,48 @@
 #include <stdbool.h>
 #include <util/delay.h>
 
+typedef struct {
+	gpio_pin_t clock_pin;
+	gpio_pin_t latch_pin;
+	gpio_pin_t data_pin;
+	uint8_t digit;
+} segment_display_t;
+
+segment_display_t segment_display_init(gpio_pin_t clock_pin, gpio_pin_t latch_pin, gpio_pin_t data_pin) {
+	gpio_pin_configure(clock_pin, PIN_MODE_OUTPUT);
+	gpio_pin_configure(latch_pin, PIN_MODE_OUTPUT);
+	gpio_pin_configure(data_pin, PIN_MODE_OUTPUT);
+	return (segment_display_t) {
+		.clock_pin = clock_pin,
+		.latch_pin = latch_pin,
+		.data_pin = data_pin,
+		.digit = 0,
+	};
+}
+
+void segment_display_update(segment_display_t* display) {
+	// write segments
+	const int8_t byte = (int8_t)~0b00000011;
+	for (uint8_t i = 0; i < 8; i++) {
+		const uint8_t bit = (byte >> ((8 - 1) - i)) & 1;
+		gpio_pin_write(display->data_pin, bit);
+		gpio_pin_set(display->clock_pin);
+		gpio_pin_clear(display->clock_pin);
+	}
+	// select digit
+	for (uint8_t i = 0; i < 8; i++) {
+		const uint8_t bit = ((0x1 << display->digit) >> ((8 - 1) - i)) & 1;
+		gpio_pin_write(display->data_pin, bit);
+		gpio_pin_set(display->clock_pin);
+		gpio_pin_clear(display->clock_pin);
+	}
+	// output digit
+	gpio_pin_set(display->latch_pin);
+	gpio_pin_clear(display->latch_pin);
+
+	display->digit = (display->digit + 1) % 16;
+}
+
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
 	timer0_timer_overflow_irq();
@@ -50,22 +92,18 @@ int main(void) {
 	const gpio_pin_t display_clock_pin = gpio_pin_init(&PORTD, 6);
 	const gpio_pin_t display_latch_pin = gpio_pin_init(&PORTD, 7);
 	const gpio_pin_t display_data_pin = gpio_pin_init(&PORTB, 0);
-	gpio_pin_configure(display_clock_pin, PIN_MODE_OUTPUT);
-	gpio_pin_configure(display_latch_pin, PIN_MODE_OUTPUT);
-	gpio_pin_configure(display_data_pin, PIN_MODE_OUTPUT);
 
 	gpio_pin_configure(led_pin, PIN_MODE_OUTPUT);
 	rotary_encoder_t tempo_knob = rotary_encoder_init(tempo_knob_a_pin, tempo_knob_b_pin);
+	segment_display_t tempo_display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin);
 
 	LOG_INFO("Program Start\n");
 	uint32_t last_tick = timer0_now_ms();
-	int digit = 0;
 	while (true) {
 		uint32_t now = timer0_now_ms();
 		if (now - last_tick >= 1000) {
 			last_tick = now;
 			gpio_pin_set(led_pin);
-			// LOG_INFO("Tick\n");
 			gpio_pin_clear(led_pin);
 		}
 
@@ -74,28 +112,7 @@ int main(void) {
 			LOG_INFO("%d\n", rotary_diff);
 		}
 
-		// test write a single digit
-		{
-			// write segments
-			const int8_t byte = (int8_t)~0b00000000;
-			for (uint8_t i = 0; i < 8; i++) {
-				const uint8_t bit = (byte >> ((8 - 1) - i)) & 1;
-				gpio_pin_write(display_data_pin, bit);
-				gpio_pin_set(display_clock_pin);
-				gpio_pin_clear(display_clock_pin);
-			}
-			// select digit
-			for (uint8_t i = 0; i < 8; i++) {
-				const uint8_t bit = ((0x1 << digit) >> ((8 - 1) - i)) & 1;
-				gpio_pin_write(display_data_pin, bit);
-				gpio_pin_set(display_clock_pin);
-				gpio_pin_clear(display_clock_pin);
-			}
-			// output digit
-			gpio_pin_set(display_latch_pin);
-			gpio_pin_clear(display_latch_pin);
-
-			digit = (digit + 1) % 16;
-		}
+		// test segment display
+		segment_display_update(&tempo_display);
 	}
 }
