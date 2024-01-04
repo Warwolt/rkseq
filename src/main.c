@@ -59,8 +59,11 @@ int main(void) {
 	segment_display_t tempo_display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin);
 
 	LOG_INFO("Program Start\n");
+	uint64_t last_tick_us = timer0_now_us();
 	uint8_t tempo_bpm = 120;
 	while (true) {
+		const uint64_t now_us = timer0_now_us();
+
 		// update tempo
 		int rotary_diff = rotary_encoder_read(&tempo_knob);
 		tempo_bpm = clamp(tempo_bpm + rotary_diff, MIN_BPM, MAX_BPM);
@@ -69,5 +72,13 @@ int main(void) {
 		segment_display_set_number(&tempo_display, tempo_bpm * 10);
 		segment_display_enable_period(&tempo_display, 1);
 		segment_display_update(&tempo_display);
+
+		// output tick
+		if (now_us - last_tick_us >= 1e6 / 2) {
+			last_tick_us = now_us;
+			gpio_pin_set(led_pin);
+			_delay_ms(20);
+			gpio_pin_clear(led_pin);
+		}
 	}
 }
