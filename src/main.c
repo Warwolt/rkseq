@@ -14,6 +14,9 @@
 #include <stdbool.h>
 #include <util/delay.h>
 
+#define MIN_BPM 40
+#define MAX_BPM 200
+
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
 	timer0_timer_overflow_irq();
@@ -60,7 +63,7 @@ int main(void) {
 	while (true) {
 		// update tempo
 		int rotary_diff = rotary_encoder_read(&tempo_knob);
-		tempo_bpm = clamp(tempo_bpm + rotary_diff, 40, 200);
+		tempo_bpm = clamp(tempo_bpm + rotary_diff, MIN_BPM, MAX_BPM);
 
 		// display tempo
 		segment_display_set_number(&tempo_display, tempo_bpm * 10);
