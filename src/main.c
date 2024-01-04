@@ -30,6 +30,7 @@ typedef struct {
 	gpio_pin_t clock_pin;
 	gpio_pin_t latch_pin;
 	gpio_pin_t data_pin;
+	bool period[4];
 	uint8_t digits[4];
 	uint8_t current_digit;
 } segment_display_t;
@@ -47,6 +48,18 @@ segment_display_t segment_display_init(gpio_pin_t clock_pin, gpio_pin_t latch_pi
 	};
 }
 
+void segment_display_enable_period(segment_display_t* display, uint8_t number) {
+	if (number < 4) {
+		display->period[number] = 1;
+	}
+}
+
+void segment_display_disable_period(segment_display_t* display, uint8_t number) {
+	if (number < 4) {
+		display->period[number] = 0;
+	}
+}
+
 void segment_display_set_number(segment_display_t* display, uint16_t number) {
 	display->digits[0] = number / 1 % 10;
 	display->digits[1] = number / 10 % 10;
@@ -59,6 +72,7 @@ void segment_display_update(segment_display_t* display) {
 	int8_t byte = 0;
 	if (display->current_digit < 4) {
 		byte = ~digit_segments[display->digits[display->current_digit]];
+		byte &= ~(display->period[display->current_digit] << (8 - 1));
 	}
 	for (uint8_t i = 0; i < 8; i++) {
 		const uint8_t bit = (byte >> ((8 - 1) - i)) & 1;
@@ -111,7 +125,6 @@ int main(void) {
 	const gpio_pin_t display_clock_pin = gpio_pin_init(&PORTD, 6);
 	const gpio_pin_t display_latch_pin = gpio_pin_init(&PORTD, 7);
 	const gpio_pin_t display_data_pin = gpio_pin_init(&PORTB, 0);
-	gpio_pin_configure(led_pin, PIN_MODE_OUTPUT);
 
 	globally_enable_interrupts();
 	timer0_initialize();
@@ -121,25 +134,18 @@ int main(void) {
 	rotary_encoder_t tempo_knob = rotary_encoder_init(tempo_knob_a_pin, tempo_knob_b_pin);
 	segment_display_t tempo_display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin);
 
+	gpio_pin_configure(led_pin, PIN_MODE_OUTPUT);
+
 	LOG_INFO("Program Start\n");
-	uint32_t last_tick = timer0_now_ms();
 	uint8_t tempo_bpm = 120;
 	while (true) {
-		uint32_t now = timer0_now_ms();
-		if (now - last_tick >= 1000) {
-			last_tick = now;
-			gpio_pin_set(led_pin);
-			gpio_pin_clear(led_pin);
-		}
-
+		// update tempo
 		int rotary_diff = rotary_encoder_read(&tempo_knob);
-		tempo_bpm = max(tempo_bpm + rotary_diff, 1);
-		segment_display_set_number(&tempo_display, tempo_bpm);
-		if (rotary_diff != 0) {
-			LOG_INFO("%d\n", tempo_bpm);
-		}
+		tempo_bpm = clamp(tempo_bpm + rotary_diff, 40, 200);
 
-		// test segment display
+		// display tempo
+		segment_display_set_number(&tempo_display, tempo_bpm * 10);
+		segment_display_enable_period(&tempo_display, 1);
 		segment_display_update(&tempo_display);
 	}
 }
