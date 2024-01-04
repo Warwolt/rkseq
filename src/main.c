@@ -8,6 +8,7 @@
 #include "logging.h"
 #include "util/bits.h"
 #include "util/math.h"
+#include "util/usec_timer.h"
 
 #include <avr/interrupt.h>
 #include <avr/io.h>
@@ -63,23 +64,20 @@ int main(void) {
 
 	LOG_INFO("Program Start\n");
 	// Tempo
-	uint64_t last_bpm_tick_us = timer0_now_us();
-	uint64_t last_pulse_tick_us = timer0_now_us();
 	uint8_t tempo_bpm = 120;
-	uint64_t quarternote_period_us = (60 * 1e6) / tempo_bpm;
+	usec_timer_t pulse_timer = usec_timer_init(QUARTERNOTE_PULSE_LENGTH_MS * 1e3);
+	usec_timer_t quarternote_timer = usec_timer_init((60 * 1e6) / tempo_bpm);
 	// Start stop button
 	// TODO: add a button_t struct that tracks button presses and does debouncing
 	pin_state_t button_was_pressed = 0;
-	bool playback_started = false;
+	bool is_playing = false;
 	while (true) {
-		const uint64_t now_us = timer0_now_us();
-
 		/* Update playback */
 		bool playback_just_started = false;
 		const pin_state_t button_pressed = gpio_pin_read(start_stop_button_pin);
 		if (!button_was_pressed && button_pressed) {
-			playback_started = !playback_started;
-			if (playback_started) {
+			is_playing = !is_playing;
+			if (is_playing) {
 				playback_just_started = true;
 			}
 		}
@@ -88,7 +86,7 @@ int main(void) {
 		/* Update Tempo */
 		const int rotary_diff = rotary_encoder_read(&tempo_knob);
 		tempo_bpm = clamp(tempo_bpm + rotary_diff, MIN_BPM, MAX_BPM);
-		quarternote_period_us = (60 * 1e6) / tempo_bpm;
+		quarternote_timer.period_us = (60 * 1e6) / tempo_bpm;
 
 		/* Display Current Tempo*/
 		segment_display_set_number(&tempo_display, tempo_bpm * 10);
@@ -96,16 +94,13 @@ int main(void) {
 		segment_display_update(&tempo_display);
 
 		/* Output tempo pulse */
-		// TODO: clean this up with some kind of "stopwatch_t" struct to help
-		// with these kinds of events that are separated by some amount of time.
-		if (playback_started) {
-			if (now_us - last_bpm_tick_us >= quarternote_period_us || playback_just_started) {
-				last_bpm_tick_us = now_us;
-
+		if (is_playing) {
+			if (usec_timer_period_has_elapsed(&quarternote_timer) || playback_just_started) {
+				usec_timer_reset(&quarternote_timer);
+				usec_timer_reset(&pulse_timer);
 				gpio_pin_set(led_pin);
-				last_pulse_tick_us = now_us;
 			}
-			if (now_us - last_pulse_tick_us >= (QUARTERNOTE_PULSE_LENGTH_MS * 1e3)) {
+			if (usec_timer_period_has_elapsed(&pulse_timer)) {
 				gpio_pin_clear(led_pin);
 			}
 		}
