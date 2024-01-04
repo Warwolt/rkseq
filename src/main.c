@@ -18,6 +18,26 @@
 #define MAX_BPM 200
 #define QUARTERNOTE_PULSE_LENGTH_MS 2
 
+typedef struct {
+	uint64_t start_time_us;
+	uint64_t period_us;
+} usec_timer_t;
+
+usec_timer_t usec_timer_init(uint64_t period_us) {
+	return (usec_timer_t) {
+		.start_time_us = timer0_now_us(),
+		.period_us = period_us,
+	};
+}
+
+void usec_timer_reset(usec_timer_t* timer) {
+	timer->start_time_us = timer0_now_us();
+}
+
+bool usec_timer_period_has_elapsed(const usec_timer_t* timer) {
+	return (timer0_now_us() - timer->start_time_us >= timer->period_us);
+}
+
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
 	timer0_timer_overflow_irq();
@@ -63,10 +83,9 @@ int main(void) {
 
 	LOG_INFO("Program Start\n");
 	// Tempo
-	uint64_t last_bpm_tick_us = timer0_now_us();
 	uint64_t last_pulse_tick_us = timer0_now_us();
 	uint8_t tempo_bpm = 120;
-	uint64_t quarternote_period_us = (60 * 1e6) / tempo_bpm;
+	usec_timer_t quarternote_timer = usec_timer_init((60 * 1e6) / tempo_bpm);
 	// Start stop button
 	// TODO: add a button_t struct that tracks button presses and does debouncing
 	pin_state_t button_was_pressed = 0;
@@ -88,7 +107,7 @@ int main(void) {
 		/* Update Tempo */
 		const int rotary_diff = rotary_encoder_read(&tempo_knob);
 		tempo_bpm = clamp(tempo_bpm + rotary_diff, MIN_BPM, MAX_BPM);
-		quarternote_period_us = (60 * 1e6) / tempo_bpm;
+		quarternote_timer.period_us = (60 * 1e6) / tempo_bpm;
 
 		/* Display Current Tempo*/
 		segment_display_set_number(&tempo_display, tempo_bpm * 10);
@@ -99,8 +118,8 @@ int main(void) {
 		// TODO: clean this up with some kind of "stopwatch_t" struct to help
 		// with these kinds of events that are separated by some amount of time.
 		if (playback_started) {
-			if (now_us - last_bpm_tick_us >= quarternote_period_us || playback_just_started) {
-				last_bpm_tick_us = now_us;
+			if (usec_timer_period_has_elapsed(&quarternote_timer) || playback_just_started) {
+				usec_timer_reset(&quarternote_timer);
 
 				gpio_pin_set(led_pin);
 				last_pulse_tick_us = now_us;
