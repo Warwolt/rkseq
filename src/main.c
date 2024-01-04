@@ -59,6 +59,7 @@ int main(void) {
 
 	LOG_INFO("Program Start\n");
 	uint32_t last_tick = timer0_now_ms();
+	int digit = 0;
 	while (true) {
 		uint32_t now = timer0_now_ms();
 		if (now - last_tick >= 1000) {
@@ -84,9 +85,8 @@ int main(void) {
 				gpio_pin_clear(display_clock_pin);
 			}
 			// select digit
-			const uint8_t digit = 1;
 			for (uint8_t i = 0; i < 8; i++) {
-				const uint8_t bit = (digit >> ((8 - 1) - i)) & 1;
+				const uint8_t bit = ((0x1 << digit) >> ((8 - 1) - i)) & 1;
 				gpio_pin_write(display_data_pin, bit);
 				gpio_pin_set(display_clock_pin);
 				gpio_pin_clear(display_clock_pin);
@@ -95,7 +95,7 @@ int main(void) {
 			gpio_pin_set(display_latch_pin);
 			gpio_pin_clear(display_latch_pin);
 
-			_delay_ms(10); // sleep to separate stuff on oscillscope
+			digit = (digit + 1) % 16;
 		}
 	}
 }
