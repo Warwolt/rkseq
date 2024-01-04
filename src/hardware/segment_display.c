@@ -13,6 +13,15 @@ static int8_t digit_segments[10] = {
 	0b01100111, // 9
 };
 
+static void segment_display_output_byte(segment_display_t* display, uint8_t byte) {
+	for (uint8_t i = 0; i < 8; i++) {
+		const uint8_t bit = (byte >> ((8 - 1) - i)) & 1;
+		gpio_pin_write(display->data_pin, bit);
+		gpio_pin_set(display->clock_pin);
+		gpio_pin_clear(display->clock_pin);
+	}
+}
+
 segment_display_t segment_display_init(gpio_pin_t clock_pin, gpio_pin_t latch_pin, gpio_pin_t data_pin) {
 	gpio_pin_configure(clock_pin, PIN_MODE_OUTPUT);
 	gpio_pin_configure(latch_pin, PIN_MODE_OUTPUT);
@@ -47,24 +56,14 @@ void segment_display_set_number(segment_display_t* display, uint16_t number) {
 
 void segment_display_update(segment_display_t* display) {
 	// write segments
-	int8_t byte = 0;
+	int8_t segments = 0;
 	if (display->current_digit < 4) {
-		byte = ~digit_segments[display->digits[display->current_digit]];
-		byte &= ~(display->period[display->current_digit] << (8 - 1));
+		segments = ~digit_segments[display->digits[display->current_digit]];
+		segments &= ~(display->period[display->current_digit] << (8 - 1));
 	}
-	for (uint8_t i = 0; i < 8; i++) {
-		const uint8_t bit = (byte >> ((8 - 1) - i)) & 1;
-		gpio_pin_write(display->data_pin, bit);
-		gpio_pin_set(display->clock_pin);
-		gpio_pin_clear(display->clock_pin);
-	}
-	// select digit
-	for (uint8_t i = 0; i < 8; i++) {
-		const uint8_t bit = ((0x1 << display->current_digit) >> ((8 - 1) - i)) & 1;
-		gpio_pin_write(display->data_pin, bit);
-		gpio_pin_set(display->clock_pin);
-		gpio_pin_clear(display->clock_pin);
-	}
+	segment_display_output_byte(display, segments);
+	segment_display_output_byte(display, 0x1 << display->current_digit);
+
 	// output digit
 	gpio_pin_set(display->latch_pin);
 	gpio_pin_clear(display->latch_pin);
