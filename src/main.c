@@ -68,6 +68,7 @@ int main(void) {
 	uint8_t tempo_bpm = 120;
 	uint64_t quarternote_period_us = (60 * 1e6) / tempo_bpm;
 	// Start stop button
+	// TODO: add a button_t struct that tracks button presses and does debouncing
 	pin_state_t button_was_pressed = 0;
 	bool playback_started = false;
 	while (true) {
