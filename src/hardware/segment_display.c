@@ -37,13 +37,13 @@ segment_display_t segment_display_init(gpio_pin_t clock_pin, gpio_pin_t latch_pi
 
 void segment_display_enable_period(segment_display_t* display, uint8_t number) {
 	if (number < 4) {
-		display->period[number] = 1;
+		display->period_enabled[number] = 1;
 	}
 }
 
 void segment_display_disable_period(segment_display_t* display, uint8_t number) {
 	if (number < 4) {
-		display->period[number] = 0;
+		display->period_enabled[number] = 0;
 	}
 }
 
@@ -56,12 +56,14 @@ void segment_display_set_number(segment_display_t* display, uint16_t number) {
 
 void segment_display_update(segment_display_t* display) {
 	// write segments
-	int8_t segments = 0;
+	int8_t byte = 0;
 	if (display->digits_index < 4) {
-		segments = ~digit_segments[display->digits[display->digits_index]];
-		segments &= ~(display->period[display->digits_index] << (8 - 1));
+		const uint8_t digit = display->digits[display->digits_index];
+		const uint8_t segments = digit_segments[digit];
+		const uint8_t period = display->period_enabled[display->digits_index] << (8 - 1);
+		byte = ~(segments | period);
 	}
-	segment_display_output_byte(display, segments);
+	segment_display_output_byte(display, byte);
 	segment_display_output_byte(display, 0x1 << display->digits_index);
 
 	// output digit

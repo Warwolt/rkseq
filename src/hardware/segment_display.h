@@ -10,7 +10,7 @@ typedef struct {
 	gpio_pin_t clock_pin;
 	gpio_pin_t latch_pin;
 	gpio_pin_t data_pin;
-	bool period[4];
+	bool period_enabled[4];
 	uint8_t digits[4];
 	uint8_t digits_index;
 } segment_display_t;
