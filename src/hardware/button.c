@@ -1,8 +1,7 @@
 #include "hardware/button.h"
 
 static uint32_t button_debounce_state(button_t* button, button_state_t state, uint32_t time_now_ms) {
-	const uint32_t state_stable = time_now_ms - button->last_stable_signal_ms >= BUTTON_DEBOUNCE_MS;
-	if (state_stable) {
+	if (time_now_ms - button->last_stable_signal_ms >= BUTTON_DEBOUNCE_MS) {
 		button->last_stable_signal_ms = time_now_ms;
 		return state;
 	} else {
