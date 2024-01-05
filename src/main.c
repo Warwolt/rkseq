@@ -67,7 +67,7 @@ int main(void) {
 	segment_display_t tempo_display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin);
 
 	/* Run */
-	LOG_INFO("Program start!\n");
+	LOG_INFO("Program Start\n");
 	uint8_t tempo_bpm = 120;
 	usec_timer_t pulse_timer = usec_timer_init(QUARTERNOTE_PULSE_LENGTH_MS * 1e3);
 	usec_timer_t quarternote_timer = usec_timer_init((60 * 1e6) / tempo_bpm);
