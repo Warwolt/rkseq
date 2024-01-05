@@ -74,7 +74,7 @@ int main(void) {
 	bool is_playing = false;
 	while (true) {
 		/* Update buttons */
-		button_update(&start_stop_button, gpio_pin_read(start_stop_button_pin));
+		button_update(&start_stop_button, gpio_pin_read(start_stop_button_pin), timer0_now_ms());
 
 		/* Update playback */
 		bool playback_just_started = false;
