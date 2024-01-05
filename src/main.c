@@ -18,7 +18,7 @@
 
 #define MIN_BPM 40
 #define MAX_BPM 200
-#define QUARTERNOTE_PULSE_LENGTH_MS 2
+#define QUARTERNOTE_PULSE_LENGTH_US 500
 
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
@@ -69,7 +69,7 @@ int main(void) {
 	/* Run */
 	LOG_INFO("Program Start\n");
 	uint8_t tempo_bpm = 120;
-	usec_timer_t pulse_timer = usec_timer_init(QUARTERNOTE_PULSE_LENGTH_MS * 1e3);
+	usec_timer_t pulse_timer = usec_timer_init(QUARTERNOTE_PULSE_LENGTH_US);
 	usec_timer_t quarternote_timer = usec_timer_init((60 * 1e6) / tempo_bpm);
 	bool is_playing = false;
 	while (true) {
