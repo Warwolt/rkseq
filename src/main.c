@@ -7,6 +7,7 @@
 #include "hardware/sw_serial.h"
 #include "hardware/timer0.h"
 #include "logging.h"
+#include "sequencer/beat_clock.h"
 #include "util/bits.h"
 #include "util/math.h"
 #include "util/usec_timer.h"
@@ -16,8 +17,6 @@
 #include <stdbool.h>
 #include <util/delay.h>
 
-#define MIN_BPM 40
-#define MAX_BPM 200
 #define QUARTERNOTE_PULSE_LENGTH_US 500
 
 /* ----------------------- Interrupt service routines ----------------------- */
@@ -68,41 +67,39 @@ int main(void) {
 
 	/* Run */
 	LOG_INFO("Program Start\n");
-	uint8_t tempo_bpm = 120;
+	beat_clock_t beat_clock = beat_clock_init(120);
 	usec_timer_t pulse_timer = usec_timer_init(QUARTERNOTE_PULSE_LENGTH_US);
-	usec_timer_t quarternote_timer = usec_timer_init((60 * 1e6) / tempo_bpm);
-	bool is_playing = false;
 	while (true) {
 		/* Update buttons */
 		button_update(&start_stop_button, gpio_pin_read(start_stop_button_pin), timer0_now_ms());
 
 		/* Update playback */
-		bool playback_just_started = false;
+		beat_clock_update(&beat_clock);
+
 		if (button_just_pressed(&start_stop_button)) {
-			is_playing = !is_playing;
-			playback_just_started = true;
+			if (!beat_clock.is_playing) {
+				beat_clock_start(&beat_clock);
+			} else {
+				beat_clock_stop(&beat_clock);
+			}
 		}
 
 		/* Update Tempo */
 		const int rotary_diff = rotary_encoder_read(&tempo_knob);
-		tempo_bpm = clamp(tempo_bpm + rotary_diff, MIN_BPM, MAX_BPM);
-		quarternote_timer.period_us = (60 * 1e6) / tempo_bpm;
+		beat_clock_set_tempo(&beat_clock, beat_clock.tempo_bpm + rotary_diff);
 
 		/* Display Current Tempo*/
-		segment_display_set_number(&tempo_display, tempo_bpm * 10);
+		segment_display_set_number(&tempo_display, beat_clock.tempo_bpm * 10);
 		segment_display_enable_period(&tempo_display, 1);
 		segment_display_update(&tempo_display);
 
 		/* Output tempo pulse */
-		if (is_playing) {
-			if (usec_timer_period_has_elapsed(&quarternote_timer) || playback_just_started) {
-				usec_timer_reset(&quarternote_timer);
-				usec_timer_reset(&pulse_timer);
-				gpio_pin_set(led_pin);
-			}
-			if (usec_timer_period_has_elapsed(&pulse_timer)) {
-				gpio_pin_clear(led_pin);
-			}
+		if (beat_clock_should_output_quarternote(&beat_clock)) {
+			gpio_pin_set(led_pin);
+			usec_timer_reset(&pulse_timer);
+		}
+		if (usec_timer_period_has_elapsed(&pulse_timer)) {
+			gpio_pin_clear(led_pin);
 		}
 	}
 }

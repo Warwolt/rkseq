@@ -83,6 +83,7 @@ add_avr_executable("${PROJECT_NAME}"
   src/hardware/segment_display.c
   src/hardware/sw_serial.c
   src/hardware/timer0.c
+  src/sequencer/beat_clock.c
   src/util/usec_timer.c
 )
 avr_target_include_directories("${PROJECT_NAME}" PRIVATE src)
