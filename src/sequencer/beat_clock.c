@@ -1,4 +1,4 @@
-#include "beat_clock.h"
+#include "sequencer/beat_clock.h"
 
 #include "util/math.h"
 

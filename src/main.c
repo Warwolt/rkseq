@@ -1,4 +1,3 @@
-#include "beat_clock.h"
 #include "data/ring_buffer.h"
 #include "hardware/button.h"
 #include "hardware/gpio.h"
@@ -8,6 +7,7 @@
 #include "hardware/sw_serial.h"
 #include "hardware/timer0.h"
 #include "logging.h"
+#include "sequencer/beat_clock.h"
 #include "util/bits.h"
 #include "util/math.h"
 #include "util/usec_timer.h"
