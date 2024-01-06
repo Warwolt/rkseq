@@ -110,8 +110,6 @@ int main(void) {
 
 	/* Run */
 	LOG_INFO("Program Start\n");
-	// TODO: extract out `tempo_bpm` + `quarternote_timer` into a `beat_timer_t` struct
-	// it should handle start, stop, and knowing when to output a note pulse
 	beat_clock_t beat_clock = beat_clock_init(120);
 	usec_timer_t pulse_timer = usec_timer_init(QUARTERNOTE_PULSE_LENGTH_US);
 	while (true) {
