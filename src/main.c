@@ -24,6 +24,7 @@ typedef struct {
 	uint8_t tempo_bpm;
 	bool is_playing;
 	bool just_started;
+	bool quarternote_elapsed;
 	usec_timer_t timer;
 } beat_clock_t;
 
@@ -49,9 +50,17 @@ void beat_clock_stop(beat_clock_t* beat_clock) {
 	beat_clock->just_started = false;
 }
 
-// void beat_clock_update(beat_clock_t* beat_clock) {
-// 	beat_clock->just_started = false;
-// }
+void beat_clock_update(beat_clock_t* beat_clock) {
+	beat_clock->quarternote_elapsed = beat_clock->just_started || (beat_clock->is_playing && usec_timer_period_has_elapsed(&beat_clock->timer));
+	beat_clock->just_started = false;
+	if (beat_clock->quarternote_elapsed) {
+		usec_timer_reset(&beat_clock->timer);
+	}
+}
+
+bool beat_clock_should_output_quarternote(const beat_clock_t* beat_clock) {
+	return beat_clock->quarternote_elapsed;
+}
 
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
@@ -110,6 +119,8 @@ int main(void) {
 		button_update(&start_stop_button, gpio_pin_read(start_stop_button_pin), timer0_now_ms());
 
 		/* Update playback */
+		beat_clock_update(&beat_clock);
+
 		if (button_just_pressed(&start_stop_button)) {
 			if (!beat_clock.is_playing) {
 				beat_clock_start(&beat_clock);
@@ -128,12 +139,9 @@ int main(void) {
 		segment_display_update(&tempo_display);
 
 		/* Output tempo pulse */
-		const bool start_pulse = beat_clock.just_started || (beat_clock.is_playing && usec_timer_period_has_elapsed(&beat_clock.timer));
-		beat_clock.just_started = false;
-		if (start_pulse) {
-			usec_timer_reset(&beat_clock.timer);
-			usec_timer_reset(&pulse_timer);
+		if (beat_clock_should_output_quarternote(&beat_clock)) {
 			gpio_pin_set(led_pin);
+			usec_timer_reset(&pulse_timer);
 		}
 		if (usec_timer_period_has_elapsed(&pulse_timer)) {
 			gpio_pin_clear(led_pin);
