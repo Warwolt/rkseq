@@ -76,6 +76,7 @@ add_compile_options(-Os -Wall -Werror -Wextra)
 add_avr_executable("${PROJECT_NAME}"
   src/main.c
   src/logging.c
+  src/beat_clock.c
   src/hardware/button.c
   src/hardware/gpio.c
   src/hardware/hw_serial.c
