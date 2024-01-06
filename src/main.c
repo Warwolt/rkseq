@@ -23,6 +23,7 @@
 typedef struct {
 	uint8_t tempo_bpm;
 	bool is_playing;
+	bool just_started;
 	usec_timer_t timer;
 } beat_clock_t;
 
@@ -37,6 +38,20 @@ void beat_clock_set_tempo(beat_clock_t* beat_clock, uint8_t tempo_bpm) {
 	beat_clock->tempo_bpm = clamp(tempo_bpm, MIN_BPM, MAX_BPM);
 	beat_clock->timer.period_us = (60 * 1e6) / tempo_bpm;
 }
+
+void beat_clock_start(beat_clock_t* beat_clock) {
+	beat_clock->is_playing = true;
+	beat_clock->just_started = true;
+}
+
+void beat_clock_stop(beat_clock_t* beat_clock) {
+	beat_clock->is_playing = false;
+	beat_clock->just_started = false;
+}
+
+// void beat_clock_update(beat_clock_t* beat_clock) {
+// 	beat_clock->just_started = false;
+// }
 
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
@@ -95,10 +110,12 @@ int main(void) {
 		button_update(&start_stop_button, gpio_pin_read(start_stop_button_pin), timer0_now_ms());
 
 		/* Update playback */
-		bool playback_just_started = false;
 		if (button_just_pressed(&start_stop_button)) {
-			beat_clock.is_playing = !beat_clock.is_playing;
-			playback_just_started = true;
+			if (!beat_clock.is_playing) {
+				beat_clock_start(&beat_clock);
+			} else {
+				beat_clock_stop(&beat_clock);
+			}
 		}
 
 		/* Update Tempo */
@@ -111,7 +128,8 @@ int main(void) {
 		segment_display_update(&tempo_display);
 
 		/* Output tempo pulse */
-		const bool start_pulse = playback_just_started || (beat_clock.is_playing && usec_timer_period_has_elapsed(&beat_clock.timer));
+		const bool start_pulse = beat_clock.just_started || (beat_clock.is_playing && usec_timer_period_has_elapsed(&beat_clock.timer));
+		beat_clock.just_started = false;
 		if (start_pulse) {
 			usec_timer_reset(&beat_clock.timer);
 			usec_timer_reset(&pulse_timer);
