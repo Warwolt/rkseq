@@ -16,6 +16,10 @@
 #include <stdbool.h>
 #include <util/delay.h>
 
+#define MIN_BPM 40
+#define MAX_BPM 200
+#define QUARTERNOTE_PULSE_LENGTH_US 500
+
 typedef struct {
 	uint8_t tempo_bpm;
 	bool is_playing;
@@ -24,14 +28,15 @@ typedef struct {
 
 beat_clock_t beat_clock_init(uint8_t tempo_bpm) {
 	return (beat_clock_t) {
-		.tempo_bpm = tempo_bpm,
+		.tempo_bpm = clamp(tempo_bpm, MIN_BPM, MAX_BPM),
 		.timer = usec_timer_init((60 * 1e6) / tempo_bpm)
 	};
 }
 
-#define MIN_BPM 40
-#define MAX_BPM 200
-#define QUARTERNOTE_PULSE_LENGTH_US 500
+void beat_clock_set_tempo(beat_clock_t* beat_clock, uint8_t tempo_bpm) {
+	beat_clock->tempo_bpm = clamp(tempo_bpm, MIN_BPM, MAX_BPM);
+	beat_clock->timer.period_us = (60 * 1e6) / tempo_bpm;
+}
 
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
@@ -98,8 +103,7 @@ int main(void) {
 
 		/* Update Tempo */
 		const int rotary_diff = rotary_encoder_read(&tempo_knob);
-		beat_clock.tempo_bpm = clamp(beat_clock.tempo_bpm + rotary_diff, MIN_BPM, MAX_BPM);
-		beat_clock.timer.period_us = (60 * 1e6) / beat_clock.tempo_bpm;
+		beat_clock_set_tempo(&beat_clock, beat_clock.tempo_bpm + rotary_diff);
 
 		/* Display Current Tempo*/
 		segment_display_set_number(&tempo_display, beat_clock.tempo_bpm * 10);
