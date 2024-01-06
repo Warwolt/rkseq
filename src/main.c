@@ -19,11 +19,13 @@
 typedef struct {
 	uint8_t tempo_bpm;
 	bool is_playing;
+	usec_timer_t timer;
 } beat_clock_t;
 
 beat_clock_t beat_clock_init(uint8_t tempo_bpm) {
 	return (beat_clock_t) {
 		.tempo_bpm = tempo_bpm,
+		.timer = usec_timer_init((60 * 1e6) / tempo_bpm)
 	};
 }
 
@@ -83,7 +85,6 @@ int main(void) {
 	// it should handle start, stop, and knowing when to output a note pulse
 	beat_clock_t beat_clock = beat_clock_init(120);
 	usec_timer_t pulse_timer = usec_timer_init(QUARTERNOTE_PULSE_LENGTH_US);
-	usec_timer_t quarternote_timer = usec_timer_init((60 * 1e6) / beat_clock.tempo_bpm);
 	while (true) {
 		/* Update buttons */
 		button_update(&start_stop_button, gpio_pin_read(start_stop_button_pin), timer0_now_ms());
@@ -98,7 +99,7 @@ int main(void) {
 		/* Update Tempo */
 		const int rotary_diff = rotary_encoder_read(&tempo_knob);
 		beat_clock.tempo_bpm = clamp(beat_clock.tempo_bpm + rotary_diff, MIN_BPM, MAX_BPM);
-		quarternote_timer.period_us = (60 * 1e6) / beat_clock.tempo_bpm;
+		beat_clock.timer.period_us = (60 * 1e6) / beat_clock.tempo_bpm;
 
 		/* Display Current Tempo*/
 		segment_display_set_number(&tempo_display, beat_clock.tempo_bpm * 10);
@@ -106,15 +107,14 @@ int main(void) {
 		segment_display_update(&tempo_display);
 
 		/* Output tempo pulse */
-		if (beat_clock.is_playing) {
-			if (usec_timer_period_has_elapsed(&quarternote_timer) || playback_just_started) {
-				usec_timer_reset(&quarternote_timer);
-				usec_timer_reset(&pulse_timer);
-				gpio_pin_set(led_pin);
-			}
-			if (usec_timer_period_has_elapsed(&pulse_timer)) {
-				gpio_pin_clear(led_pin);
-			}
+		const bool start_pulse = playback_just_started || (beat_clock.is_playing && usec_timer_period_has_elapsed(&beat_clock.timer));
+		if (start_pulse) {
+			usec_timer_reset(&beat_clock.timer);
+			usec_timer_reset(&pulse_timer);
+			gpio_pin_set(led_pin);
+		}
+		if (usec_timer_period_has_elapsed(&pulse_timer)) {
+			gpio_pin_clear(led_pin);
 		}
 	}
 }
