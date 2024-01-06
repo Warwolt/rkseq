@@ -16,6 +16,17 @@
 #include <stdbool.h>
 #include <util/delay.h>
 
+typedef struct {
+	uint8_t tempo_bpm;
+	bool is_playing;
+} beat_clock_t;
+
+beat_clock_t beat_clock_init(uint8_t tempo_bpm) {
+	return (beat_clock_t) {
+		.tempo_bpm = tempo_bpm,
+	};
+}
+
 #define MIN_BPM 40
 #define MAX_BPM 200
 #define QUARTERNOTE_PULSE_LENGTH_US 500
@@ -68,10 +79,11 @@ int main(void) {
 
 	/* Run */
 	LOG_INFO("Program Start\n");
-	uint8_t tempo_bpm = 120;
+	// TODO: extract out `tempo_bpm` + `quarternote_timer` into a `beat_timer_t` struct
+	// it should handle start, stop, and knowing when to output a note pulse
+	beat_clock_t beat_clock = beat_clock_init(120);
 	usec_timer_t pulse_timer = usec_timer_init(QUARTERNOTE_PULSE_LENGTH_US);
-	usec_timer_t quarternote_timer = usec_timer_init((60 * 1e6) / tempo_bpm);
-	bool is_playing = false;
+	usec_timer_t quarternote_timer = usec_timer_init((60 * 1e6) / beat_clock.tempo_bpm);
 	while (true) {
 		/* Update buttons */
 		button_update(&start_stop_button, gpio_pin_read(start_stop_button_pin), timer0_now_ms());
@@ -79,22 +91,22 @@ int main(void) {
 		/* Update playback */
 		bool playback_just_started = false;
 		if (button_just_pressed(&start_stop_button)) {
-			is_playing = !is_playing;
+			beat_clock.is_playing = !beat_clock.is_playing;
 			playback_just_started = true;
 		}
 
 		/* Update Tempo */
 		const int rotary_diff = rotary_encoder_read(&tempo_knob);
-		tempo_bpm = clamp(tempo_bpm + rotary_diff, MIN_BPM, MAX_BPM);
-		quarternote_timer.period_us = (60 * 1e6) / tempo_bpm;
+		beat_clock.tempo_bpm = clamp(beat_clock.tempo_bpm + rotary_diff, MIN_BPM, MAX_BPM);
+		quarternote_timer.period_us = (60 * 1e6) / beat_clock.tempo_bpm;
 
 		/* Display Current Tempo*/
-		segment_display_set_number(&tempo_display, tempo_bpm * 10);
+		segment_display_set_number(&tempo_display, beat_clock.tempo_bpm * 10);
 		segment_display_enable_period(&tempo_display, 1);
 		segment_display_update(&tempo_display);
 
 		/* Output tempo pulse */
-		if (is_playing) {
+		if (beat_clock.is_playing) {
 			if (usec_timer_period_has_elapsed(&quarternote_timer) || playback_just_started) {
 				usec_timer_reset(&quarternote_timer);
 				usec_timer_reset(&pulse_timer);
