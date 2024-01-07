@@ -2,7 +2,7 @@ name: Lint style
 on:
   push
 jobs:
-  build:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
