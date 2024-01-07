@@ -9,6 +9,7 @@ typedef enum {
 } spi_data_order_t;
 
 void spi_initialize(spi_data_order_t data_order);
-void spi_send(uint8_t byte);
+uint8_t spi_send(uint8_t byte);
+uint8_t spi_receive(void);
 
 #endif /* SPI_H */

@@ -17,8 +17,13 @@ void spi_initialize(spi_data_order_t data_order) {
 	set_bit(SPCR, SPE); // SPI Enable (must be last!)
 }
 
-void spi_send(uint8_t byte) {
+uint8_t spi_send(uint8_t byte) {
 	SPDR = byte; // start transmission
 	while (!(SPSR & (1 << SPIF))) { // wait for transmission to completele
 	}
+	return SPDR;
+}
+
+uint8_t spi_receive(void) {
+	return spi_send(0);
 }
