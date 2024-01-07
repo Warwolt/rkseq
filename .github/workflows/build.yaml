@@ -8,9 +8,6 @@ jobs:
       - name: Install AVR GCC
         run: sudo apt-get install -y binutils-avr gcc-avr avr-libc
 
-      - name: debug
-        run: which avr-gcc
-
       - name: Install CMake
         run: sudo apt-get install cmake
 
