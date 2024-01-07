@@ -17,6 +17,12 @@
 #include <stdbool.h>
 #include <util/delay.h>
 
+typedef struct {
+	button_t start_button;
+	rotary_encoder_t tempo_knob;
+	segment_display_t tempo_display;
+} playback_control_t;
+
 #define QUARTERNOTE_PULSE_LENGTH_US 500
 
 /* ----------------------- Interrupt service routines ----------------------- */
@@ -60,10 +66,11 @@ int main(void) {
 
 	const gpio_pin_t start_stop_button_pin = gpio_pin_init(&PORTB, 1);
 	gpio_pin_configure(start_stop_button_pin, PIN_MODE_INPUT);
-	button_t start_stop_button = button_init();
 
-	rotary_encoder_t tempo_knob = rotary_encoder_init(tempo_knob_a_pin, tempo_knob_b_pin);
-	segment_display_t tempo_display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin);
+	playback_control_t playback_control;
+	playback_control.start_button = button_init();
+	playback_control.tempo_knob = rotary_encoder_init(tempo_knob_a_pin, tempo_knob_b_pin);
+	playback_control.tempo_display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin);
 
 	/* Run */
 	LOG_INFO("Program Start\n");
@@ -71,12 +78,12 @@ int main(void) {
 	usec_timer_t pulse_timer = usec_timer_init(QUARTERNOTE_PULSE_LENGTH_US);
 	while (true) {
 		/* Update buttons */
-		button_update(&start_stop_button, gpio_pin_read(start_stop_button_pin), timer0_now_ms());
+		button_update(&playback_control.start_button, gpio_pin_read(start_stop_button_pin), timer0_now_ms());
 
 		/* Update playback */
 		beat_clock_update(&beat_clock);
 
-		if (button_just_pressed(&start_stop_button)) {
+		if (button_just_pressed(&playback_control.start_button)) {
 			if (!beat_clock.is_playing) {
 				beat_clock_start(&beat_clock);
 			} else {
@@ -85,13 +92,13 @@ int main(void) {
 		}
 
 		/* Update Tempo */
-		const int rotary_diff = rotary_encoder_read(&tempo_knob);
+		const int rotary_diff = rotary_encoder_read(&playback_control.tempo_knob);
 		beat_clock_set_tempo(&beat_clock, beat_clock.tempo_bpm + rotary_diff);
 
 		/* Display Current Tempo*/
-		segment_display_set_number(&tempo_display, beat_clock.tempo_bpm * 10);
-		segment_display_enable_period(&tempo_display, 1);
-		segment_display_update(&tempo_display);
+		segment_display_set_number(&playback_control.tempo_display, beat_clock.tempo_bpm * 10);
+		segment_display_enable_period(&playback_control.tempo_display, 1);
+		segment_display_update(&playback_control.tempo_display);
 
 		/* Output tempo pulse */
 		if (beat_clock_should_output_quarternote(&beat_clock)) {
