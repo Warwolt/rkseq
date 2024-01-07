@@ -63,6 +63,20 @@ int main(void) {
 	gpio_pin_configure(pulse_pin, PIN_MODE_OUTPUT);
 	gpio_pin_configure(start_button_pin, PIN_MODE_INPUT);
 
+	// SPI initialize
+	{
+		// const bool msb_first = true;
+		set_bit(DDRB, 3); // set MOSI pin to output
+		clear_bit(DDRB, 4); // set MISO pin to input
+		set_bit(DDRB, 5); // set clock pin to output
+		set_bit(DDRB, 2); // set slave select to output
+		// set_bit(SPCR, SPE); // SPI Enable
+		// set_bit(SPCR, MSTR); // Master mode
+		// write_bit(SPCR, DORD, msb_first); // select byte order
+
+		SPCR = (1 << SPE) | (1 << MSTR) | (1 << SPR0);
+	}
+
 	ui_devices_t ui_devices = {
 		.start_button = button_init(),
 		.encoder = rotary_encoder_init(encoder_a_pin, encoder_b_pin),
@@ -88,6 +102,14 @@ int main(void) {
 		}
 		if (usec_timer_period_has_elapsed(&pulse_timer)) {
 			gpio_pin_clear(pulse_pin);
+		}
+
+		// test output a byte over SPI
+		{
+			const uint8_t byte = 0x55;
+			SPDR = byte; // start transmission
+			while (!(SPSR & (1 << SPIF))) // wait for transmission to completele
+				;
 		}
 	}
 }
