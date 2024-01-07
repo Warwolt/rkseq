@@ -2,7 +2,7 @@ name: Tests
 on:
   push
 jobs:
-  run_tests:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
