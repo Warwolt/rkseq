@@ -1,6 +1,6 @@
 name: run_tests
 on:
-  push:
+  push
 jobs:
   run_tests:
     runs-on: ubuntu-latest

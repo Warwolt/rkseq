@@ -1,6 +1,6 @@
 name: Clang Format
 on:
-  push:
+  push
 jobs:
   build:
     runs-on: ubuntu-latest
