@@ -73,7 +73,7 @@ JavaImportGroups: []
 JavaScriptQuotes: Double
 JavaScriptWrapImports: true
 KeepEmptyLinesAtTheStartOfBlocks: false
-Language: c
+Language: Cpp
 MaxEmptyLinesToKeep: 1
 NamespaceIndentation: All
 PenaltyBreakAssignment: 0
