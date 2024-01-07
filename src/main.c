@@ -76,8 +76,9 @@ int main(void) {
 	/* Run */
 	LOG_INFO("Program Start\n");
 	while (true) {
-		/* Update button states */
+		/* Update devices */
 		button_update(&ui_devices.start_button, gpio_pin_read(start_button_pin), timer0_now_ms());
+		segment_display_update(&ui_devices.display); // cycle to next digit
 
 		/* Update sequencer playback */
 		beat_clock_update(&beat_clock);
