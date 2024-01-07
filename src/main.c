@@ -23,6 +23,30 @@ typedef struct {
 	segment_display_t tempo_display;
 } playback_control_t;
 
+static void toggle_beat_clock(beat_clock_t* beat_clock) {
+	if (!beat_clock->is_playing) {
+		beat_clock_start(beat_clock);
+	} else {
+		beat_clock_stop(beat_clock);
+	}
+}
+
+void playback_control_update(playback_control_t* playback_control, beat_clock_t* beat_clock) {
+	/* Start / Stop Playback */
+	if (button_just_pressed(&playback_control->start_button)) {
+		toggle_beat_clock(beat_clock);
+	}
+
+	/* Update Tempo */
+	const int rotary_diff = rotary_encoder_read(&playback_control->tempo_knob);
+	beat_clock_set_tempo(beat_clock, beat_clock->tempo_bpm + rotary_diff);
+
+	/* Display Current Tempo*/
+	segment_display_set_number(&playback_control->tempo_display, beat_clock->tempo_bpm * 10);
+	segment_display_enable_period(&playback_control->tempo_display, 1);
+	segment_display_update(&playback_control->tempo_display);
+}
+
 #define QUARTERNOTE_PULSE_LENGTH_US 500
 
 /* ----------------------- Interrupt service routines ----------------------- */
@@ -67,10 +91,11 @@ int main(void) {
 	const gpio_pin_t start_stop_button_pin = gpio_pin_init(&PORTB, 1);
 	gpio_pin_configure(start_stop_button_pin, PIN_MODE_INPUT);
 
-	playback_control_t playback_control;
-	playback_control.start_button = button_init();
-	playback_control.tempo_knob = rotary_encoder_init(tempo_knob_a_pin, tempo_knob_b_pin);
-	playback_control.tempo_display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin);
+	playback_control_t playback_control = {
+		.start_button = button_init(),
+		.tempo_knob = rotary_encoder_init(tempo_knob_a_pin, tempo_knob_b_pin),
+		.tempo_display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin),
+	};
 
 	/* Run */
 	LOG_INFO("Program Start\n");
@@ -82,23 +107,7 @@ int main(void) {
 
 		/* Update playback */
 		beat_clock_update(&beat_clock);
-
-		if (button_just_pressed(&playback_control.start_button)) {
-			if (!beat_clock.is_playing) {
-				beat_clock_start(&beat_clock);
-			} else {
-				beat_clock_stop(&beat_clock);
-			}
-		}
-
-		/* Update Tempo */
-		const int rotary_diff = rotary_encoder_read(&playback_control.tempo_knob);
-		beat_clock_set_tempo(&beat_clock, beat_clock.tempo_bpm + rotary_diff);
-
-		/* Display Current Tempo*/
-		segment_display_set_number(&playback_control.tempo_display, beat_clock.tempo_bpm * 10);
-		segment_display_enable_period(&playback_control.tempo_display, 1);
-		segment_display_update(&playback_control.tempo_display);
+		playback_control_update(&playback_control, &beat_clock);
 
 		/* Output tempo pulse */
 		if (beat_clock_should_output_quarternote(&beat_clock)) {
