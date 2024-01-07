@@ -9,7 +9,7 @@ void spi_initialize(spi_data_order_t data_order) {
 	set_bit(DDRB, 3); // Set MOSI pin to output
 	clear_bit(DDRB, 4); // Set MISO pin to input
 	set_bit(DDRB, 5); // Set clock pin to output
-	set_bit(DDRB, 2); // Set slave select to output
+	set_bit(DDRB, 2); // Set slave select to output (otherwise SPI becomes slave mode)
 
 	/* Configure SPI */
 	set_bit(SPCR, MSTR); // Master mode

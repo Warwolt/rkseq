@@ -63,7 +63,7 @@ int main(void) {
 	sw_serial_initialize(31250, midi_rx_pin, midi_tx_pin);
 	gpio_pin_configure(pulse_pin, PIN_MODE_OUTPUT);
 	gpio_pin_configure(start_button_pin, PIN_MODE_INPUT);
-	spi_initialize(SPI_DATA_ORDER_MSB_FIRST); // uses PB2, PB3, PB4 and PB5
+	spi_initialize(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
 
 	ui_devices_t ui_devices = {
 		.start_button = button_init(),
