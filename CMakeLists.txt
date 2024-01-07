@@ -76,7 +76,7 @@ add_compile_options(-Os -Wall -Werror -Wextra)
 add_avr_executable("${PROJECT_NAME}"
   src/main.c
   src/logging.c
-  src/hardware/button.c
+  src/data/button.c
   src/hardware/gpio.c
   src/hardware/hw_serial.c
   src/hardware/rotary_encoder.c
@@ -93,7 +93,7 @@ else()
 # -------------------------------- Unit tests -------------------------------- #
 add_subdirectory(external/rktest)
 add_executable(tests
-  src/hardware/button.c
+  src/data/button.c
   tests/button_tests.c
   tests/ring_buffer_tests.c
 )

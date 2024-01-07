@@ -1,7 +1,7 @@
 #ifndef PLAYBACK_CONTROL_H
 #define PLAYBACK_CONTROL_H
 
-#include "hardware/button.h"
+#include "data/button.h"
 #include "hardware/rotary_encoder.h"
 #include "hardware/segment_display.h"
 #include "sequencer/beat_clock.h"

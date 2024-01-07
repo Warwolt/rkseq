@@ -1,5 +1,5 @@
+#include "data/button.h"
 #include "data/ring_buffer.h"
-#include "hardware/button.h"
 #include "hardware/gpio.h"
 #include "hardware/hw_serial.h"
 #include "hardware/rotary_encoder.h"
@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <util/delay.h>
 
+#define DEFAULT_BPM 120
 #define QUARTERNOTE_PULSE_LENGTH_US 500
 
 /* ----------------------- Interrupt service routines ----------------------- */
@@ -66,7 +67,7 @@ int main(void) {
 		.tempo_knob = rotary_encoder_init(tempo_knob_a_pin, tempo_knob_b_pin),
 		.tempo_display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin),
 	};
-	beat_clock_t beat_clock = beat_clock_init(120);
+	beat_clock_t beat_clock = beat_clock_init(DEFAULT_BPM);
 	usec_timer_t pulse_timer = usec_timer_init(QUARTERNOTE_PULSE_LENGTH_US);
 
 	/* Run */
