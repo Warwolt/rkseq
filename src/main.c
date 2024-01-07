@@ -55,7 +55,13 @@ int main(void) {
 	const gpio_pin_t display_clock_pin = gpio_pin_init(&PORTD, 6);
 	const gpio_pin_t display_latch_pin = gpio_pin_init(&PORTD, 7);
 	const gpio_pin_t display_data_pin = gpio_pin_init(&PORTB, 0);
-	const gpio_pin_t start_button_pin = gpio_pin_init(&PORTB, 1);
+	const gpio_pin_t start_button_pin = gpio_pin_init(&PORTC, 4);
+
+	// shift reg buttons
+	const gpio_pin_t step_buttons_parallel_load_pin = gpio_pin_init(&PORTB, 1);
+	const gpio_pin_t step_buttons_clock_enable_pin = gpio_pin_init(&PORTB, 2);
+	gpio_pin_configure(step_buttons_parallel_load_pin, PIN_MODE_OUTPUT);
+	gpio_pin_configure(step_buttons_clock_enable_pin, PIN_MODE_OUTPUT);
 
 	globally_enable_interrupts();
 	timer0_initialize();
@@ -74,6 +80,7 @@ int main(void) {
 	usec_timer_t pulse_timer = usec_timer_init(QUARTERNOTE_PULSE_LENGTH_US);
 
 	/* Run */
+	uint32_t last_print_time = 0;
 	LOG_INFO("Program Start\n");
 	while (true) {
 		/* Update devices */
@@ -91,6 +98,21 @@ int main(void) {
 		}
 		if (usec_timer_period_has_elapsed(&pulse_timer)) {
 			gpio_pin_clear(pulse_pin);
+		}
+
+		// load button states into shift register
+		gpio_pin_clear(step_buttons_parallel_load_pin);
+		gpio_pin_set(step_buttons_parallel_load_pin);
+
+		// enable shift register SPI and read states
+		gpio_pin_clear(step_buttons_clock_enable_pin);
+		const uint8_t step_buttons_state = spi_receive();
+		gpio_pin_set(step_buttons_clock_enable_pin);
+
+		const uint32_t now_ms = timer0_now_ms();
+		if (now_ms - last_print_time >= 100) {
+			last_print_time = now_ms;
+			LOG_INFO("button state = %x\n", step_buttons_state & 1);
 		}
 	}
 }
