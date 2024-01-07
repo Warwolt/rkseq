@@ -1,8 +1,8 @@
-name: run_tests
+name: Tests
 on:
-  push:
+  push
 jobs:
-  run_tests:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

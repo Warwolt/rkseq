@@ -1,15 +1,12 @@
-name: build
+name: Build
 on:
-  push:
+  push
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Install AVR GCC
         run: sudo apt-get install -y binutils-avr gcc-avr avr-libc
-
-      - name: debug
-        run: which avr-gcc
 
       - name: Install CMake
         run: sudo apt-get install cmake

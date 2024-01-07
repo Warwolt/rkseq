@@ -1,0 +1,17 @@
+name: Lint style
+on:
+  push
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.1.1
+
+      - name: Run linter
+        uses: DoozyX/clang-format-lint-action@v0.16.2
+        with:
+            source: 'src tests'
+            extensions: 'c,h'
+            clangFormatVersion: 16
+
