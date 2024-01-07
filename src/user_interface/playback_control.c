@@ -21,5 +21,4 @@ void playback_control_update(ui_devices_t* ui_devices, beat_clock_t* beat_clock)
 	/* Display Current Tempo*/
 	segment_display_set_number(&ui_devices->display, beat_clock->tempo_bpm * 10);
 	segment_display_enable_period(&ui_devices->display, 1);
-	segment_display_update(&ui_devices->display);
 }
