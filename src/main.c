@@ -62,7 +62,7 @@ int main(void) {
 	hw_serial_initialize(9600); // uses PD0 and PD1 for logging
 	sw_serial_initialize(31250, midi_rx_pin, midi_tx_pin);
 
-	playback_control_t playback_control = {
+	ui_devices_t ui_devices = {
 		.start_button = button_init(),
 		.tempo_knob = rotary_encoder_init(tempo_knob_a_pin, tempo_knob_b_pin),
 		.tempo_display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin),
@@ -74,11 +74,11 @@ int main(void) {
 	LOG_INFO("Program Start\n");
 	while (true) {
 		/* Update button states */
-		button_update(&playback_control.start_button, gpio_pin_read(start_stop_button_pin), timer0_now_ms());
+		button_update(&ui_devices.start_button, gpio_pin_read(start_stop_button_pin), timer0_now_ms());
 
 		/* Update sequencer playback */
 		beat_clock_update(&beat_clock);
-		playback_control_update(&playback_control, &beat_clock);
+		playback_control_update(&ui_devices, &beat_clock);
 
 		/* Output tempo pulse */
 		if (beat_clock_should_output_quarternote(&beat_clock)) {

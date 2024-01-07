@@ -10,8 +10,8 @@ typedef struct {
 	button_t start_button;
 	rotary_encoder_t tempo_knob;
 	segment_display_t tempo_display;
-} playback_control_t;
+} ui_devices_t;
 
-void playback_control_update(playback_control_t* playback_control, beat_clock_t* beat_clock);
+void playback_control_update(ui_devices_t* ui_devices, beat_clock_t* beat_clock);
 
 #endif /* PLAYBACK_CONTROL_H */
