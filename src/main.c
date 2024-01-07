@@ -19,6 +19,30 @@
 #include <stdbool.h>
 #include <util/delay.h>
 
+typedef enum {
+	SPI_DATA_ORDER_MSB_FIRST = 0,
+	SPI_DATA_ORDER_LSB_FIRST = 1,
+} spi_data_order_t;
+
+void spi_initialize(spi_data_order_t data_order) {
+	/* Configure pins */
+	set_bit(DDRB, 3); // Set MOSI pin to output
+	clear_bit(DDRB, 4); // Set MISO pin to input
+	set_bit(DDRB, 5); // Set clock pin to output
+	set_bit(DDRB, 2); // Set slave select to output
+
+	/* Configure SPI */
+	set_bit(SPCR, MSTR); // Master mode
+	write_bit(SPCR, DORD, data_order); // Select order bits are sent
+	set_bit(SPCR, SPE); // SPI Enable (must be last!)
+}
+
+void spi_send(uint8_t byte) {
+	SPDR = byte; // start transmission
+	while (!(SPSR & (1 << SPIF))) // wait for transmission to completele
+		;
+}
+
 #define DEFAULT_BPM 120
 #define QUARTERNOTE_PULSE_LENGTH_US 500
 
@@ -58,24 +82,11 @@ int main(void) {
 
 	globally_enable_interrupts();
 	timer0_initialize();
-	hw_serial_initialize(9600); // uses PD0 and PD1 for logging
+	hw_serial_initialize(9600); // uses PD0 and PD1
 	sw_serial_initialize(31250, midi_rx_pin, midi_tx_pin);
 	gpio_pin_configure(pulse_pin, PIN_MODE_OUTPUT);
 	gpio_pin_configure(start_button_pin, PIN_MODE_INPUT);
-
-	// SPI initialize
-	{
-		// const bool msb_first = true;
-		set_bit(DDRB, 3); // set MOSI pin to output
-		clear_bit(DDRB, 4); // set MISO pin to input
-		set_bit(DDRB, 5); // set clock pin to output
-		set_bit(DDRB, 2); // set slave select to output
-		// set_bit(SPCR, SPE); // SPI Enable
-		// set_bit(SPCR, MSTR); // Master mode
-		// write_bit(SPCR, DORD, msb_first); // select byte order
-
-		SPCR = (1 << SPE) | (1 << MSTR) | (1 << SPR0);
-	}
+	spi_initialize(SPI_DATA_ORDER_MSB_FIRST); // uses PB2, PB3, PB4 and PB5
 
 	ui_devices_t ui_devices = {
 		.start_button = button_init(),
@@ -104,12 +115,6 @@ int main(void) {
 			gpio_pin_clear(pulse_pin);
 		}
 
-		// test output a byte over SPI
-		{
-			const uint8_t byte = 0x55;
-			SPDR = byte; // start transmission
-			while (!(SPSR & (1 << SPIF))) // wait for transmission to completele
-				;
-		}
+		spi_send(0x55);
 	}
 }
