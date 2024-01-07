@@ -4,6 +4,7 @@
 #include "hardware/hw_serial.h"
 #include "hardware/rotary_encoder.h"
 #include "hardware/segment_display.h"
+#include "hardware/spi.h"
 #include "hardware/sw_serial.h"
 #include "hardware/timer0.h"
 #include "logging.h"
@@ -46,7 +47,7 @@ void globally_enable_interrupts(void) {
 
 int main(void) {
 	/* Setup */
-	const gpio_pin_t led_pin = gpio_pin_init(&PORTB, 5);
+	const gpio_pin_t pulse_pin = gpio_pin_init(&PORTC, 5);
 	const gpio_pin_t midi_rx_pin = gpio_pin_init(&PORTD, 2);
 	const gpio_pin_t midi_tx_pin = gpio_pin_init(&PORTD, 3);
 	const gpio_pin_t encoder_a_pin = gpio_pin_init(&PORTD, 4);
@@ -58,10 +59,11 @@ int main(void) {
 
 	globally_enable_interrupts();
 	timer0_initialize();
-	hw_serial_initialize(9600); // uses PD0 and PD1 for logging
+	hw_serial_initialize(9600); // uses PD0 and PD1
 	sw_serial_initialize(31250, midi_rx_pin, midi_tx_pin);
-	gpio_pin_configure(led_pin, PIN_MODE_OUTPUT);
+	gpio_pin_configure(pulse_pin, PIN_MODE_OUTPUT);
 	gpio_pin_configure(start_button_pin, PIN_MODE_INPUT);
+	spi_initialize(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
 
 	ui_devices_t ui_devices = {
 		.start_button = button_init(),
@@ -83,11 +85,11 @@ int main(void) {
 
 		/* Output tempo pulse */
 		if (beat_clock_should_output_quarternote(&beat_clock)) {
-			gpio_pin_set(led_pin);
+			gpio_pin_set(pulse_pin);
 			usec_timer_reset(&pulse_timer);
 		}
 		if (usec_timer_period_has_elapsed(&pulse_timer)) {
-			gpio_pin_clear(led_pin);
+			gpio_pin_clear(pulse_pin);
 		}
 	}
 }
