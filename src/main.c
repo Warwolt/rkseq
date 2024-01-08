@@ -20,6 +20,34 @@
 #include <stdbool.h>
 #include <util/delay.h>
 
+typedef struct {
+	gpio_pin_t load_pin;
+	gpio_pin_t chip_enable_pin;
+} input_shift_register_t;
+
+input_shift_register_t input_shift_register_init(gpio_pin_t load_pin, gpio_pin_t chip_enable_pin) {
+	gpio_pin_configure(load_pin, PIN_MODE_OUTPUT);
+	gpio_pin_configure(chip_enable_pin, PIN_MODE_OUTPUT);
+	return (input_shift_register_t) {
+		.load_pin = load_pin,
+		.chip_enable_pin = chip_enable_pin,
+	};
+}
+
+uint16_t input_shift_register_read(const input_shift_register_t* shift_reg) {
+	// load button states into shift register
+	gpio_pin_clear(shift_reg->load_pin);
+	gpio_pin_set(shift_reg->load_pin);
+
+	// enable shift register SPI and read states
+	gpio_pin_clear(shift_reg->chip_enable_pin);
+	const uint8_t high_byte = spi_receive();
+	const uint8_t low_byte = spi_receive();
+	gpio_pin_set(shift_reg->chip_enable_pin);
+
+	return (low_byte | high_byte << 8);
+}
+
 #define DEFAULT_BPM 120
 #define QUARTERNOTE_PULSE_LENGTH_US 500
 
@@ -56,12 +84,8 @@ int main(void) {
 	const gpio_pin_t display_latch_pin = gpio_pin_init(&PORTD, 7);
 	const gpio_pin_t display_data_pin = gpio_pin_init(&PORTB, 0);
 	const gpio_pin_t start_button_pin = gpio_pin_init(&PORTC, 4);
-
-	// shift reg buttons
-	const gpio_pin_t step_buttons_parallel_load_pin = gpio_pin_init(&PORTB, 1);
-	const gpio_pin_t step_buttons_clock_enable_pin = gpio_pin_init(&PORTB, 2);
-	gpio_pin_configure(step_buttons_parallel_load_pin, PIN_MODE_OUTPUT);
-	gpio_pin_configure(step_buttons_clock_enable_pin, PIN_MODE_OUTPUT);
+	const gpio_pin_t shift_reg_load_pin = gpio_pin_init(&PORTB, 1);
+	const gpio_pin_t shift_reg_chip_enable_pin = gpio_pin_init(&PORTB, 2);
 
 	globally_enable_interrupts();
 	timer0_initialize();
@@ -70,12 +94,12 @@ int main(void) {
 	gpio_pin_configure(pulse_pin, PIN_MODE_OUTPUT);
 	gpio_pin_configure(start_button_pin, PIN_MODE_INPUT);
 	spi_initialize(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
-
 	ui_devices_t ui_devices = {
 		.start_button = button_init(),
 		.encoder = rotary_encoder_init(encoder_a_pin, encoder_b_pin),
 		.display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin),
 	};
+	input_shift_register_t input_shift_reg = input_shift_register_init(shift_reg_load_pin, shift_reg_chip_enable_pin);
 	beat_clock_t beat_clock = beat_clock_init(DEFAULT_BPM);
 	usec_timer_t pulse_timer = usec_timer_init(QUARTERNOTE_PULSE_LENGTH_US);
 
@@ -100,17 +124,18 @@ int main(void) {
 			gpio_pin_clear(pulse_pin);
 		}
 
-		// load button states into shift register
-		gpio_pin_clear(step_buttons_parallel_load_pin);
-		gpio_pin_set(step_buttons_parallel_load_pin);
+		// // load button states into shift register
+		// gpio_pin_clear(step_buttons_parallel_load_pin);
+		// gpio_pin_set(step_buttons_parallel_load_pin);
 
-		// enable shift register SPI and read states
-		gpio_pin_clear(step_buttons_clock_enable_pin);
-		const uint8_t high_byte = spi_receive();
-		const uint8_t low_byte = spi_receive();
-		const uint16_t step_buttons_state = low_byte | high_byte << 8;
-		gpio_pin_set(step_buttons_clock_enable_pin);
+		// // enable shift register SPI and read states
+		// gpio_pin_clear(step_buttons_clock_enable_pin);
+		// const uint8_t high_byte = spi_receive();
+		// const uint8_t low_byte = spi_receive();
+		// const uint16_t step_buttons_state = low_byte | high_byte << 8;
+		// gpio_pin_set(step_buttons_clock_enable_pin);
 
+		const uint16_t step_buttons_state = input_shift_register_read(&input_shift_reg);
 		const uint32_t now_ms = timer0_now_ms();
 		if (now_ms - last_print_time >= 100) {
 			last_print_time = now_ms;
