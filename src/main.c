@@ -68,7 +68,8 @@ int main(void) {
 	gpio_pin_configure(start_button_pin, PIN_MODE_INPUT);
 	spi_initialize(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
 	ui_devices_t ui_devices = {
-		.start_button = button_init(),
+		.start_button = { 0 },
+		.step_buttons = { 0 },
 		.encoder = rotary_encoder_init(encoder_a_pin, encoder_b_pin),
 		.display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin),
 	};
@@ -81,7 +82,15 @@ int main(void) {
 	LOG_INFO("Program Start\n");
 	while (true) {
 		/* Update devices */
-		button_update(&ui_devices.start_button, gpio_pin_read(start_button_pin), timer0_now_ms());
+		const uint32_t now_ms = timer0_now_ms();
+		// update step buttons
+		{
+			const uint16_t step_button_input = input_shift_register_read(&input_shift_reg);
+			for (uint8_t i = 0; i < 16; i++) {
+				button_update(&ui_devices.step_buttons[i], (step_button_input >> i) & 1, now_ms);
+			}
+		}
+		button_update(&ui_devices.start_button, gpio_pin_read(start_button_pin), now_ms);
 		segment_display_update(&ui_devices.display); // cycle to next digit
 
 		/* Update sequencer playback */
@@ -97,11 +106,9 @@ int main(void) {
 			gpio_pin_clear(pulse_pin);
 		}
 
-		const uint16_t step_buttons_state = input_shift_register_read(&input_shift_reg);
-		const uint32_t now_ms = timer0_now_ms();
 		if (now_ms - last_print_time >= 100) {
 			last_print_time = now_ms;
-			LOG_INFO("button state = %x\n", step_buttons_state & 1);
+			LOG_INFO("button state = %x\n", button_is_pressed(&ui_devices.step_buttons[0]));
 		}
 	}
 }

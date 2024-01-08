@@ -9,10 +9,6 @@ static uint32_t debounce_input_state(button_t* button, button_state_t input_stat
 	}
 }
 
-button_t button_init(void) {
-	return (button_t) { 0 };
-}
-
 void button_update(button_t* button, button_state_t state, uint32_t time_now_ms) {
 	const button_state_t debounced_state = debounce_input_state(button, state, time_now_ms);
 	button->changed_now = button->state != debounced_state;

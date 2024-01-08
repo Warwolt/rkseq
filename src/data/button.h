@@ -17,7 +17,6 @@ typedef struct {
 	uint32_t last_stable_signal_ms;
 } button_t;
 
-button_t button_init(void);
 void button_update(button_t* button, button_state_t state, uint32_t time_now_ms);
 bool button_just_pressed(const button_t* button);
 bool button_just_relased(const button_t* button);

@@ -15,14 +15,14 @@ TEST_SETUP(button_tests) {
 }
 
 TEST(button_tests, button_initially_released) {
-	button_t button = button_init();
+	button_t button = { 0 };
 
 	EXPECT_FALSE(button_is_pressed(&button));
 	EXPECT_FALSE(button_just_pressed(&button));
 }
 
 TEST(button_tests, pressing_released_button_becomes_just_pressed) {
-	button_t button = button_init();
+	button_t button = { 0 };
 
 	debounced_button_update(&button, BUTTON_STATE_PRESSED);
 
@@ -33,7 +33,7 @@ TEST(button_tests, pressing_released_button_becomes_just_pressed) {
 }
 
 TEST(button_tests, pressing_pressed_button_remains_pressed) {
-	button_t button = button_init();
+	button_t button = { 0 };
 
 	debounced_button_update(&button, BUTTON_STATE_PRESSED);
 	debounced_button_update(&button, BUTTON_STATE_PRESSED);
@@ -45,7 +45,7 @@ TEST(button_tests, pressing_pressed_button_remains_pressed) {
 }
 
 TEST(button_tests, releasing_pressed_button_becomes_just_released) {
-	button_t button = button_init();
+	button_t button = { 0 };
 
 	debounced_button_update(&button, BUTTON_STATE_PRESSED);
 	debounced_button_update(&button, BUTTON_STATE_RELEASED);
@@ -57,7 +57,7 @@ TEST(button_tests, releasing_pressed_button_becomes_just_released) {
 }
 
 TEST(button_tests, releasing_released_button_remains_released) {
-	button_t button = button_init();
+	button_t button = { 0 };
 
 	debounced_button_update(&button, BUTTON_STATE_PRESSED);
 	debounced_button_update(&button, BUTTON_STATE_RELEASED);
@@ -70,7 +70,7 @@ TEST(button_tests, releasing_released_button_remains_released) {
 }
 
 TEST(button_tests, released_button_bouncing_while_pressed_remains_released) {
-	button_t button = button_init();
+	button_t button = { 0 };
 
 	button_update(&button, BUTTON_STATE_PRESSED, 0);
 	button_update(&button, BUTTON_STATE_RELEASED, 1);
@@ -81,7 +81,7 @@ TEST(button_tests, released_button_bouncing_while_pressed_remains_released) {
 }
 
 TEST(button_tests, pressed_button_bouncing_while_released_remains_pressed) {
-	button_t button = button_init();
+	button_t button = { 0 };
 
 	debounced_button_update(&button, BUTTON_STATE_PRESSED);
 	button_update(&button, BUTTON_STATE_RELEASED, g_time_now + 1);
