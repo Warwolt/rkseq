@@ -7,6 +7,7 @@
 
 typedef struct {
 	button_t start_button;
+	button_t step_buttons[16];
 	rotary_encoder_t encoder;
 	segment_display_t display;
 } ui_devices_t;

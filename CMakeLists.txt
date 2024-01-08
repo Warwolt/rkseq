@@ -72,13 +72,14 @@ endif(AVR)
 
 # ---------------------------- Program executable ---------------------------- #
 if(AVR)
-add_compile_options(-Os -Wall -Werror -Wextra)
+add_compile_options(-Os -Wall -Werror -Wextra -Wno-missing-braces -Wmissing-field-initializers)
 add_avr_executable("${PROJECT_NAME}"
   src/main.c
   src/logging.c
   src/data/button.c
   src/hardware/gpio.c
   src/hardware/hw_serial.c
+  src/hardware/input_shift_register.c
   src/hardware/rotary_encoder.c
   src/hardware/segment_display.c
   src/hardware/spi.c
