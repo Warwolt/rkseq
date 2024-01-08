@@ -106,8 +106,9 @@ int main(void) {
 
 		// enable shift register SPI and read states
 		gpio_pin_clear(step_buttons_clock_enable_pin);
-		spi_receive(); // skip first byte (chained registers)
-		const uint8_t step_buttons_state = spi_receive();
+		const uint8_t high_byte = spi_receive();
+		const uint8_t low_byte = spi_receive();
+		const uint16_t step_buttons_state = low_byte | high_byte << 8;
 		gpio_pin_set(step_buttons_clock_enable_pin);
 
 		const uint32_t now_ms = timer0_now_ms();
