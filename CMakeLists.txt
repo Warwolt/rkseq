@@ -79,6 +79,7 @@ add_avr_executable("${PROJECT_NAME}"
   src/data/button.c
   src/hardware/gpio.c
   src/hardware/hw_serial.c
+  src/hardware/input_shift_register.c
   src/hardware/rotary_encoder.c
   src/hardware/segment_display.c
   src/hardware/spi.c
