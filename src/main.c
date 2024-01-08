@@ -42,8 +42,15 @@ ISR(USART_UDRE_vect) {
 }
 
 /* ------------------------------ Main Program ------------------------------ */
-void globally_enable_interrupts(void) {
+static void globally_enable_interrupts(void) {
 	sei();
+}
+
+static void update_step_buttons(button_t* step_buttons, uint8_t step_buttons_size, input_shift_register_t* input_shift_reg) {
+	const uint16_t step_button_input = input_shift_register_read(input_shift_reg);
+	for (uint8_t i = 0; i < step_buttons_size; i++) {
+		button_update(&step_buttons[i], (step_button_input >> i) & 1, timer0_now_ms());
+	}
 }
 
 int main(void) {
@@ -78,19 +85,11 @@ int main(void) {
 	usec_timer_t pulse_timer = usec_timer_init(QUARTERNOTE_PULSE_LENGTH_US);
 
 	/* Run */
-	uint32_t last_print_time = 0;
 	LOG_INFO("Program Start\n");
 	while (true) {
 		/* Update devices */
-		const uint32_t now_ms = timer0_now_ms();
-		// update step buttons
-		{
-			const uint16_t step_button_input = input_shift_register_read(&input_shift_reg);
-			for (uint8_t i = 0; i < 16; i++) {
-				button_update(&ui_devices.step_buttons[i], (step_button_input >> i) & 1, now_ms);
-			}
-		}
-		button_update(&ui_devices.start_button, gpio_pin_read(start_button_pin), now_ms);
+		update_step_buttons(ui_devices.step_buttons, 16, &input_shift_reg);
+		button_update(&ui_devices.start_button, gpio_pin_read(start_button_pin), timer0_now_ms());
 		segment_display_update(&ui_devices.display); // cycle to next digit
 
 		/* Update sequencer playback */
@@ -104,11 +103,6 @@ int main(void) {
 		}
 		if (usec_timer_period_has_elapsed(&pulse_timer)) {
 			gpio_pin_clear(pulse_pin);
-		}
-
-		if (now_ms - last_print_time >= 100) {
-			last_print_time = now_ms;
-			LOG_INFO("button state = %x\n", button_is_pressed(&ui_devices.step_buttons[0]));
 		}
 	}
 }
