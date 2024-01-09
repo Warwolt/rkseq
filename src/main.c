@@ -97,7 +97,7 @@ int main(void) {
 		playback_control_update(&ui_devices, &beat_clock);
 
 		/* Output tempo pulse */
-		if (beat_clock_should_output_quarternote(&beat_clock)) {
+		if (beat_clock_quarternote_ready(&beat_clock)) {
 			gpio_pin_set(pulse_pin);
 			usec_timer_reset(&pulse_timer);
 		}
