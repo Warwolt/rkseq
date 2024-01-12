@@ -67,8 +67,7 @@ int main(void) {
 	const gpio_pin_t display_latch_pin = gpio_pin_init(&PORTD, 7);
 	const gpio_pin_t display_data_pin = gpio_pin_init(&PORTB, 0);
 	const gpio_pin_t step_buttons_latch_pin = gpio_pin_init(&PORTB, 1);
-	const gpio_pin_t step_buttons_enable_pin = gpio_pin_init(&PORTB, 2);
-	const gpio_pin_t step_leds_latch_pin = gpio_pin_init(&PORTC, 4);
+	const gpio_pin_t step_leds_latch_pin = gpio_pin_init(&PORTB, 2);
 	gpio_pin_configure(step_leds_latch_pin, PIN_MODE_OUTPUT);
 
 	globally_enable_interrupts();
@@ -82,7 +81,7 @@ int main(void) {
 		.encoder = rotary_encoder_init(encoder_a_pin, encoder_b_pin),
 		.display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin),
 	};
-	input_shift_register_t input_shift_reg = input_shift_register_init(step_buttons_latch_pin, step_buttons_enable_pin);
+	input_shift_register_t input_shift_reg = input_shift_register_init(step_buttons_latch_pin);
 	beat_clock_t beat_clock = beat_clock_init(DEFAULT_BPM);
 	usec_timer_t pulse_timer = usec_timer_init(QUARTERNOTE_PULSE_LENGTH_US);
 
