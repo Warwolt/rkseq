@@ -86,12 +86,14 @@ int main(void) {
 	beat_clock_t beat_clock = beat_clock_init(DEFAULT_BPM);
 	usec_timer_t pulse_timer = usec_timer_init(QUARTERNOTE_PULSE_LENGTH_US);
 
+	uint8_t led_state = 0;
+
 	/* Run */
 	LOG_INFO("Program Start\n");
 	while (true) {
 		// step LEDs
 		gpio_pin_clear(step_leds_latch_pin);
-		spi_send(0xFF);
+		spi_send(led_state);
 		gpio_pin_set(step_leds_latch_pin);
 
 		/* Update devices */
@@ -115,6 +117,7 @@ int main(void) {
 		// debugging
 		if (button_just_pressed(&ui_devices.step_buttons[0])) {
 			LOG_INFO("Press\n");
+			led_state = ~led_state;
 		}
 	}
 }
