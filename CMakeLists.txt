@@ -72,7 +72,11 @@ endif(AVR)
 
 # ---------------------------- Program executable ---------------------------- #
 if(AVR)
-add_compile_options(-Os -Wall -Werror -Wextra -Wno-missing-braces -Wmissing-field-initializers)
+if(STRICT_MODE)
+  add_compile_options(-Os -Wall -Werror -Wno-missing-braces -Wmissing-field-initializers)
+else()
+  add_compile_options(-Os -Wall -Wno-missing-braces -Wmissing-field-initializers)
+endif()
 add_avr_executable("${PROJECT_NAME}"
   src/main.c
   src/logging.c
