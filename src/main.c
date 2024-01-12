@@ -104,5 +104,10 @@ int main(void) {
 		if (usec_timer_period_has_elapsed(&pulse_timer)) {
 			gpio_pin_clear(pulse_pin);
 		}
+
+		// debugging
+		if (button_just_pressed(&ui_devices.step_buttons[0])) {
+			LOG_INFO("Press\n");
+		}
 	}
 }
