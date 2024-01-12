@@ -115,9 +115,6 @@ int main(void) {
 		}
 
 		// debugging
-		if (button_just_pressed(&ui_devices.step_buttons[0])) {
-			LOG_INFO("Press\n");
-			led_state = ~led_state;
-		}
+		led_state = button_is_pressed(&ui_devices.step_buttons[0]) ? 0xFF : 0x0;
 	}
 }
