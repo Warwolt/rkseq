@@ -84,8 +84,6 @@ int main(void) {
 	beat_clock_t beat_clock = beat_clock_init(DEFAULT_BPM);
 	usec_timer_t pulse_timer = usec_timer_init(QUARTERNOTE_PULSE_LENGTH_US);
 
-	int cool;
-
 	/* Run */
 	LOG_INFO("Program Start\n");
 	while (true) {
