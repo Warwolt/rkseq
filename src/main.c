@@ -4,6 +4,7 @@
 #include "hardware/hw_serial.h"
 #include "hardware/rotary_encoder.h"
 #include "hardware/segment_display.h"
+#include "hardware/shift_register.h"
 #include "hardware/spi.h"
 #include "hardware/sw_serial.h"
 #include "hardware/timer0.h"
@@ -45,34 +46,9 @@ static void globally_enable_interrupts(void) {
 	sei();
 }
 
-// read bits from 74HC165
-static void read_shift_register_input(gpio_pin_t latch_pin, bool* out_buf, uint8_t out_buf_len) {
-	// Update shift register content
-	gpio_pin_clear(latch_pin);
-	gpio_pin_set(latch_pin);
-
-	// Read content
-	uint8_t byte = 0;
-	for (uint8_t i = 0; i < out_buf_len; i++) {
-		if (i % 8 == 0) {
-			byte = spi_receive();
-		}
-		out_buf[i] = (byte >> i % 8) & 1;
-	}
-}
-
-// write bytes to 74HC595
-static void write_shift_register_output(gpio_pin_t latch_pin, uint8_t* bytes, uint8_t num_bytes) {
-	for (uint8_t i = 0; i < num_bytes; i++) {
-		spi_send(bytes[i]);
-	}
-	gpio_pin_clear(latch_pin);
-	gpio_pin_set(latch_pin);
-}
-
-static void update_button_states(button_t* buttons, uint8_t num_buttons, gpio_pin_t latch_pin) {
+static void update_button_states(button_t* buttons, uint8_t num_buttons, const shift_register_t* shift_reg) {
 	bool button_states[256];
-	read_shift_register_input(latch_pin, button_states, num_buttons);
+	shift_register_read(shift_reg, button_states, num_buttons);
 	for (uint8_t i = 0; i < num_buttons; i++) {
 		button_update(&buttons[i], button_states[i], timer0_now_ms());
 	}
@@ -92,15 +68,15 @@ int main(void) {
 	const gpio_pin_t display_latch_pin = gpio_pin_init(&PORTD, 7);
 	const gpio_pin_t display_data_pin = gpio_pin_init(&PORTB, 0);
 	const gpio_pin_t step_buttons_latch_pin = gpio_pin_init(&PORTB, 1);
-	gpio_pin_configure(step_buttons_latch_pin, PIN_MODE_OUTPUT);
 	const gpio_pin_t step_leds_latch_pin = gpio_pin_init(&PORTB, 2);
-	gpio_pin_configure(step_leds_latch_pin, PIN_MODE_OUTPUT);
 
 	globally_enable_interrupts();
 	timer0_initialize();
 	hw_serial_initialize(9600); // uses PD0 and PD1
 	sw_serial_initialize(31250, midi_rx_pin, midi_tx_pin);
-	spi_initialize(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
+	spi_t spi = spi_initialize(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
+	shift_register_t step_buttons_shift_reg = shift_register_init(spi, step_buttons_latch_pin);
+	shift_register_t step_leds_shift_reg = shift_register_init(spi, step_leds_latch_pin);
 	ui_devices_t ui_devices = {
 		.start_button = { 0 },
 		.step_buttons = { 0 },
@@ -116,7 +92,7 @@ int main(void) {
 	LOG_INFO("Program Start\n");
 	while (true) {
 		/* Read input */
-		update_button_states(ui_devices.step_buttons, 8, step_buttons_latch_pin);
+		update_button_states(ui_devices.step_buttons, 8, &step_buttons_shift_reg);
 		button_update(&ui_devices.start_button, gpio_pin_read(start_button_pin), timer0_now_ms());
 		segment_display_update(&ui_devices.display); // cycle to next digit
 
@@ -135,6 +111,6 @@ int main(void) {
 
 		/* Update output */
 		led_state = button_is_pressed(&ui_devices.step_buttons[0]) ? 0xFF : 0x0;
-		write_shift_register_output(step_leds_latch_pin, &led_state, 1);
+		shift_register_write(&step_leds_shift_reg, &led_state, 1);
 	}
 }
