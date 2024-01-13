@@ -70,6 +70,14 @@ static void write_shift_register_output(gpio_pin_t latch_pin, uint8_t* bytes, ui
 	gpio_pin_set(latch_pin);
 }
 
+static void update_button_states(button_t* buttons, uint8_t num_buttons, gpio_pin_t latch_pin) {
+	bool button_states[256];
+	read_shift_register_input(latch_pin, button_states, num_buttons);
+	for (uint8_t i = 0; i < num_buttons; i++) {
+		button_update(&buttons[i], button_states[i], timer0_now_ms());
+	}
+}
+
 int main(void) {
 	/* Setup */
 	const gpio_pin_t start_button_pin = gpio_pin_init(&PORTC, 3);
@@ -108,14 +116,7 @@ int main(void) {
 	LOG_INFO("Program Start\n");
 	while (true) {
 		/* Read input */
-		{
-			// Read step button states
-			bool button_states[8];
-			read_shift_register_input(step_buttons_latch_pin, button_states, 8);
-			for (uint8_t i = 0; i < 8; i++) {
-				button_update(&ui_devices.step_buttons[i], button_states[i], timer0_now_ms());
-			}
-		}
+		update_button_states(&ui_devices.step_buttons, 8, step_buttons_latch_pin);
 		button_update(&ui_devices.start_button, gpio_pin_read(start_button_pin), timer0_now_ms());
 		segment_display_update(&ui_devices.display); // cycle to next digit
 
