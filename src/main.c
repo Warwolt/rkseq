@@ -46,7 +46,7 @@ static void globally_enable_interrupts(void) {
 }
 
 // read bits from 74HC165
-static void read_shift_register_input(gpio_pin_t latch_pin, bool* out_buf, uint8_t out_buf_len) {
+static void read_shift_register_input(spi_t spi, gpio_pin_t latch_pin, bool* out_buf, uint8_t out_buf_len) {
 	// Update shift register content
 	gpio_pin_clear(latch_pin);
 	gpio_pin_set(latch_pin);
@@ -55,24 +55,24 @@ static void read_shift_register_input(gpio_pin_t latch_pin, bool* out_buf, uint8
 	uint8_t byte = 0;
 	for (uint8_t i = 0; i < out_buf_len; i++) {
 		if (i % 8 == 0) {
-			byte = spi_receive();
+			byte = spi_receive(spi);
 		}
 		out_buf[i] = (byte >> i % 8) & 1;
 	}
 }
 
 // write bytes to 74HC595
-static void write_shift_register_output(gpio_pin_t latch_pin, uint8_t* bytes, uint8_t num_bytes) {
+static void write_shift_register_output(spi_t spi, gpio_pin_t latch_pin, uint8_t* bytes, uint8_t num_bytes) {
 	for (uint8_t i = 0; i < num_bytes; i++) {
-		spi_send(bytes[i]);
+		spi_send(spi, bytes[i]);
 	}
 	gpio_pin_clear(latch_pin);
 	gpio_pin_set(latch_pin);
 }
 
-static void update_button_states(button_t* buttons, uint8_t num_buttons, gpio_pin_t latch_pin) {
+static void update_button_states(spi_t spi, button_t* buttons, uint8_t num_buttons, gpio_pin_t latch_pin) {
 	bool button_states[256];
-	read_shift_register_input(latch_pin, button_states, num_buttons);
+	read_shift_register_input(spi, latch_pin, button_states, num_buttons);
 	for (uint8_t i = 0; i < num_buttons; i++) {
 		button_update(&buttons[i], button_states[i], timer0_now_ms());
 	}
@@ -100,7 +100,7 @@ int main(void) {
 	timer0_initialize();
 	hw_serial_initialize(9600); // uses PD0 and PD1
 	sw_serial_initialize(31250, midi_rx_pin, midi_tx_pin);
-	spi_initialize(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
+	spi_t spi = spi_initialize(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
 	ui_devices_t ui_devices = {
 		.start_button = { 0 },
 		.step_buttons = { 0 },
@@ -116,7 +116,7 @@ int main(void) {
 	LOG_INFO("Program Start\n");
 	while (true) {
 		/* Read input */
-		update_button_states(ui_devices.step_buttons, 8, step_buttons_latch_pin);
+		update_button_states(spi, ui_devices.step_buttons, 8, step_buttons_latch_pin);
 		button_update(&ui_devices.start_button, gpio_pin_read(start_button_pin), timer0_now_ms());
 		segment_display_update(&ui_devices.display); // cycle to next digit
 
@@ -135,6 +135,6 @@ int main(void) {
 
 		/* Update output */
 		led_state = button_is_pressed(&ui_devices.step_buttons[0]) ? 0xFF : 0x0;
-		write_shift_register_output(step_leds_latch_pin, &led_state, 1);
+		write_shift_register_output(spi, step_leds_latch_pin, &led_state, 1);
 	}
 }
