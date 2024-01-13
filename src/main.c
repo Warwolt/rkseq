@@ -46,7 +46,7 @@ static void globally_enable_interrupts(void) {
 }
 
 // read bits from 74HC165
-static void read_shift_register_input(spi_t spi, gpio_pin_t latch_pin, bool* out_buf, uint8_t out_buf_len) {
+static void read_shift_register_input(gpio_pin_t latch_pin, spi_t spi, bool* out_buf, uint8_t out_buf_len) {
 	// Update shift register content
 	gpio_pin_clear(latch_pin);
 	gpio_pin_set(latch_pin);
@@ -70,9 +70,9 @@ static void write_shift_register_output(spi_t spi, gpio_pin_t latch_pin, uint8_t
 	gpio_pin_set(latch_pin);
 }
 
-static void update_button_states(spi_t spi, button_t* buttons, uint8_t num_buttons, gpio_pin_t latch_pin) {
+static void update_button_states(button_t* buttons, uint8_t num_buttons, gpio_pin_t latch_pin, spi_t spi) {
 	bool button_states[256];
-	read_shift_register_input(spi, latch_pin, button_states, num_buttons);
+	read_shift_register_input(latch_pin, spi, button_states, num_buttons);
 	for (uint8_t i = 0; i < num_buttons; i++) {
 		button_update(&buttons[i], button_states[i], timer0_now_ms());
 	}
@@ -116,7 +116,7 @@ int main(void) {
 	LOG_INFO("Program Start\n");
 	while (true) {
 		/* Read input */
-		update_button_states(spi, ui_devices.step_buttons, 8, step_buttons_latch_pin);
+		update_button_states(ui_devices.step_buttons, 8, step_buttons_latch_pin, spi);
 		button_update(&ui_devices.start_button, gpio_pin_read(start_button_pin), timer0_now_ms());
 		segment_display_update(&ui_devices.display); // cycle to next digit
 
