@@ -45,6 +45,31 @@ static void globally_enable_interrupts(void) {
 	sei();
 }
 
+// read bits from 74HC165
+static void read_shift_register_input(gpio_pin_t latch_pin, bool* out_buf, uint8_t out_buf_len) {
+	// Update shift register content
+	gpio_pin_clear(latch_pin);
+	gpio_pin_set(latch_pin);
+
+	// Read content
+	uint8_t byte = 0;
+	for (uint8_t i = 0; i < out_buf_len; i++) {
+		if (i % 8 == 0) {
+			byte = spi_receive();
+		}
+		out_buf[i] = (byte >> i % 8) & 1;
+	}
+}
+
+// write bytes to 74HC595
+static void write_shift_register_output(gpio_pin_t latch_pin, uint8_t* bytes, uint8_t num_bytes) {
+	for (uint8_t i = 0; i < num_bytes; i++) {
+		spi_send(bytes[i]);
+	}
+	gpio_pin_clear(latch_pin);
+	gpio_pin_set(latch_pin);
+}
+
 int main(void) {
 	/* Setup */
 	const gpio_pin_t start_button_pin = gpio_pin_init(&PORTC, 3);
@@ -82,15 +107,15 @@ int main(void) {
 	/* Run */
 	LOG_INFO("Program Start\n");
 	while (true) {
-		// Read step buttons
-		gpio_pin_clear(step_buttons_latch_pin);
-		gpio_pin_set(step_buttons_latch_pin);
-		const uint8_t button_input = spi_receive();
-		for (uint8_t i = 0; i < 8; i++) {
-			button_update(&ui_devices.step_buttons[i], (button_input >> i) & 1, timer0_now_ms());
+		/* Read input */
+		{
+			// Read step button states
+			bool button_states[8];
+			read_shift_register_input(step_buttons_latch_pin, button_states, 8);
+			for (uint8_t i = 0; i < 8; i++) {
+				button_update(&ui_devices.step_buttons[i], button_states[i], timer0_now_ms());
+			}
 		}
-
-		/* Update devices */
 		button_update(&ui_devices.start_button, gpio_pin_read(start_button_pin), timer0_now_ms());
 		segment_display_update(&ui_devices.display); // cycle to next digit
 
@@ -107,12 +132,8 @@ int main(void) {
 			gpio_pin_clear(pulse_pin);
 		}
 
-		// debugging
+		/* Update output */
 		led_state = button_is_pressed(&ui_devices.step_buttons[0]) ? 0xFF : 0x0;
-
-		// Output step LED states
-		spi_send(led_state);
-		gpio_pin_clear(step_leds_latch_pin);
-		gpio_pin_set(step_leds_latch_pin);
+		write_shift_register_output(step_leds_latch_pin, &led_state, 1);
 	}
 }
