@@ -24,6 +24,15 @@
 #define DEFAULT_BPM 120
 #define QUARTERNOTE_PULSE_LENGTH_US 500
 
+// Write bytes to 74HC595
+void shift_register_write(const shift_register_t* shift_reg, uint8_t* bytes, uint8_t num_bytes) {
+	for (uint8_t i = 0; i < num_bytes; i++) {
+		spi_send(shift_reg->spi, bytes[i]);
+	}
+	gpio_pin_clear(shift_reg->latch_pin);
+	gpio_pin_set(shift_reg->latch_pin);
+}
+
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
 	timer0_timer_overflow_irq();
@@ -44,15 +53,6 @@ ISR(USART_UDRE_vect) {
 /* ------------------------------ Main Program ------------------------------ */
 static void globally_enable_interrupts(void) {
 	sei();
-}
-
-// write bytes to 74HC595
-static void write_shift_register_output(spi_t spi, gpio_pin_t latch_pin, uint8_t* bytes, uint8_t num_bytes) {
-	for (uint8_t i = 0; i < num_bytes; i++) {
-		spi_send(spi, bytes[i]);
-	}
-	gpio_pin_clear(latch_pin);
-	gpio_pin_set(latch_pin);
 }
 
 static void update_button_states(button_t* buttons, uint8_t num_buttons, const shift_register_t* shift_reg) {
@@ -77,9 +77,7 @@ int main(void) {
 	const gpio_pin_t display_latch_pin = gpio_pin_init(&PORTD, 7);
 	const gpio_pin_t display_data_pin = gpio_pin_init(&PORTB, 0);
 	const gpio_pin_t step_buttons_latch_pin = gpio_pin_init(&PORTB, 1);
-	gpio_pin_configure(step_buttons_latch_pin, PIN_MODE_OUTPUT);
 	const gpio_pin_t step_leds_latch_pin = gpio_pin_init(&PORTB, 2);
-	gpio_pin_configure(step_leds_latch_pin, PIN_MODE_OUTPUT);
 
 	globally_enable_interrupts();
 	timer0_initialize();
@@ -87,6 +85,7 @@ int main(void) {
 	sw_serial_initialize(31250, midi_rx_pin, midi_tx_pin);
 	spi_t spi = spi_initialize(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
 	shift_register_t step_buttons_shift_reg = shift_register_init(spi, step_buttons_latch_pin);
+	shift_register_t step_leds_shift_reg = shift_register_init(spi, step_leds_latch_pin);
 	ui_devices_t ui_devices = {
 		.start_button = { 0 },
 		.step_buttons = { 0 },
@@ -121,6 +120,6 @@ int main(void) {
 
 		/* Update output */
 		led_state = button_is_pressed(&ui_devices.step_buttons[0]) ? 0xFF : 0x0;
-		write_shift_register_output(spi, step_leds_latch_pin, &led_state, 1);
+		shift_register_write(&step_leds_shift_reg, &led_state, 1);
 	}
 }
