@@ -24,15 +24,6 @@
 #define DEFAULT_BPM 120
 #define QUARTERNOTE_PULSE_LENGTH_US 500
 
-// Write bytes to 74HC595
-void shift_register_write(const shift_register_t* shift_reg, uint8_t* bytes, uint8_t num_bytes) {
-	for (uint8_t i = 0; i < num_bytes; i++) {
-		spi_send(shift_reg->spi, bytes[i]);
-	}
-	gpio_pin_clear(shift_reg->latch_pin);
-	gpio_pin_set(shift_reg->latch_pin);
-}
-
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
 	timer0_timer_overflow_irq();

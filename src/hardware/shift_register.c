@@ -23,3 +23,12 @@ void shift_register_read(const shift_register_t* shift_reg, bool* out_buf, uint8
 		out_buf[i] = (byte >> i % 8) & 1;
 	}
 }
+
+// Write bytes to 74HC595
+void shift_register_write(const shift_register_t* shift_reg, uint8_t* bytes, uint8_t num_bytes) {
+	for (uint8_t i = 0; i < num_bytes; i++) {
+		spi_send(shift_reg->spi, bytes[i]);
+	}
+	gpio_pin_clear(shift_reg->latch_pin);
+	gpio_pin_set(shift_reg->latch_pin);
+}
