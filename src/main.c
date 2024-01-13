@@ -2,7 +2,6 @@
 #include "data/ring_buffer.h"
 #include "hardware/gpio.h"
 #include "hardware/hw_serial.h"
-#include "hardware/input_shift_register.h"
 #include "hardware/rotary_encoder.h"
 #include "hardware/segment_display.h"
 #include "hardware/spi.h"
@@ -46,13 +45,6 @@ static void globally_enable_interrupts(void) {
 	sei();
 }
 
-static void update_step_buttons(button_t* step_buttons, uint8_t step_buttons_size, input_shift_register_t* input_shift_reg) {
-	const uint16_t step_button_input = input_shift_register_read(input_shift_reg);
-	for (uint8_t i = 0; i < step_buttons_size; i++) {
-		button_update(&step_buttons[i], (step_button_input >> i) & 1, timer0_now_ms());
-	}
-}
-
 int main(void) {
 	/* Setup */
 	const gpio_pin_t start_button_pin = gpio_pin_init(&PORTC, 3);
@@ -67,6 +59,7 @@ int main(void) {
 	const gpio_pin_t display_latch_pin = gpio_pin_init(&PORTD, 7);
 	const gpio_pin_t display_data_pin = gpio_pin_init(&PORTB, 0);
 	const gpio_pin_t step_buttons_latch_pin = gpio_pin_init(&PORTB, 1);
+	gpio_pin_configure(step_buttons_latch_pin, PIN_MODE_OUTPUT);
 	const gpio_pin_t step_leds_latch_pin = gpio_pin_init(&PORTB, 2);
 	gpio_pin_configure(step_leds_latch_pin, PIN_MODE_OUTPUT);
 
@@ -81,7 +74,6 @@ int main(void) {
 		.encoder = rotary_encoder_init(encoder_a_pin, encoder_b_pin),
 		.display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin),
 	};
-	input_shift_register_t input_shift_reg = input_shift_register_init(step_buttons_latch_pin);
 	beat_clock_t beat_clock = beat_clock_init(DEFAULT_BPM);
 	usec_timer_t pulse_timer = usec_timer_init(QUARTERNOTE_PULSE_LENGTH_US);
 
@@ -90,13 +82,15 @@ int main(void) {
 	/* Run */
 	LOG_INFO("Program Start\n");
 	while (true) {
-		// step LEDs
-		gpio_pin_clear(step_leds_latch_pin);
-		spi_send(led_state);
-		gpio_pin_set(step_leds_latch_pin);
+		// Read step buttons
+		gpio_pin_clear(step_buttons_latch_pin);
+		gpio_pin_set(step_buttons_latch_pin);
+		const uint8_t button_input = spi_receive();
+		for (uint8_t i = 0; i < 8; i++) {
+			button_update(&ui_devices.step_buttons[i], (button_input >> i) & 1, timer0_now_ms());
+		}
 
 		/* Update devices */
-		update_step_buttons(ui_devices.step_buttons, 16, &input_shift_reg);
 		button_update(&ui_devices.start_button, gpio_pin_read(start_button_pin), timer0_now_ms());
 		segment_display_update(&ui_devices.display); // cycle to next digit
 
@@ -115,5 +109,10 @@ int main(void) {
 
 		// debugging
 		led_state = button_is_pressed(&ui_devices.step_buttons[0]) ? 0xFF : 0x0;
+
+		// Output step LED states
+		spi_send(led_state);
+		gpio_pin_clear(step_leds_latch_pin);
+		gpio_pin_set(step_leds_latch_pin);
 	}
 }
