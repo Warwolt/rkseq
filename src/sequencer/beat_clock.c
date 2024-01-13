@@ -35,6 +35,6 @@ void beat_clock_update(beat_clock_t* beat_clock) {
 	}
 }
 
-bool beat_clock_should_output_quarternote(const beat_clock_t* beat_clock) {
+bool beat_clock_quarternote_ready(const beat_clock_t* beat_clock) {
 	return beat_clock->quarternote_elapsed;
 }

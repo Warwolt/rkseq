@@ -19,6 +19,6 @@ void beat_clock_set_tempo(beat_clock_t* beat_clock, uint8_t tempo_bpm);
 void beat_clock_start(beat_clock_t* beat_clock);
 void beat_clock_stop(beat_clock_t* beat_clock);
 void beat_clock_update(beat_clock_t* beat_clock);
-bool beat_clock_should_output_quarternote(const beat_clock_t* beat_clock);
+bool beat_clock_quarternote_ready(const beat_clock_t* beat_clock);
 
 #endif /* BEAT_CLOCK_H */
