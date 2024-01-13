@@ -47,10 +47,10 @@ static void globally_enable_interrupts(void) {
 }
 
 static void update_button_states(button_t* buttons, uint8_t num_buttons, const shift_register_t* shift_reg) {
-	bool button_states[256];
-	shift_register_read(shift_reg, button_states, num_buttons);
+	bool button_input[256];
+	shift_register_read(shift_reg, button_input, num_buttons);
 	for (uint8_t i = 0; i < num_buttons; i++) {
-		button_update(&buttons[i], button_states[i], timer0_now_ms());
+		button_update(&buttons[i], button_input[i], timer0_now_ms());
 	}
 }
 
@@ -64,9 +64,9 @@ int main(void) {
 	const gpio_pin_t midi_tx_pin = gpio_pin_init(&PORTD, 3);
 	const gpio_pin_t encoder_a_pin = gpio_pin_init(&PORTD, 4);
 	const gpio_pin_t encoder_b_pin = gpio_pin_init(&PORTD, 5);
-	const gpio_pin_t display_clock_pin = gpio_pin_init(&PORTD, 6);
+	const gpio_pin_t display_data_pin = gpio_pin_init(&PORTD, 6);
 	const gpio_pin_t display_latch_pin = gpio_pin_init(&PORTD, 7);
-	const gpio_pin_t display_data_pin = gpio_pin_init(&PORTB, 0);
+	const gpio_pin_t display_clock_pin = gpio_pin_init(&PORTB, 0);
 	const gpio_pin_t step_buttons_latch_pin = gpio_pin_init(&PORTB, 1);
 	const gpio_pin_t step_leds_latch_pin = gpio_pin_init(&PORTB, 2);
 
