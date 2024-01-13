@@ -85,6 +85,7 @@ add_avr_executable("${PROJECT_NAME}"
   src/hardware/hw_serial.c
   src/hardware/rotary_encoder.c
   src/hardware/segment_display.c
+  src/hardware/shift_register.c
   src/hardware/spi.c
   src/hardware/sw_serial.c
   src/hardware/timer0.c
