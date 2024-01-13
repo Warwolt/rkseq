@@ -1,8 +1,8 @@
 #ifndef SHIFT_REGISTER_H
 #define SHIFT_REGISTER_H
 
-#include "hardware/spi.h"
 #include "hardware/gpio.h"
+#include "hardware/spi.h"
 
 #include <stdbool.h>
 #include <stdint.h>
