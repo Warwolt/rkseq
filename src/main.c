@@ -116,7 +116,7 @@ int main(void) {
 	LOG_INFO("Program Start\n");
 	while (true) {
 		/* Read input */
-		update_button_states(&ui_devices.step_buttons, 8, step_buttons_latch_pin);
+		update_button_states(ui_devices.step_buttons, 8, step_buttons_latch_pin);
 		button_update(&ui_devices.start_button, gpio_pin_read(start_button_pin), timer0_now_ms());
 		segment_display_update(&ui_devices.display); // cycle to next digit
 
