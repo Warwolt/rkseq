@@ -25,6 +25,9 @@
 #define QUARTERNOTE_PULSE_LENGTH_US 500
 
 #define MIDI_CLOCK_BYTE 0xF8
+#define MIDI_START_BYTE 0xFA
+#define MIDI_CONTINUE_BYTE 0xFB
+#define MIDI_STOP_BYTE 0xFC
 
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
@@ -91,6 +94,7 @@ int main(void) {
 	uint8_t led_state = 0;
 
 	/* Run */
+	bool playback_started = false;
 	uint8_t midi_clock_pulses = 0;
 	LOG_INFO("Program Start\n");
 	while (true) {
@@ -124,10 +128,19 @@ int main(void) {
 			if (byte == MIDI_CLOCK_BYTE) {
 				midi_clock_pulses++;
 			}
+			if (byte == MIDI_START_BYTE) {
+				playback_started = true;
+				midi_clock_pulses = 24;
+			}
+			if (byte == MIDI_STOP_BYTE) {
+				playback_started = false;
+			}
 		}
 
 		if (midi_clock_pulses == 24) {
-			LOG_INFO("Tick\n");
+			if (playback_started) {
+				LOG_INFO("Tick\n");
+			}
 			midi_clock_pulses = 0;
 		}
 	}
