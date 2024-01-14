@@ -24,6 +24,8 @@
 #define DEFAULT_BPM 120
 #define QUARTERNOTE_PULSE_LENGTH_US 500
 
+#define MIDI_CLOCK_BYTE 0xF8
+
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
 	timer0_timer_overflow_irq();
@@ -89,7 +91,7 @@ int main(void) {
 	uint8_t led_state = 0;
 
 	/* Run */
-	bool printed_once = false;
+	uint8_t midi_clock_pulses = 0;
 	LOG_INFO("Program Start\n");
 	while (true) {
 		/* Read input */
@@ -114,11 +116,19 @@ int main(void) {
 		led_state = button_is_pressed(&ui_devices.step_buttons[0]) ? 0xFF : 0x0;
 		shift_register_write(&step_leds_shift_reg, &led_state, 1);
 
-		if (!printed_once && sw_serial_available_bytes() > 0) {
+		// TODO: proper MIDI handling etc. etc.
+		// PoC: count 24 clock pulses and then output a LOG message
+		if (sw_serial_available_bytes() > 0) {
 			uint8_t byte = 0;
 			sw_serial_read(&byte);
-			LOG_INFO("Got 0x%x!", byte);
-			printed_once = true;
+			if (byte == MIDI_CLOCK_BYTE) {
+				midi_clock_pulses++;
+			}
+		}
+
+		if (midi_clock_pulses == 24) {
+			LOG_INFO("Tick\n");
+			midi_clock_pulses = 0;
 		}
 	}
 }
