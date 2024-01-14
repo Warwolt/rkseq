@@ -125,20 +125,25 @@ int main(void) {
 		if (sw_serial_available_bytes() > 0) {
 			uint8_t byte = 0;
 			sw_serial_read(&byte);
-			if (byte == MIDI_CLOCK_BYTE) {
-				if (playback_started) {
-					midi_clock_pulses++;
-				}
-			}
-			if (byte == MIDI_START_BYTE) {
-				playback_started = true;
-				midi_clock_pulses = 23; // trigger note on next clock pulse
-			}
-			if (byte == MIDI_CONTINUE_BYTE) {
-				playback_started = true;
-			}
-			if (byte == MIDI_STOP_BYTE) {
-				playback_started = false;
+			switch (byte) {
+				case MIDI_CLOCK_BYTE:
+					if (playback_started) {
+						midi_clock_pulses++;
+					}
+					break;
+
+				case MIDI_START_BYTE:
+					playback_started = true;
+					midi_clock_pulses = 23; // trigger note on next clock pulse
+					break;
+
+				case MIDI_CONTINUE_BYTE:
+					playback_started = true;
+					break;
+
+				case MIDI_STOP_BYTE:
+					playback_started = false;
+					break;
 			}
 		}
 
