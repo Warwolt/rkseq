@@ -49,6 +49,9 @@ if __name__ == "__main__":
     while True:
         serial_input = ser.readline().decode('utf-8').strip('\n')
         if serial_input:
-            [level, file, text] = serial_input.split(" ", 2)
-            print("[%s %s %s] %s" %
-                  (timestamp_str(), log_level_str[level], file, text))
+            try:
+                [level, file, text] = serial_input.split(" ", 2)
+                print("[%s %s %s] %s" %
+                    (timestamp_str(), log_level_str[level], file, text))
+            except:
+                print("%s" % serial_input)

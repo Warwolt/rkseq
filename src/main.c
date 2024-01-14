@@ -24,6 +24,11 @@
 #define DEFAULT_BPM 120
 #define QUARTERNOTE_PULSE_LENGTH_US 500
 
+#define MIDI_CLOCK_BYTE 0xF8
+#define MIDI_START_BYTE 0xFA
+#define MIDI_CONTINUE_BYTE 0xFB
+#define MIDI_STOP_BYTE 0xFC
+
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
 	timer0_timer_overflow_irq();
@@ -52,6 +57,14 @@ static void update_button_states(button_t* buttons, uint8_t num_buttons, const s
 	for (uint8_t i = 0; i < num_buttons; i++) {
 		button_update(&buttons[i], button_input[i], timer0_now_ms());
 	}
+}
+
+static uint8_t read_midi_byte(void) {
+	uint8_t midi_byte = 0;
+	if (sw_serial_available_bytes() > 0) {
+		sw_serial_read(&midi_byte);
+	}
+	return midi_byte;
 }
 
 int main(void) {
@@ -89,18 +102,44 @@ int main(void) {
 	uint8_t led_state = 0;
 
 	/* Run */
+	bool playback_started = false;
+	uint8_t midi_clock_pulses = 0;
 	LOG_INFO("Program Start\n");
 	while (true) {
-		/* Read input */
+		/* Input */
 		update_button_states(ui_devices.step_buttons, 8, &step_buttons_shift_reg);
 		button_update(&ui_devices.start_button, gpio_pin_read(start_button_pin), timer0_now_ms());
 		segment_display_update(&ui_devices.display); // cycle to next digit
+		const uint8_t midi_byte = read_midi_byte();
 
-		/* Update sequencer playback */
+		/* Update */
 		beat_clock_update(&beat_clock);
 		playback_control_update(&ui_devices, &beat_clock);
+		led_state = button_is_pressed(&ui_devices.step_buttons[0]) ? 0xFF : 0x0;
 
-		/* Output tempo pulse */
+		// Proof of concept MIDI handling
+		switch (midi_byte) {
+			case MIDI_CLOCK_BYTE:
+				if (playback_started) {
+					midi_clock_pulses++;
+				}
+				break;
+
+			case MIDI_START_BYTE:
+				playback_started = true;
+				midi_clock_pulses = 23; // trigger note on next clock pulse
+				break;
+
+			case MIDI_CONTINUE_BYTE:
+				playback_started = true;
+				break;
+
+			case MIDI_STOP_BYTE:
+				playback_started = false;
+				break;
+		}
+
+		/* Output */
 		if (beat_clock_quarternote_ready(&beat_clock)) {
 			gpio_pin_set(pulse_pin);
 			usec_timer_reset(&pulse_timer);
@@ -109,8 +148,13 @@ int main(void) {
 			gpio_pin_clear(pulse_pin);
 		}
 
-		/* Update output */
-		led_state = button_is_pressed(&ui_devices.step_buttons[0]) ? 0xFF : 0x0;
+		// step leds
 		shift_register_write(&step_leds_shift_reg, &led_state, 1);
+
+		// Proof of concept MIDI Clock hanling
+		if (midi_clock_pulses == 24) {
+			LOG_INFO("Tick\n");
+			midi_clock_pulses = 0;
+		}
 	}
 }

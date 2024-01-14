@@ -30,11 +30,6 @@ void sw_serial_pin_change_irq(void) {
 
 			const uint8_t bit = gpio_pin_read(g_rx_pin);
 			byte |= bit << i;
-			// debug toggle
-			{
-				toggle_bit(PORTB, 5);
-				toggle_bit(PORTB, 5);
-			}
 		}
 
 		ring_buffer_write(&g_rx_buffer, byte);
@@ -58,7 +53,9 @@ void sw_serial_initialize(uint16_t baud, gpio_pin_t rx_pin, gpio_pin_t tx_pin) {
 	gpio_pin_configure(g_rx_pin, PIN_MODE_INPUT);
 	gpio_pin_configure(g_tx_pin, PIN_MODE_OUTPUT);
 	set_bit(PCICR, PCIE2); // enable pin change interrupts
-	set_bit(PCMSK2, PCINT16); // configure PD0-pin (Rx) to trigger interrupts
+
+	// FIXME: this should either be deduced from rx_pin arg or be configured elsewhere!!!
+	set_bit(PCMSK2, PCINT18); // configure PD2-pin (Rx) to trigger interrupts
 }
 
 uint16_t sw_serial_available_bytes(void) {
