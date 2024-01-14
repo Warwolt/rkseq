@@ -126,11 +126,16 @@ int main(void) {
 			uint8_t byte = 0;
 			sw_serial_read(&byte);
 			if (byte == MIDI_CLOCK_BYTE) {
-				midi_clock_pulses++;
+				if (playback_started) {
+					midi_clock_pulses++;
+				}
 			}
 			if (byte == MIDI_START_BYTE) {
 				playback_started = true;
-				midi_clock_pulses = 24;
+				midi_clock_pulses = 23; // trigger note on next clock pulse
+			}
+			if (byte == MIDI_CONTINUE_BYTE) {
+				playback_started = true;
 			}
 			if (byte == MIDI_STOP_BYTE) {
 				playback_started = false;
@@ -138,9 +143,7 @@ int main(void) {
 		}
 
 		if (midi_clock_pulses == 24) {
-			if (playback_started) {
-				LOG_INFO("Tick\n");
-			}
+			LOG_INFO("Tick\n");
 			midi_clock_pulses = 0;
 		}
 	}
