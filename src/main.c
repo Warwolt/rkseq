@@ -117,6 +117,7 @@ int main(void) {
 		playback_control_update(&ui_devices, &beat_clock);
 		led_state = button_is_pressed(&ui_devices.step_buttons[0]) ? 0xFF : 0x0;
 
+		// Proof of concept MIDI handling
 		switch (midi_byte) {
 			case MIDI_CLOCK_BYTE:
 				if (playback_started) {
@@ -137,6 +138,7 @@ int main(void) {
 				playback_started = false;
 				break;
 		}
+
 		/* Output */
 		if (beat_clock_quarternote_ready(&beat_clock)) {
 			gpio_pin_set(pulse_pin);
@@ -149,7 +151,7 @@ int main(void) {
 		// step leds
 		shift_register_write(&step_leds_shift_reg, &led_state, 1);
 
-		// PoC for midi handling
+		// Proof of concept MIDI Clock hanling
 		if (midi_clock_pulses == 24) {
 			LOG_INFO("Tick\n");
 			midi_clock_pulses = 0;
