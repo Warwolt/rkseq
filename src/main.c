@@ -89,6 +89,7 @@ int main(void) {
 	uint8_t led_state = 0;
 
 	/* Run */
+	bool printed_once = false;
 	LOG_INFO("Program Start\n");
 	while (true) {
 		/* Read input */
@@ -112,5 +113,12 @@ int main(void) {
 		/* Update output */
 		led_state = button_is_pressed(&ui_devices.step_buttons[0]) ? 0xFF : 0x0;
 		shift_register_write(&step_leds_shift_reg, &led_state, 1);
+
+		if (!printed_once && sw_serial_available_bytes() > 0) {
+			uint8_t byte = 0;
+			sw_serial_read(&byte);
+			LOG_INFO("Got 0x%x!", byte);
+			printed_once = true;
+		}
 	}
 }
