@@ -102,6 +102,9 @@ int main(void) {
 	uint8_t led_state = 0;
 
 	/* Run */
+	const uint64_t ppqn_period = (60 * 1e6) / (DEFAULT_BPM * 24);
+	usec_timer_t midi_ppqn_timer = usec_timer_init(ppqn_period);
+
 	bool playback_started = false;
 	uint8_t midi_clock_pulses = 0;
 	LOG_INFO("Program Start\n");
@@ -148,13 +151,24 @@ int main(void) {
 			gpio_pin_clear(pulse_pin);
 		}
 
-		// step leds
+		// Step leds
 		shift_register_write(&step_leds_shift_reg, &led_state, 1);
 
-		// Proof of concept MIDI Clock hanling
+		// Proof of concept MIDI clock input
 		if (midi_clock_pulses == 24) {
 			LOG_INFO("Tick\n");
 			midi_clock_pulses = 0;
+		}
+
+		// Proof of concept MIDI clock output
+		// PROBLEM: If we run just this
+		// statement in the loop things are fine, but full main-loop is
+		// currently to slow.
+		// To fix this, we need to either make the main loop faster or
+		// put the Midi Clock output on an interrupt
+		if (usec_timer_period_has_elapsed(&midi_ppqn_timer)) {
+			usec_timer_reset(&midi_ppqn_timer);
+			sw_serial_write(MIDI_CLOCK_BYTE);
 		}
 	}
 }
