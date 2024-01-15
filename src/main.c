@@ -161,11 +161,11 @@ int main(void) {
 		}
 
 		// Proof of concept MIDI clock output
-		// PROBLEM: If we run just this
-		// statement in the loop things are fine, but full main-loop is
-		// currently to slow.
-		// To fix this, we need to either make the main loop faster or
-		// put the Midi Clock output on an interrupt
+		// PROBLEM:
+		// Just using usec_timer is NOT precise enough to guarantee an accurate
+		// enough BPM. Propper implementation will require using interrupts of a
+		// high precision hardware timer.
+		// Probably timer1 (16-bit timer) will be adequate.
 		if (usec_timer_period_has_elapsed(&midi_ppqn_timer)) {
 			usec_timer_reset(&midi_ppqn_timer);
 			sw_serial_write(MIDI_CLOCK_BYTE);
