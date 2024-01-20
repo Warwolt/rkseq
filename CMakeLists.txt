@@ -89,6 +89,7 @@ add_avr_executable("${PROJECT_NAME}"
   src/hardware/spi.c
   src/hardware/sw_serial.c
   src/hardware/timer0.c
+  src/hardware/timer1.c
   src/sequencer/beat_clock.c
   src/user_interface/playback_control.c
   src/util/usec_timer.c

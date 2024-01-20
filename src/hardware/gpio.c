@@ -37,6 +37,12 @@ gpio_pin_t gpio_pin_init(volatile uint8_t* port, uint8_t pin_num) {
 	};
 }
 
+gpio_pin_t gpio_pin_init_mode(volatile uint8_t* port, uint8_t pin_num, pin_mode_t mode) {
+	gpio_pin_t pin = gpio_pin_init(port, pin_num);
+	gpio_pin_configure(pin, mode);
+	return pin;
+}
+
 void gpio_pin_configure(gpio_pin_t pin, pin_mode_t mode) {
 	volatile uint8_t* pin_dir_reg = port_to_pin_direction_reg(pin.port);
 	if (mode == PIN_MODE_INPUT) {
