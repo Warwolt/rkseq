@@ -37,7 +37,7 @@ static beat_clock_t g_beat_clock;
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
 	timer0_timer_overflow_irq();
-	// TODO update display here
+	// FIXME: update display here at an appropriate frequency
 }
 
 ISR(TIMER1_COMPA_vect) {
