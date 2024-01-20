@@ -29,13 +29,28 @@
 #define MIDI_CONTINUE_BYTE 0xFB
 #define MIDI_STOP_BYTE 0xFC
 
+#define SEQUENCER_PPQN 96
+#define MIDI_PPQN 24
+
+static uint8_t g_pulse_counter = 0;
+
+static void on_beat_pulse(void) {
+	g_pulse_counter = (g_pulse_counter + 1) % SEQUENCER_PPQN;
+	if (g_pulse_counter == 0) {
+		toggle_bit(PORTC, 3);
+	}
+	if (g_pulse_counter % (SEQUENCER_PPQN / MIDI_PPQN) == 0) {
+		sw_serial_write(MIDI_CLOCK_BYTE);
+	}
+}
+
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
 	timer0_timer_overflow_irq();
 }
 
 ISR(TIMER1_COMPA_vect) {
-	toggle_bit(PORTC, 3);
+	on_beat_pulse();
 }
 
 ISR(PCINT2_vect) {
@@ -73,8 +88,8 @@ static uint8_t read_midi_byte(void) {
 
 int main(void) {
 	/* Setup */
-	const gpio_pin_t debug_pin1 = gpio_pin_init_mode(&PORTC, 3, PIN_MODE_OUTPUT);
-	const gpio_pin_t debug_pin2 = gpio_pin_init_mode(&PORTC, 4, PIN_MODE_OUTPUT);
+	// const gpio_pin_t debug_pin1 = gpio_pin_init_mode(&PORTC, 3, PIN_MODE_OUTPUT);
+	// const gpio_pin_t debug_pin2 = gpio_pin_init_mode(&PORTC, 4, PIN_MODE_OUTPUT);
 	const gpio_pin_t pulse_pin = gpio_pin_init_mode(&PORTC, 5, PIN_MODE_OUTPUT);
 	const gpio_pin_t midi_rx_pin = gpio_pin_init(&PORTD, 2);
 	const gpio_pin_t midi_tx_pin = gpio_pin_init(&PORTD, 3);
@@ -112,77 +127,59 @@ int main(void) {
 	}
 
 	/* Run */
-	const uint64_t ppqn_period = (60 * 1e6) / (DEFAULT_BPM * 24);
-	usec_timer_t midi_ppqn_timer = usec_timer_init(ppqn_period);
-
 	bool playback_started = false;
 	uint8_t midi_clock_pulses = 0;
 	LOG_INFO("Program Start\n");
 	while (true) {
-		// gpio_pin_toggle(debug_pin1); // measure loop timing
+		/* Input */
+		update_button_states(ui_devices.step_buttons, 8, &step_buttons_shift_reg);
+		// button_update(&ui_devices.start_button, gpio_pin_read(start_button_pin), timer0_now_ms()); // TODO use shift register for this
+		segment_display_update(&ui_devices.display); // cycle to next digit
+		const uint8_t midi_byte = read_midi_byte();
 
-		// /* Input */
-		// update_button_states(ui_devices.step_buttons, 8, &step_buttons_shift_reg);
-		// // button_update(&ui_devices.start_button, gpio_pin_read(start_button_pin), timer0_now_ms()); // TODO use shift register for this
-		// segment_display_update(&ui_devices.display); // cycle to next digit
-		// const uint8_t midi_byte = read_midi_byte();
+		/* Update */
+		beat_clock_update(&beat_clock);
+		playback_control_update(&ui_devices, &beat_clock);
+		led_state = button_is_pressed(&ui_devices.step_buttons[0]) ? 0xFF : 0x0;
 
-		// /* Update */
-		// beat_clock_update(&beat_clock);
-		// playback_control_update(&ui_devices, &beat_clock);
-		// led_state = button_is_pressed(&ui_devices.step_buttons[0]) ? 0xFF : 0x0;
+		// Proof of concept MIDI handling
+		switch (midi_byte) {
+			case MIDI_CLOCK_BYTE:
+				if (playback_started) {
+					midi_clock_pulses++;
+				}
+				break;
 
-		// // Proof of concept MIDI handling
-		// switch (midi_byte) {
-		// 	case MIDI_CLOCK_BYTE:
-		// 		if (playback_started) {
-		// 			midi_clock_pulses++;
-		// 		}
-		// 		break;
+			case MIDI_START_BYTE:
+				playback_started = true;
+				midi_clock_pulses = 23; // trigger note on next clock pulse
+				break;
 
-		// 	case MIDI_START_BYTE:
-		// 		playback_started = true;
-		// 		midi_clock_pulses = 23; // trigger note on next clock pulse
-		// 		break;
+			case MIDI_CONTINUE_BYTE:
+				playback_started = true;
+				break;
 
-		// 	case MIDI_CONTINUE_BYTE:
-		// 		playback_started = true;
-		// 		break;
+			case MIDI_STOP_BYTE:
+				playback_started = false;
+				break;
+		}
 
-		// 	case MIDI_STOP_BYTE:
-		// 		playback_started = false;
-		// 		break;
-		// }
+		/* Output */
+		if (beat_clock_quarternote_ready(&beat_clock)) {
+			gpio_pin_set(pulse_pin);
+			usec_timer_reset(&pulse_timer);
+		}
+		if (usec_timer_period_has_elapsed(&pulse_timer)) {
+			gpio_pin_clear(pulse_pin);
+		}
 
-		// /* Output */
-		// if (beat_clock_quarternote_ready(&beat_clock)) {
-		// 	gpio_pin_set(pulse_pin);
-		// 	usec_timer_reset(&pulse_timer);
-		// }
-		// if (usec_timer_period_has_elapsed(&pulse_timer)) {
-		// 	gpio_pin_clear(pulse_pin);
-		// }
+		// Step leds
+		shift_register_write(&step_leds_shift_reg, &led_state, 1);
 
-		// // Step leds
-		// shift_register_write(&step_leds_shift_reg, &led_state, 1);
-
-		// // Proof of concept MIDI clock input
-		// if (midi_clock_pulses == 24) {
-		// 	LOG_INFO("Tick\n");
-		// 	midi_clock_pulses = 0;
-		// }
-
-		// Proof of concept MIDI clock output
-		// PROBLEM:
-		// Just using usec_timer is NOT precise enough to guarantee an accurate
-		// enough BPM. Propper implementation will require using interrupts of a
-		// high precision hardware timer.
-		// Probably timer1 (16-bit timer) will be adequate.
-		if (usec_timer_period_has_elapsed(&midi_ppqn_timer)) {
-			usec_timer_reset(&midi_ppqn_timer);
-			// sw_serial_write(MIDI_CLOCK_BYTE);
-			gpio_pin_set(debug_pin2);
-			gpio_pin_clear(debug_pin2);
+		// Proof of concept MIDI clock input
+		if (midi_clock_pulses == 24) {
+			LOG_INFO("Tick\n");
+			midi_clock_pulses = 0;
 		}
 	}
 }
