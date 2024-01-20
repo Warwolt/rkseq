@@ -9,26 +9,24 @@
 
 beat_clock_t beat_clock_init(uint8_t tempo_bpm) {
 	return (beat_clock_t) {
-		.tempo_bpm = clamp(tempo_bpm, MIN_BPM, MAX_BPM),
-		.timer = usec_timer_init((60 * 1e6) / tempo_bpm)
+		._tempo_bpm = clamp(tempo_bpm, MIN_BPM, MAX_BPM),
 	};
 }
 
 void beat_clock_on_pulse(beat_clock_t* beat_clock) {
-	beat_clock->beat_pulses = (beat_clock->beat_pulses + 1) % BEAT_CLOCK_SEQUENCER_PPQN;
+	beat_clock->_beat_pulses = (beat_clock->_beat_pulses + 1) % BEAT_CLOCK_SEQUENCER_PPQN;
 }
 
 void beat_clock_set_tempo(beat_clock_t* beat_clock, uint8_t tempo_bpm) {
-	beat_clock->tempo_bpm = clamp(tempo_bpm, MIN_BPM, MAX_BPM);
-	beat_clock->timer.period_us = (60 * 1e6) / tempo_bpm;
+	beat_clock->_tempo_bpm = clamp(tempo_bpm, MIN_BPM, MAX_BPM);
 }
 
 void beat_clock_start(beat_clock_t* beat_clock) {
-	beat_clock->started = true;
+	beat_clock->_started = true;
 }
 
 void beat_clock_stop(beat_clock_t* beat_clock) {
-	beat_clock->started = false;
+	beat_clock->_started = false;
 }
 
 void beat_clock_update(beat_clock_t* beat_clock) {
@@ -36,9 +34,9 @@ void beat_clock_update(beat_clock_t* beat_clock) {
 }
 
 bool beat_clock_sixteenth_note_ready(const beat_clock_t* beat_clock) {
-	return beat_clock->beat_pulses == 0;
+	return beat_clock->_beat_pulses == 0;
 }
 
 bool beat_clock_midi_pulse_ready(const beat_clock_t* beat_clock) {
-	return (beat_clock->beat_pulses % (BEAT_CLOCK_SEQUENCER_PPQN / MIDI_PPQN)) == 0;
+	return (beat_clock->_beat_pulses % (BEAT_CLOCK_SEQUENCER_PPQN / MIDI_PPQN)) == 0;
 }

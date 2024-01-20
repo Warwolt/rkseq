@@ -80,7 +80,7 @@ static uint8_t read_midi_byte(void) {
 }
 
 static void update_tempo(beat_clock_t* beat_clock, uint8_t bpm) {
-	beat_clock->tempo_bpm = bpm;
+	beat_clock_set_tempo(&beat_clock, bpm);
 	const uint16_t ticks = (1e6 * 60) / (BEAT_CLOCK_SEQUENCER_PPQN * bpm) / USEC_PER_TIMER1_TICK;
 	timer1_set_period(ticks);
 }
