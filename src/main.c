@@ -8,6 +8,7 @@
 #include "hardware/spi.h"
 #include "hardware/sw_serial.h"
 #include "hardware/timer0.h"
+#include "hardware/timer1.h"
 #include "logging.h"
 #include "sequencer/beat_clock.h"
 #include "user_interface/playback_control.h"
@@ -32,14 +33,9 @@
 #define SEQUENCER_PPQN 96
 #define MIDI_PPQN 24
 
-static uint8_t g_pulse_counter = 0;
-
-static void on_beat_pulse(void) {
-	g_pulse_counter = (g_pulse_counter + 1) % SEQUENCER_PPQN;
-	if (g_pulse_counter == 0) {
-		toggle_bit(PORTC, 3);
-	}
-	if (g_pulse_counter % (SEQUENCER_PPQN / MIDI_PPQN) == 0) {
+static void on_beat_pulse(uint8_t* pulse_counter) {
+	*pulse_counter = (*pulse_counter + 1) % SEQUENCER_PPQN;
+	if (*pulse_counter % (SEQUENCER_PPQN / MIDI_PPQN) == 0) {
 		sw_serial_write(MIDI_CLOCK_BYTE);
 	}
 }
@@ -50,7 +46,7 @@ ISR(TIMER0_OVF_vect) {
 }
 
 ISR(TIMER1_COMPA_vect) {
-	on_beat_pulse();
+	timer1_compare_a_match_irq();
 }
 
 ISR(PCINT2_vect) {
@@ -102,6 +98,8 @@ int main(void) {
 	const gpio_pin_t step_leds_latch_pin = gpio_pin_init(&PORTB, 2);
 
 	globally_enable_interrupts();
+	// FIXME: refactor timer0 to have similar API as timer1 and make the
+	// ms-timer a separate module that gets wired up with timer0 via interrupts
 	timer0_initialize();
 	hw_serial_initialize(9600); // uses PD0 and PD1
 	sw_serial_initialize(31250, midi_rx_pin, midi_tx_pin);
@@ -117,13 +115,14 @@ int main(void) {
 	beat_clock_t beat_clock = beat_clock_init(DEFAULT_BPM);
 	usec_timer_t pulse_timer = usec_timer_init(QUARTERNOTE_PULSE_LENGTH_US);
 	uint8_t led_state = 0;
+	uint8_t pulse_counter = 0;
 
 	// configure up Timer1 as PPQN-counter
 	{
-		set_bit(TIMSK1, OCIE1A); // Enable Output Compare A Match interrupts
-		set_bit(TCCR1B, WGM12); // Clear timer on Compare A Match
-		set_bit(TCCR1B, CS11); // set prescaler to 8
-		OCR1A = 10417; // set compare match to 10417 ticks (96 PPQN => 120 BPM)
+		timer1_initialize();
+		timer1_set_period(10417); // set period to 10417 ticks (96 PPQN => 120 BPM)
+		timer1_set_compare_a_match_handler((void (*)(void*))(&on_beat_pulse), (void*)&pulse_counter);
+		timer1_start();
 	}
 
 	/* Run */
@@ -176,7 +175,11 @@ int main(void) {
 		// Step leds
 		shift_register_write(&step_leds_shift_reg, &led_state, 1);
 
-		// Proof of concept MIDI clock input
+		// FIXME: Handling MIDI clock input should probably be done using interrupts
+		// to guarantee correct timing.
+		// FIXME: There needs to be a mechanism that detects when an external
+		// clock source has been attached, so that the sequencer knows when to
+		// use internal clock and when to use the external clock.
 		if (midi_clock_pulses == 24) {
 			LOG_INFO("Tick\n");
 			midi_clock_pulses = 0;
