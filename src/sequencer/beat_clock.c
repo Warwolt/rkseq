@@ -5,7 +5,6 @@
 #define MIN_BPM 40
 #define MAX_BPM 200
 
-#define SEQUENCER_PPQN 96
 #define MIDI_PPQN 24
 
 beat_clock_t beat_clock_init(uint8_t tempo_bpm) {
@@ -16,7 +15,7 @@ beat_clock_t beat_clock_init(uint8_t tempo_bpm) {
 }
 
 void beat_clock_on_pulse(beat_clock_t* beat_clock) {
-	beat_clock->beat_pulses = (beat_clock->beat_pulses + 1) % SEQUENCER_PPQN;
+	beat_clock->beat_pulses = (beat_clock->beat_pulses + 1) % BEAT_CLOCK_SEQUENCER_PPQN;
 }
 
 void beat_clock_set_tempo(beat_clock_t* beat_clock, uint8_t tempo_bpm) {
@@ -41,5 +40,5 @@ bool beat_clock_sixteenth_note_ready(const beat_clock_t* beat_clock) {
 }
 
 bool beat_clock_midi_pulse_ready(const beat_clock_t* beat_clock) {
-	return (beat_clock->beat_pulses % (SEQUENCER_PPQN / MIDI_PPQN)) == 0;
+	return (beat_clock->beat_pulses % (BEAT_CLOCK_SEQUENCER_PPQN / MIDI_PPQN)) == 0;
 }

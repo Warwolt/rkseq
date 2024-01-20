@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define BEAT_CLOCK_SEQUENCER_PPQN 96
+
 typedef struct {
 	uint8_t tempo_bpm;
 	bool started;

@@ -30,27 +30,18 @@
 #define MIDI_CONTINUE_BYTE 0xFB
 #define MIDI_STOP_BYTE 0xFC
 
-#define SEQUENCER_PPQN 96
-#define MIDI_PPQN 24
+#define USEC_PER_TIMER1_TICK 0.5f
+
+static beat_clock_t g_beat_clock;
 
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
 	timer0_timer_overflow_irq();
 }
 
-typedef struct {
-	beat_clock_t* beat_clock;
-} timer1_compa_context_t;
-static timer1_compa_context_t g_timer1_compa_ctx;
-
 ISR(TIMER1_COMPA_vect) {
-	if (!g_timer1_compa_ctx.beat_clock) {
-		return;
-	}
-
-	beat_clock_t* beat_clock = g_timer1_compa_ctx.beat_clock;
-	beat_clock_on_pulse(beat_clock);
-	if (beat_clock_midi_pulse_ready(beat_clock)) {
+	beat_clock_on_pulse(&g_beat_clock);
+	if (beat_clock_midi_pulse_ready(&g_beat_clock)) {
 		sw_serial_write(MIDI_CLOCK_BYTE);
 	}
 }
@@ -88,6 +79,12 @@ static uint8_t read_midi_byte(void) {
 	return midi_byte;
 }
 
+static void update_tempo(beat_clock_t* beat_clock, uint8_t bpm) {
+	beat_clock->tempo_bpm = bpm;
+	const uint16_t ticks = (1e6 * 60) / (BEAT_CLOCK_SEQUENCER_PPQN * bpm) / USEC_PER_TIMER1_TICK;
+	timer1_set_period(ticks);
+}
+
 int main(void) {
 	/* Setup */
 	// const gpio_pin_t debug_pin1 = gpio_pin_init_mode(&PORTC, 3, PIN_MODE_OUTPUT);
@@ -109,6 +106,7 @@ int main(void) {
 	timer0_initialize();
 	hw_serial_initialize(9600); // uses PD0 and PD1
 	sw_serial_initialize(31250, midi_rx_pin, midi_tx_pin);
+	timer1_initialize();
 	spi_t spi = spi_initialize(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
 	shift_register_t step_buttons_shift_reg = shift_register_init(spi, step_buttons_latch_pin);
 	shift_register_t step_leds_shift_reg = shift_register_init(spi, step_leds_latch_pin);
@@ -118,18 +116,14 @@ int main(void) {
 		.encoder = rotary_encoder_init(encoder_a_pin, encoder_b_pin),
 		.display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin),
 	};
-	beat_clock_t beat_clock = beat_clock_init(DEFAULT_BPM);
+	g_beat_clock = beat_clock_init(DEFAULT_BPM);
 	uint8_t led_state = 0;
 
-	// configure up Timer1 as PPQN-counter
-	{
-		g_timer1_compa_ctx.beat_clock = &beat_clock;
-		timer1_initialize();
-		timer1_set_period(10417); // set period to 10417 ticks (96 PPQN => 120 BPM)
-		timer1_start();
-	}
-
 	/* Run */
+	// Start beat timer
+	update_tempo(&g_beat_clock, DEFAULT_BPM);
+	timer1_set_period(10417); // set period to 10417 ticks (96 PPQN => 120 BPM)
+	timer1_start();
 	bool playback_started = false;
 	uint8_t midi_clock_pulses = 0;
 	LOG_INFO("Program Start\n");
@@ -141,8 +135,8 @@ int main(void) {
 		const uint8_t midi_byte = read_midi_byte();
 
 		/* Update */
-		beat_clock_update(&beat_clock);
-		playback_control_update(&ui_devices, &beat_clock);
+		beat_clock_update(&g_beat_clock);
+		playback_control_update(&ui_devices, &g_beat_clock);
 		led_state = button_is_pressed(&ui_devices.step_buttons[0]) ? 0xFF : 0x0;
 
 		// Proof of concept MIDI handling
