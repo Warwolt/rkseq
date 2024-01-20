@@ -37,6 +37,7 @@ static beat_clock_t g_beat_clock;
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
 	timer0_timer_overflow_irq();
+	// TODO update display here
 }
 
 ISR(TIMER1_COMPA_vect) {
@@ -80,9 +81,8 @@ static uint8_t read_midi_byte(void) {
 }
 
 static void update_tempo(beat_clock_t* beat_clock, uint8_t bpm) {
-	beat_clock_set_tempo(&beat_clock, bpm);
-	const uint16_t ticks = (1e6 * 60) / (BEAT_CLOCK_SEQUENCER_PPQN * bpm) / USEC_PER_TIMER1_TICK;
-	timer1_set_period(ticks);
+	beat_clock_set_tempo(beat_clock, bpm);
+	timer1_set_period((1e6 * 60) / (BEAT_CLOCK_SEQUENCER_PPQN * bpm) / USEC_PER_TIMER1_TICK);
 }
 
 int main(void) {
@@ -138,6 +138,7 @@ int main(void) {
 		beat_clock_update(&g_beat_clock);
 		playback_control_update(&ui_devices, &g_beat_clock);
 		led_state = button_is_pressed(&ui_devices.step_buttons[0]) ? 0xFF : 0x0;
+		update_tempo(&g_beat_clock, g_beat_clock._tempo_bpm);
 
 		// Proof of concept MIDI handling
 		switch (midi_byte) {
