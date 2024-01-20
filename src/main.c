@@ -33,20 +33,26 @@
 #define SEQUENCER_PPQN 96
 #define MIDI_PPQN 24
 
-static void on_beat_pulse(uint8_t* pulse_counter) {
-	*pulse_counter = (*pulse_counter + 1) % SEQUENCER_PPQN;
-	if (*pulse_counter % (SEQUENCER_PPQN / MIDI_PPQN) == 0) {
-		sw_serial_write(MIDI_CLOCK_BYTE);
-	}
-}
-
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
 	timer0_timer_overflow_irq();
 }
 
+typedef struct {
+	beat_clock_t* beat_clock;
+} timer1_compa_context_t;
+static timer1_compa_context_t g_timer1_compa_ctx;
+
 ISR(TIMER1_COMPA_vect) {
-	timer1_compare_a_match_irq();
+	if (!g_timer1_compa_ctx.beat_clock) {
+		return;
+	}
+
+	beat_clock_t* beat_clock = g_timer1_compa_ctx.beat_clock;
+	beat_clock_on_pulse(beat_clock);
+	if (beat_clock_midi_pulse_ready(beat_clock)) {
+		sw_serial_write(MIDI_CLOCK_BYTE);
+	}
 }
 
 ISR(PCINT2_vect) {
@@ -86,7 +92,7 @@ int main(void) {
 	/* Setup */
 	// const gpio_pin_t debug_pin1 = gpio_pin_init_mode(&PORTC, 3, PIN_MODE_OUTPUT);
 	// const gpio_pin_t debug_pin2 = gpio_pin_init_mode(&PORTC, 4, PIN_MODE_OUTPUT);
-	const gpio_pin_t pulse_pin = gpio_pin_init_mode(&PORTC, 5, PIN_MODE_OUTPUT);
+	// const gpio_pin_t pulse_pin = gpio_pin_init_mode(&PORTC, 5, PIN_MODE_OUTPUT);
 	const gpio_pin_t midi_rx_pin = gpio_pin_init(&PORTD, 2);
 	const gpio_pin_t midi_tx_pin = gpio_pin_init(&PORTD, 3);
 	const gpio_pin_t encoder_a_pin = gpio_pin_init(&PORTD, 4);
@@ -113,15 +119,13 @@ int main(void) {
 		.display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin),
 	};
 	beat_clock_t beat_clock = beat_clock_init(DEFAULT_BPM);
-	usec_timer_t pulse_timer = usec_timer_init(QUARTERNOTE_PULSE_LENGTH_US);
 	uint8_t led_state = 0;
-	uint8_t pulse_counter = 0;
 
 	// configure up Timer1 as PPQN-counter
 	{
+		g_timer1_compa_ctx.beat_clock = &beat_clock;
 		timer1_initialize();
 		timer1_set_period(10417); // set period to 10417 ticks (96 PPQN => 120 BPM)
-		timer1_set_compare_a_match_handler((void (*)(void*))(&on_beat_pulse), (void*)&pulse_counter);
 		timer1_start();
 	}
 
@@ -164,14 +168,6 @@ int main(void) {
 		}
 
 		/* Output */
-		if (beat_clock_quarternote_ready(&beat_clock)) {
-			gpio_pin_set(pulse_pin);
-			usec_timer_reset(&pulse_timer);
-		}
-		if (usec_timer_period_has_elapsed(&pulse_timer)) {
-			gpio_pin_clear(pulse_pin);
-		}
-
 		// Step leds
 		shift_register_write(&step_leds_shift_reg, &led_state, 1);
 

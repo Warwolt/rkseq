@@ -2,23 +2,9 @@
 
 #include "util/bits.h"
 
-static void (*g_compare_a_match_handler)(void* context);
-static void* g_compare_a_match_context;
-
-void timer1_compare_a_match_irq(void) {
-	if (g_compare_a_match_handler) {
-		g_compare_a_match_handler(g_compare_a_match_context);
-	}
-}
-
 void timer1_initialize(void) {
 	set_bit(TIMSK1, OCIE1A); // Enable "Output Compare A Match" interrupts
 	set_bit(TCCR1B, WGM12); // Clear counter on "Compare A Match"
-}
-
-void timer1_set_compare_a_match_handler(void (*handler)(void*), void* context) {
-	g_compare_a_match_handler = handler;
-	g_compare_a_match_context = context;
 }
 
 void timer1_set_period(uint16_t ticks) {

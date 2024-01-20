@@ -1,7 +1,7 @@
 #include "user_interface/playback_control.h"
 
 static void toggle_beat_clock(beat_clock_t* beat_clock) {
-	if (!beat_clock->is_playing) {
+	if (!beat_clock->started) {
 		beat_clock_start(beat_clock);
 	} else {
 		beat_clock_stop(beat_clock);
