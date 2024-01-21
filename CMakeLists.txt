@@ -101,7 +101,7 @@ else()
 # -------------------------------- Unit tests -------------------------------- #
 add_subdirectory(external/rktest)
 add_executable(tests
-  src/data/button.c
+  src/input/button.c
   tests/button_tests.c
   tests/ring_buffer_tests.c
 )
