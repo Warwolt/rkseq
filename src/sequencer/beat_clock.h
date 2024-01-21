@@ -9,8 +9,9 @@
 #define BEAT_CLOCK_SEQUENCER_PPQN 96
 
 typedef struct {
-	bool _is_playing;
-	uint8_t _beat_pulses;
+	bool is_playing;
+	uint8_t beat_pulses;
+	uint16_t tempo_bpm;
 } beat_clock_t;
 
 beat_clock_t beat_clock_init(uint8_t tempo_bpm);

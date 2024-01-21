@@ -72,5 +72,9 @@ void segment_display_update(segment_display_t* display) {
 
 	// cycle next index, index > 7 outputs no digit which dims the display
 	// since the digits now have a duty cycle less than 100 %
-	display->digits_index = (display->digits_index + 1) % 24;
+	display->digits_index = (display->digits_index + 1) % 12;
+}
+
+void segment_display_set_digit(segment_display_t* display, uint16_t digit, uint8_t value) {
+	display->digits[digit] = value;
 }

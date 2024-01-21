@@ -7,18 +7,17 @@
 #include <stdint.h>
 
 typedef struct {
-	uint8_t segment_display[4];
+	uint8_t display_digits[4];
 } playback_ui_t;
 
 typedef struct {
 	int8_t rotary_encoder_diff;
-	bool start_button_pressed_now;
 } playback_ui_input_t;
 
 typedef struct {
 	bool start_playback;
 	bool stop_playback;
-	int8_t tempo_diff;
+	uint16_t new_tempo_bpm;
 } playback_ui_events_t;
 
 playback_ui_t playback_ui_init(void);
