@@ -21,6 +21,6 @@ typedef struct {
 } user_interface_events_t;
 
 user_interface_t user_interface_init(void);
-user_interface_events_t user_interface_update(user_interface_t* ui, const user_interface_input_t* input, const beat_clock_t* beat_clock);
+user_interface_events_t user_interface_update(user_interface_t* ui, const user_interface_input_t* input, const BeatClock* beat_clock);
 
 #endif /* PLAYBACK_CONTROL_H */

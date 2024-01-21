@@ -4,7 +4,7 @@ user_interface_t user_interface_init(void) {
 	return (user_interface_t) { 0 };
 }
 
-user_interface_events_t user_interface_update(user_interface_t* ui, const user_interface_input_t* input, const beat_clock_t* beat_clock) {
+user_interface_events_t user_interface_update(user_interface_t* ui, const user_interface_input_t* input, const BeatClock* beat_clock) {
 	user_interface_events_t events = { 0 };
 
 	/* Set Tempo */

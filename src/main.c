@@ -33,7 +33,7 @@
 
 #define USEC_PER_TIMER1_TICK 0.5f
 
-static beat_clock_t g_beat_clock;
+static BeatClock g_beat_clock;
 static SegmentDisplay g_segment_display;
 
 /* ----------------------- Interrupt service routines ----------------------- */
@@ -48,8 +48,8 @@ ISR(TIMER0_OVF_vect) {
 }
 
 ISR(TIMER1_COMPA_vect) {
-	beat_clock_on_pulse(&g_beat_clock);
-	if (beat_clock_midi_pulse_ready(&g_beat_clock)) {
+	BeatClock_on_pulse(&g_beat_clock);
+	if (BeatClock_midi_pulse_ready(&g_beat_clock)) {
 		SoftwareSerial_write(MIDI_CLOCK_BYTE);
 	}
 }
@@ -87,7 +87,7 @@ static void update_Button_states(Button* buttons, uint8_t num_buttons, const Shi
 // 	return midi_byte;
 // }
 
-static void set_playback_tempo(beat_clock_t* beat_clock, uint8_t bpm) {
+static void set_playback_tempo(BeatClock* beat_clock, uint8_t bpm) {
 	beat_clock->tempo_bpm = bpm;
 	Timer1_set_period((1e6 * 60) / (BEAT_CLOCK_SEQUENCER_PPQN * bpm) / USEC_PER_TIMER1_TICK);
 }
@@ -120,7 +120,7 @@ int main(void) {
 	Button step_buttons[16];
 	RotaryEncoder rotary_encoder = RotaryEncoder_init(encoder_a_pin, encoder_b_pin);
 	g_segment_display = SegmentDisplay_init(display_clock_pin, display_latch_pin, display_data_pin);
-	g_beat_clock = beat_clock_init(DEFAULT_BPM);
+	g_beat_clock = BeatClock_init(DEFAULT_BPM);
 
 	user_interface_t user_interface = user_interface_init();
 
@@ -145,10 +145,10 @@ int main(void) {
 			set_playback_tempo(&g_beat_clock, playback_events.new_tempo_bpm);
 		}
 		if (playback_events.start_playback) {
-			beat_clock_start(&g_beat_clock);
+			BeatClock_start(&g_beat_clock);
 		}
 		if (playback_events.stop_playback) {
-			beat_clock_stop(&g_beat_clock);
+			BeatClock_stop(&g_beat_clock);
 		}
 
 		/* Output */
