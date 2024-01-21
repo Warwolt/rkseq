@@ -34,7 +34,7 @@
 #define USEC_PER_TIMER1_TICK 0.5f
 
 static beat_clock_t g_beat_clock;
-static segment_display_t g_segment_display;
+static SegmentDisplay g_segment_display;
 
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
@@ -43,7 +43,7 @@ ISR(TIMER0_OVF_vect) {
 	last_update++;
 	if (last_update > 10) {
 		last_update = 0;
-		segment_display_update(&g_segment_display); // cycle to next digit
+		SegmentDisplay_update(&g_segment_display); // cycle to next digit
 	}
 }
 
@@ -119,7 +119,7 @@ int main(void) {
 	// shift_register_t step_leds_shift_reg = shift_register_init(spi, step_leds_latch_pin);
 	button_t step_buttons[16];
 	RotaryEncoder rotary_encoder = RotaryEncoder_init(encoder_a_pin, encoder_b_pin);
-	g_segment_display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin);
+	g_segment_display = SegmentDisplay_init(display_clock_pin, display_latch_pin, display_data_pin);
 	g_beat_clock = beat_clock_init(DEFAULT_BPM);
 
 	user_interface_t user_interface = user_interface_init();
@@ -153,9 +153,9 @@ int main(void) {
 
 		/* Output */
 		// Tempo display
-		segment_display_set_digit(&g_segment_display, 0, user_interface.display_digits[0]);
-		segment_display_set_digit(&g_segment_display, 1, user_interface.display_digits[1]);
-		segment_display_set_digit(&g_segment_display, 2, user_interface.display_digits[2]);
-		segment_display_set_digit(&g_segment_display, 3, user_interface.display_digits[3]);
+		SegmentDisplay_set_digit(&g_segment_display, 0, user_interface.display_digits[0]);
+		SegmentDisplay_set_digit(&g_segment_display, 1, user_interface.display_digits[1]);
+		SegmentDisplay_set_digit(&g_segment_display, 2, user_interface.display_digits[2]);
+		SegmentDisplay_set_digit(&g_segment_display, 3, user_interface.display_digits[3]);
 	}
 }

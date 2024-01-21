@@ -13,13 +13,13 @@ typedef struct {
 	bool period_enabled[4];
 	uint8_t digits[4];
 	uint8_t digits_index;
-} segment_display_t;
+} SegmentDisplay;
 
-segment_display_t segment_display_init(GpioPin clock_pin, GpioPin latch_pin, GpioPin data_pin);
-void segment_display_enable_period(segment_display_t* display, uint8_t number);
-void segment_display_disable_period(segment_display_t* display, uint8_t number);
-void segment_display_set_number(segment_display_t* display, uint16_t number);
-void segment_display_set_digit(segment_display_t* display, uint16_t digit, uint8_t value);
-void segment_display_update(segment_display_t* display);
+SegmentDisplay SegmentDisplay_init(GpioPin clock_pin, GpioPin latch_pin, GpioPin data_pin);
+void SegmentDisplay_enable_period(SegmentDisplay* display, uint8_t number);
+void SegmentDisplay_disable_period(SegmentDisplay* display, uint8_t number);
+void SegmentDisplay_set_number(SegmentDisplay* display, uint16_t number);
+void SegmentDisplay_set_digit(SegmentDisplay* display, uint16_t digit, uint8_t value);
+void SegmentDisplay_update(SegmentDisplay* display);
 
 #endif /* SEGMENT_DISPLAY_H */
