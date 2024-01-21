@@ -12,8 +12,8 @@ UserInterfaceEvents UserInterface_update(UserInterface* ui, const UserInterfaceI
 	UserInterfaceEvents events = { 0 };
 
 	/* Set Tempo */
-	if (input->RotaryEncoder_diff) {
-		events.new_tempo_bpm = clamp(beat_clock->tempo_bpm + input->RotaryEncoder_diff, MIN_BPM, MAX_BPM);
+	if (input->rotary_encoder_diff) {
+		events.new_tempo_bpm = clamp(beat_clock->tempo_bpm + input->rotary_encoder_diff, MIN_BPM, MAX_BPM);
 	}
 
 	/* Tempo display */
