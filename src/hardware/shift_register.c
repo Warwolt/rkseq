@@ -1,15 +1,15 @@
 #include "hardware/shift_register.h"
 
-shift_register_t shift_register_init(spi_t spi, GpioPin latch_pin) {
+ShiftRegister ShiftRegister_init(spi_t spi, GpioPin latch_pin) {
 	GpioPin_configure(latch_pin, PIN_MODE_OUTPUT);
-	return (shift_register_t) {
+	return (ShiftRegister) {
 		.spi = spi,
 		.latch_pin = latch_pin
 	};
 }
 
 // Read bits from 74HC165
-void shift_register_read(const shift_register_t* shift_reg, bool* out_buf, uint8_t out_buf_len) {
+void ShiftRegister_read(const ShiftRegister* shift_reg, bool* out_buf, uint8_t out_buf_len) {
 	// Update shift register content
 	GpioPin_clear(shift_reg->latch_pin);
 	GpioPin_set(shift_reg->latch_pin);
@@ -25,7 +25,7 @@ void shift_register_read(const shift_register_t* shift_reg, bool* out_buf, uint8
 }
 
 // Write bytes to 74HC595
-void shift_register_write(const shift_register_t* shift_reg, uint8_t* bytes, uint8_t num_bytes) {
+void ShiftRegister_write(const ShiftRegister* shift_reg, uint8_t* bytes, uint8_t num_bytes) {
 	for (uint8_t i = 0; i < num_bytes; i++) {
 		spi_send(shift_reg->spi, bytes[i]);
 	}

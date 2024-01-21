@@ -71,9 +71,9 @@ static void globally_enable_interrupts(void) {
 	sei();
 }
 
-static void update_button_states(button_t* buttons, uint8_t num_buttons, const shift_register_t* shift_reg) {
+static void update_button_states(button_t* buttons, uint8_t num_buttons, const ShiftRegister* shift_reg) {
 	bool button_input[256];
-	shift_register_read(shift_reg, button_input, num_buttons);
+	ShiftRegister_read(shift_reg, button_input, num_buttons);
 	for (uint8_t i = 0; i < num_buttons; i++) {
 		button_update(&buttons[i], button_input[i], timer0_now_ms());
 	}
@@ -115,8 +115,8 @@ int main(void) {
 	sw_serial_initialize(31250, midi_rx_pin, midi_tx_pin);
 	timer1_initialize();
 	spi_t spi = spi_initialize(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
-	shift_register_t step_buttons_shift_reg = shift_register_init(spi, step_buttons_latch_pin);
-	// shift_register_t step_leds_shift_reg = shift_register_init(spi, step_leds_latch_pin);
+	ShiftRegister step_buttons_shift_reg = ShiftRegister_init(spi, step_buttons_latch_pin);
+	// ShiftRegister step_leds_shift_reg = ShiftRegister_init(spi, step_leds_latch_pin);
 	button_t step_buttons[16];
 	RotaryEncoder rotary_encoder = RotaryEncoder_init(encoder_a_pin, encoder_b_pin);
 	g_segment_display = SegmentDisplay_init(display_clock_pin, display_latch_pin, display_data_pin);

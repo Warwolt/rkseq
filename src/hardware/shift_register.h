@@ -10,10 +10,10 @@
 typedef struct {
 	spi_t spi;
 	GpioPin latch_pin;
-} shift_register_t;
+} ShiftRegister;
 
-shift_register_t shift_register_init(spi_t spi, GpioPin latch_pin);
-void shift_register_read(const shift_register_t* shift_reg, bool* out_buf, uint8_t out_buf_len);
-void shift_register_write(const shift_register_t* shift_reg, uint8_t* bytes, uint8_t num_bytes);
+ShiftRegister ShiftRegister_init(spi_t spi, GpioPin latch_pin);
+void ShiftRegister_read(const ShiftRegister* shift_reg, bool* out_buf, uint8_t out_buf_len);
+void ShiftRegister_write(const ShiftRegister* shift_reg, uint8_t* bytes, uint8_t num_bytes);
 
 #endif /* SHIFT_REGISTER_H */
