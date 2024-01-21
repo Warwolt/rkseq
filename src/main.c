@@ -38,7 +38,7 @@ static SegmentDisplay g_segment_display;
 
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
-	timer0_timer_overflow_irq();
+	Timer0_timer_overflow_irq();
 	static uint8_t last_update = 0;
 	last_update++;
 	if (last_update > 10) {
@@ -71,11 +71,11 @@ static void globally_enable_interrupts(void) {
 	sei();
 }
 
-static void update_button_states(button_t* buttons, uint8_t num_buttons, const ShiftRegister* shift_reg) {
-	bool button_input[256];
-	ShiftRegister_read(shift_reg, button_input, num_buttons);
+static void update_Button_states(Button* buttons, uint8_t num_buttons, const ShiftRegister* shift_reg) {
+	bool Button_input[256];
+	ShiftRegister_read(shift_reg, Button_input, num_buttons);
 	for (uint8_t i = 0; i < num_buttons; i++) {
-		button_update(&buttons[i], button_input[i], timer0_now_ms());
+		Button_update(&buttons[i], Button_input[i], Timer0_now_ms());
 	}
 }
 
@@ -89,7 +89,7 @@ static void update_button_states(button_t* buttons, uint8_t num_buttons, const S
 
 static void set_playback_tempo(beat_clock_t* beat_clock, uint8_t bpm) {
 	beat_clock->tempo_bpm = bpm;
-	timer1_set_period((1e6 * 60) / (BEAT_CLOCK_SEQUENCER_PPQN * bpm) / USEC_PER_TIMER1_TICK);
+	Timer1_set_period((1e6 * 60) / (BEAT_CLOCK_SEQUENCER_PPQN * bpm) / USEC_PER_TIMER1_TICK);
 }
 
 int main(void) {
@@ -110,14 +110,14 @@ int main(void) {
 	globally_enable_interrupts();
 	// FIXME: refactor timer0 to have similar API as timer1 and make the
 	// ms-timer a separate module that gets wired up with timer0 via interrupts
-	timer0_initialize();
+	Timer0_initialize();
 	HardwareSerial_initialize(9600); // uses PD0 and PD1
 	SoftwareSerial_initialize(31250, midi_rx_pin, midi_tx_pin);
-	timer1_initialize();
+	Timer1_initialize();
 	Spi spi = Spi_initialize(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
 	ShiftRegister step_buttons_shift_reg = ShiftRegister_init(spi, step_buttons_latch_pin);
 	// ShiftRegister step_leds_shift_reg = ShiftRegister_init(spi, step_leds_latch_pin);
-	button_t step_buttons[16];
+	Button step_buttons[16];
 	RotaryEncoder rotary_encoder = RotaryEncoder_init(encoder_a_pin, encoder_b_pin);
 	g_segment_display = SegmentDisplay_init(display_clock_pin, display_latch_pin, display_data_pin);
 	g_beat_clock = beat_clock_init(DEFAULT_BPM);
@@ -128,13 +128,13 @@ int main(void) {
 	// Start beat timer
 	{
 		set_playback_tempo(&g_beat_clock, DEFAULT_BPM);
-		timer1_set_period(10417); // set period to 10417 ticks (96 PPQN => 120 BPM)
-		timer1_start();
+		Timer1_set_period(10417); // set period to 10417 ticks (96 PPQN => 120 BPM)
+		Timer1_start();
 	}
 	LOG_INFO("Program Start\n");
 	while (true) {
 		/* Input */
-		update_button_states(step_buttons, 8, &step_buttons_shift_reg);
+		update_Button_states(step_buttons, 8, &step_buttons_shift_reg);
 		const user_interface_input_t user_interface_input = {
 			.RotaryEncoder_diff = RotaryEncoder_read(&rotary_encoder),
 		};

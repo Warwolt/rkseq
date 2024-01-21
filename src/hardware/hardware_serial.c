@@ -40,13 +40,13 @@ void HardwareSerial_tx_udr_empty_irq(void) {
 
 static int HardwareSerial_read_byte_with_timeout() {
 	const unsigned long timeout_ms = 1000;
-	const unsigned long start_ms = timer0_now_ms();
+	const unsigned long start_ms = Timer0_now_ms();
 	uint8_t byte;
 	do {
 		if (ring_buffer_read(&g_rx_buffer, &byte) == 0) {
 			return byte;
 		}
-	} while (timer0_now_ms() - start_ms < timeout_ms);
+	} while (Timer0_now_ms() - start_ms < timeout_ms);
 	return -1; // timed out
 }
 

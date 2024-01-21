@@ -4,7 +4,7 @@
 
 #include <avr/io.h>
 
-Spi Spi_initialize(Spi_data_order_t data_order) {
+Spi Spi_initialize(SpiDataOrder data_order) {
 	/* Configure pins */
 	set_bit(DDRB, 3); // Set MOSI pin to output
 	clear_bit(DDRB, 4); // Set MISO pin to input

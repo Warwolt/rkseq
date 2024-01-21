@@ -3,9 +3,9 @@
 
 #include <stdint.h>
 
-void timer1_initialize(void);
-void timer1_set_period(uint16_t ticks);
-void timer1_start(void);
-void timer1_stop(void);
+void Timer1_initialize(void);
+void Timer1_set_period(uint16_t ticks);
+void Timer1_start(void);
+void Timer1_stop(void);
 
 #endif /* TIMER_1_H */

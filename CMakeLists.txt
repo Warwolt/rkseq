@@ -101,7 +101,7 @@ else()
 add_subdirectory(external/rktest)
 add_executable(tests
   src/data/button.c
-  tests/button_tests.c
+  tests/Button_tests.c
   tests/ring_buffer_tests.c
 )
 target_link_libraries(tests rktest)
