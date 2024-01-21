@@ -19,10 +19,10 @@ UserInterfaceEvents UserInterface_update(UserInterface* ui, const UserInterfaceI
 	/* Tempo display */
 	// Display BPM
 	const uint16_t number = beat_clock->tempo_bpm * 10;
-	ui->segment_display_char[0] = digit_to_string(number / 1 % 10);
-	ui->segment_display_char[1] = digit_to_string(number / 10 % 10);
-	ui->segment_display_char[2] = digit_to_string(number / 100 % 10);
-	ui->segment_display_char[3] = number > 999 ? digit_to_string(number / 1000 % 10) : ' ';
+	ui->segment_display_chars[0] = digit_to_string(number / 1 % 10);
+	ui->segment_display_chars[1] = digit_to_string(number / 10 % 10);
+	ui->segment_display_chars[2] = digit_to_string(number / 100 % 10);
+	ui->segment_display_chars[3] = number > 999 ? digit_to_string(number / 1000 % 10) : ' ';
 
 	return events;
 }
