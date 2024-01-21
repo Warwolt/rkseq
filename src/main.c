@@ -11,8 +11,7 @@
 #include "hardware/timer1.h"
 #include "logging.h"
 #include "sequencer/beat_clock.h"
-#include "user_interface/playback_control.h"
-#include "user_interface/ui_devices.h"
+#include "user_interface/user_interface.h"
 #include "util/bits.h"
 #include "util/math.h"
 #include "util/usec_timer.h"
@@ -24,6 +23,8 @@
 
 #define DEFAULT_BPM 120
 #define QUARTERNOTE_PULSE_LENGTH_US 500
+#define MIN_BPM 40
+#define MAX_BPM 200
 
 #define MIDI_CLOCK_BYTE 0xF8
 #define MIDI_START_BYTE 0xFA
@@ -33,11 +34,17 @@
 #define USEC_PER_TIMER1_TICK 0.5f
 
 static beat_clock_t g_beat_clock;
+static segment_display_t g_segment_display;
 
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
 	timer0_timer_overflow_irq();
-	// FIXME: update display here at an appropriate frequency
+	static uint8_t last_update = 0;
+	last_update++;
+	if (last_update > 10) {
+		last_update = 0;
+		segment_display_update(&g_segment_display); // cycle to next digit
+	}
 }
 
 ISR(TIMER1_COMPA_vect) {
@@ -72,16 +79,16 @@ static void update_button_states(button_t* buttons, uint8_t num_buttons, const s
 	}
 }
 
-static uint8_t read_midi_byte(void) {
-	uint8_t midi_byte = 0;
-	if (sw_serial_available_bytes() > 0) {
-		sw_serial_read(&midi_byte);
-	}
-	return midi_byte;
-}
+// static uint8_t read_midi_byte(void) {
+// 	uint8_t midi_byte = 0;
+// 	if (sw_serial_available_bytes() > 0) {
+// 		sw_serial_read(&midi_byte);
+// 	}
+// 	return midi_byte;
+// }
 
-static void update_tempo(beat_clock_t* beat_clock, uint8_t bpm) {
-	beat_clock_set_tempo(beat_clock, bpm);
+static void set_playback_tempo(beat_clock_t* beat_clock, uint8_t bpm) {
+	beat_clock->tempo_bpm = bpm;
 	timer1_set_period((1e6 * 60) / (BEAT_CLOCK_SEQUENCER_PPQN * bpm) / USEC_PER_TIMER1_TICK);
 }
 
@@ -98,7 +105,7 @@ int main(void) {
 	const gpio_pin_t display_latch_pin = gpio_pin_init(&PORTD, 7);
 	const gpio_pin_t display_clock_pin = gpio_pin_init(&PORTB, 0);
 	const gpio_pin_t step_buttons_latch_pin = gpio_pin_init(&PORTB, 1);
-	const gpio_pin_t step_leds_latch_pin = gpio_pin_init(&PORTB, 2);
+	// const gpio_pin_t step_leds_latch_pin = gpio_pin_init(&PORTB, 2);
 
 	globally_enable_interrupts();
 	// FIXME: refactor timer0 to have similar API as timer1 and make the
@@ -109,71 +116,46 @@ int main(void) {
 	timer1_initialize();
 	spi_t spi = spi_initialize(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
 	shift_register_t step_buttons_shift_reg = shift_register_init(spi, step_buttons_latch_pin);
-	shift_register_t step_leds_shift_reg = shift_register_init(spi, step_leds_latch_pin);
-	ui_devices_t ui_devices = {
-		.start_button = { 0 },
-		.step_buttons = { 0 },
-		.encoder = rotary_encoder_init(encoder_a_pin, encoder_b_pin),
-		.display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin),
-	};
+	// shift_register_t step_leds_shift_reg = shift_register_init(spi, step_leds_latch_pin);
+	button_t step_buttons[16];
+	rotary_encoder_t rotary_encoder = rotary_encoder_init(encoder_a_pin, encoder_b_pin);
+	g_segment_display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin);
 	g_beat_clock = beat_clock_init(DEFAULT_BPM);
-	uint8_t led_state = 0;
+
+	user_interface_t user_interface = user_interface_init();
 
 	/* Run */
 	// Start beat timer
-	update_tempo(&g_beat_clock, DEFAULT_BPM);
-	timer1_set_period(10417); // set period to 10417 ticks (96 PPQN => 120 BPM)
-	timer1_start();
-	bool playback_started = false;
-	uint8_t midi_clock_pulses = 0;
+	{
+		set_playback_tempo(&g_beat_clock, DEFAULT_BPM);
+		timer1_set_period(10417); // set period to 10417 ticks (96 PPQN => 120 BPM)
+		timer1_start();
+	}
 	LOG_INFO("Program Start\n");
 	while (true) {
 		/* Input */
-		update_button_states(ui_devices.step_buttons, 8, &step_buttons_shift_reg);
-		// button_update(&ui_devices.start_button, gpio_pin_read(start_button_pin), timer0_now_ms()); // TODO use shift register for this
-		segment_display_update(&ui_devices.display); // cycle to next digit
-		const uint8_t midi_byte = read_midi_byte();
+		update_button_states(step_buttons, 8, &step_buttons_shift_reg);
+		const user_interface_input_t user_interface_input = {
+			.rotary_encoder_diff = rotary_encoder_read(&rotary_encoder),
+		};
 
 		/* Update */
-		beat_clock_update(&g_beat_clock);
-		playback_control_update(&ui_devices, &g_beat_clock);
-		led_state = button_is_pressed(&ui_devices.step_buttons[0]) ? 0xFF : 0x0;
-		update_tempo(&g_beat_clock, g_beat_clock._tempo_bpm);
-
-		// Proof of concept MIDI handling
-		switch (midi_byte) {
-			case MIDI_CLOCK_BYTE:
-				if (playback_started) {
-					midi_clock_pulses++;
-				}
-				break;
-
-			case MIDI_START_BYTE:
-				playback_started = true;
-				midi_clock_pulses = 23; // trigger note on next clock pulse
-				break;
-
-			case MIDI_CONTINUE_BYTE:
-				playback_started = true;
-				break;
-
-			case MIDI_STOP_BYTE:
-				playback_started = false;
-				break;
+		const user_interface_events_t playback_events = user_interface_update(&user_interface, &user_interface_input, &g_beat_clock);
+		if (playback_events.new_tempo_bpm) {
+			set_playback_tempo(&g_beat_clock, playback_events.new_tempo_bpm);
+		}
+		if (playback_events.start_playback) {
+			beat_clock_start(&g_beat_clock);
+		}
+		if (playback_events.stop_playback) {
+			beat_clock_stop(&g_beat_clock);
 		}
 
 		/* Output */
-		// Step leds
-		shift_register_write(&step_leds_shift_reg, &led_state, 1);
-
-		// FIXME: Handling MIDI clock input should probably be done using interrupts
-		// to guarantee correct timing.
-		// FIXME: There needs to be a mechanism that detects when an external
-		// clock source has been attached, so that the sequencer knows when to
-		// use internal clock and when to use the external clock.
-		if (midi_clock_pulses == 24) {
-			LOG_INFO("Tick\n");
-			midi_clock_pulses = 0;
-		}
+		// Tempo display
+		segment_display_set_digit(&g_segment_display, 0, user_interface.display_digits[0]);
+		segment_display_set_digit(&g_segment_display, 1, user_interface.display_digits[1]);
+		segment_display_set_digit(&g_segment_display, 2, user_interface.display_digits[2]);
+		segment_display_set_digit(&g_segment_display, 3, user_interface.display_digits[3]);
 	}
 }
