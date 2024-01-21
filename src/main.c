@@ -24,6 +24,8 @@
 
 #define DEFAULT_BPM 120
 #define QUARTERNOTE_PULSE_LENGTH_US 500
+#define MIN_BPM 40
+#define MAX_BPM 200
 
 #define MIDI_CLOCK_BYTE 0xF8
 #define MIDI_START_BYTE 0xFA
@@ -81,7 +83,6 @@ static uint8_t read_midi_byte(void) {
 }
 
 static void update_tempo(beat_clock_t* beat_clock, uint8_t bpm) {
-	beat_clock_set_tempo(beat_clock, bpm);
 	timer1_set_period((1e6 * 60) / (BEAT_CLOCK_SEQUENCER_PPQN * bpm) / USEC_PER_TIMER1_TICK);
 }
 
@@ -110,12 +111,9 @@ int main(void) {
 	spi_t spi = spi_initialize(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
 	shift_register_t step_buttons_shift_reg = shift_register_init(spi, step_buttons_latch_pin);
 	shift_register_t step_leds_shift_reg = shift_register_init(spi, step_leds_latch_pin);
-	ui_devices_t ui_devices = {
-		.start_button = { 0 },
-		.step_buttons = { 0 },
-		.encoder = rotary_encoder_init(encoder_a_pin, encoder_b_pin),
-		.display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin),
-	};
+	button_t step_buttons[16];
+	rotary_encoder_t rotary_encoder = rotary_encoder_init(encoder_a_pin, encoder_b_pin);
+	segment_display_t segment_display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin);
 	g_beat_clock = beat_clock_init(DEFAULT_BPM);
 	uint8_t led_state = 0;
 
@@ -124,45 +122,63 @@ int main(void) {
 	update_tempo(&g_beat_clock, DEFAULT_BPM);
 	timer1_set_period(10417); // set period to 10417 ticks (96 PPQN => 120 BPM)
 	timer1_start();
-	bool playback_started = false;
+	bool playback_is_playing = false;
 	uint8_t midi_clock_pulses = 0;
+	uint8_t tempo_bpm = DEFAULT_BPM;
 	LOG_INFO("Program Start\n");
 	while (true) {
 		/* Input */
-		update_button_states(ui_devices.step_buttons, 8, &step_buttons_shift_reg);
+		update_button_states(step_buttons, 8, &step_buttons_shift_reg);
 		// button_update(&ui_devices.start_button, gpio_pin_read(start_button_pin), timer0_now_ms()); // TODO use shift register for this
-		segment_display_update(&ui_devices.display); // cycle to next digit
+		segment_display_update(&segment_display); // cycle to next digit
 		const uint8_t midi_byte = read_midi_byte();
+		const ui_devices_input_t devices_input = {
+			.rotary_diff = rotary_encoder_read(&rotary_encoder),
+			.start_button_pressed_now = false,
+		};
 
 		/* Update */
-		beat_clock_update(&g_beat_clock);
-		playback_control_update(&ui_devices, &g_beat_clock);
-		led_state = button_is_pressed(&ui_devices.step_buttons[0]) ? 0xFF : 0x0;
-		update_tempo(&g_beat_clock, g_beat_clock._tempo_bpm);
+		{
+			const playback_control_events_t playback_events = playback_control_update(&devices_input, &g_beat_clock);
+			if (playback_events.tempo_diff) {
+				tempo_bpm += playback_events.tempo_diff;
+				update_tempo(&g_beat_clock, tempo_bpm);
+			}
+			if (playback_events.start_playback) {
+				beat_clock_start(&g_beat_clock);
+			}
+			if (playback_events.stop_playback) {
+				beat_clock_stop(&g_beat_clock);
+			}
+		}
+		led_state = button_is_pressed(&step_buttons[0]) ? 0xFF : 0x0;
 
 		// Proof of concept MIDI handling
 		switch (midi_byte) {
 			case MIDI_CLOCK_BYTE:
-				if (playback_started) {
+				if (playback_is_playing) {
 					midi_clock_pulses++;
 				}
 				break;
 
 			case MIDI_START_BYTE:
-				playback_started = true;
+				playback_is_playing = true;
 				midi_clock_pulses = 23; // trigger note on next clock pulse
 				break;
 
 			case MIDI_CONTINUE_BYTE:
-				playback_started = true;
+				playback_is_playing = true;
 				break;
 
 			case MIDI_STOP_BYTE:
-				playback_started = false;
+				playback_is_playing = false;
 				break;
 		}
 
 		/* Output */
+		// Tempo display
+		segment_display_set_number(&segment_display, tempo_bpm * 10);
+
 		// Step leds
 		shift_register_write(&step_leds_shift_reg, &led_state, 1);
 

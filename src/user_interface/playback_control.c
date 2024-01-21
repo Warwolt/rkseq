@@ -1,24 +1,19 @@
 #include "user_interface/playback_control.h"
 
-static void toggle_beat_clock(beat_clock_t* beat_clock) {
-	if (!beat_clock->_started) {
-		beat_clock_start(beat_clock);
-	} else {
-		beat_clock_stop(beat_clock);
-	}
-}
+playback_control_events_t playback_control_update(const ui_devices_input_t* input, const beat_clock_t* beat_clock) {
+	playback_control_events_t events = { 0 };
 
-void playback_control_update(ui_devices_t* ui_devices, beat_clock_t* beat_clock) {
 	/* Start / Stop Playback */
-	if (button_just_pressed(&ui_devices->start_button)) {
-		toggle_beat_clock(beat_clock);
+	if (input->start_button_pressed_now) {
+		if (beat_clock->_is_playing) {
+			events.start_playback = true;
+		} else {
+			events.stop_playback = true;
+		}
 	}
 
 	/* Update Tempo */
-	const int rotary_diff = rotary_encoder_read(&ui_devices->encoder);
-	beat_clock_set_tempo(beat_clock, beat_clock->_tempo_bpm + rotary_diff);
+	events.tempo_diff = input->rotary_diff;
 
-	/* Display Current Tempo*/
-	segment_display_set_number(&ui_devices->display, beat_clock->_tempo_bpm * 10);
-	segment_display_enable_period(&ui_devices->display, 1);
+	return events;
 }

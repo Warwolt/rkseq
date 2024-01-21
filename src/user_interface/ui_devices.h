@@ -5,11 +5,12 @@
 #include "hardware/rotary_encoder.h"
 #include "hardware/segment_display.h"
 
+#include <stdbool.h>
+#include <stdint.h>
+
 typedef struct {
-	button_t start_button;
-	button_t step_buttons[16];
-	rotary_encoder_t encoder;
-	segment_display_t display;
-} ui_devices_t;
+	int8_t rotary_diff;
+	bool start_button_pressed_now;
+} ui_devices_input_t;
 
 #endif /* UI_DEVICES_H */
