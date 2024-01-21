@@ -1,7 +1,7 @@
 #ifndef BEAT_CLOCK_H
 #define BEAT_CLOCK_H
 
-#include "util/usec_timer.h"
+#include "util/microsecond_timer.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -12,13 +12,13 @@ typedef struct {
 	bool is_playing;
 	uint8_t beat_pulses;
 	uint16_t tempo_bpm;
-} beat_clock_t;
+} BeatClock;
 
-beat_clock_t beat_clock_init(uint8_t tempo_bpm);
-void beat_clock_on_pulse(beat_clock_t* beat_clock);
-void beat_clock_start(beat_clock_t* beat_clock);
-void beat_clock_stop(beat_clock_t* beat_clock);
-bool beat_clock_sixteenth_note_ready(const beat_clock_t* beat_clock);
-bool beat_clock_midi_pulse_ready(const beat_clock_t* beat_clock);
+BeatClock BeatClock_init(uint8_t tempo_bpm);
+void BeatClock_on_pulse(BeatClock* beat_clock);
+void BeatClock_start(BeatClock* beat_clock);
+void BeatClock_stop(BeatClock* beat_clock);
+bool BeatClock_sixteenth_note_ready(const BeatClock* beat_clock);
+bool BeatClock_midi_pulse_ready(const BeatClock* beat_clock);
 
 #endif /* BEAT_CLOCK_H */

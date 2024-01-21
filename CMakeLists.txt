@@ -82,17 +82,17 @@ add_avr_executable("${PROJECT_NAME}"
   src/logging.c
   src/data/button.c
   src/hardware/gpio.c
-  src/hardware/hw_serial.c
+  src/hardware/hardware_serial.c
   src/hardware/rotary_encoder.c
   src/hardware/segment_display.c
   src/hardware/shift_register.c
   src/hardware/spi.c
-  src/hardware/sw_serial.c
+  src/hardware/software_serial.c
   src/hardware/timer0.c
   src/hardware/timer1.c
   src/sequencer/beat_clock.c
   src/user_interface/user_interface.c
-  src/util/usec_timer.c
+  src/util/microsecond_timer.c
 )
 avr_target_include_directories("${PROJECT_NAME}" PRIVATE src)
 add_definitions("-DF_CPU=${MCU_SPEED}")
