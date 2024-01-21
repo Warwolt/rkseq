@@ -7,7 +7,7 @@
 
 void SoftwareSerial_pin_change_irq(void);
 
-void SoftwareSerial_initialize(uint16_t baud, GpioPin rx_pin, GpioPin tx_pin);
+void SoftwareSerial_init(uint16_t baud, GpioPin rx_pin, GpioPin tx_pin);
 uint16_t SoftwareSerial_available_bytes(void);
 void SoftwareSerial_read(uint8_t* byte);
 void SoftwareSerial_read_bytes(uint8_t* byte_buf, uint16_t byte_buf_len);

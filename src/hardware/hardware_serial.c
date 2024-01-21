@@ -87,7 +87,7 @@ uint8_t HardwareSerial_num_available_bytes(void) {
 	return (RING_BUFFER_SIZE + g_rx_buffer.head - g_rx_buffer.tail) % RING_BUFFER_SIZE;
 }
 
-void HardwareSerial_initialize(int baud) {
+void HardwareSerial_init(int baud) {
 	// enable "double the USART transmission speed"
 	UCSR0A = 1 << U2X0;
 

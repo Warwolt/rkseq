@@ -31,7 +31,7 @@ void Timer0_timer_overflow_irq(void) {
 }
 
 // Configures Timer 0 to be used for counting elapsed milliseconds
-void Timer0_initialize() {
+void Timer0_init() {
 	// Set prescaler to 8
 	set_bit(TCCR0B, CS01);
 	clear_bit(TCCR0B, CS00);

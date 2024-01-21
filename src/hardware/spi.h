@@ -12,7 +12,7 @@ typedef struct {
 	int: 0;
 } Spi;
 
-Spi Spi_initialize(SpiDataOrder data_order);
+Spi Spi_init(SpiDataOrder data_order);
 uint8_t Spi_send(Spi spi, uint8_t byte);
 uint8_t Spi_receive(Spi spi);
 

@@ -39,7 +39,7 @@ void SoftwareSerial_pin_change_irq(void) {
 	}
 }
 
-void SoftwareSerial_initialize(uint16_t baud, GpioPin rx_pin, GpioPin tx_pin) {
+void SoftwareSerial_init(uint16_t baud, GpioPin rx_pin, GpioPin tx_pin) {
 	g_rx_pin = rx_pin;
 	g_tx_pin = tx_pin;
 

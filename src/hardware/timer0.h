@@ -5,7 +5,7 @@
 
 void Timer0_timer_overflow_irq(void);
 
-void Timer0_initialize(void);
+void Timer0_init(void);
 uint32_t Timer0_now_ms(void);
 uint64_t Timer0_now_us(void);
 

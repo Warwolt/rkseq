@@ -2,7 +2,7 @@
 
 #include "util/bits.h"
 
-void Timer1_initialize(void) {
+void Timer1_init(void) {
 	set_bit(TIMSK1, OCIE1A); // Enable "Output Compare A Match" interrupts
 	set_bit(TCCR1B, WGM12); // Clear counter on "Compare A Match"
 }
