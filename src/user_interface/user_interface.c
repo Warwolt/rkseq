@@ -8,8 +8,8 @@ user_interface_events_t user_interface_update(user_interface_t* ui, const user_i
 	user_interface_events_t events = { 0 };
 
 	/* Set Tempo */
-	if (input->rotary_encoder_diff) {
-		events.new_tempo_bpm = beat_clock->tempo_bpm + input->rotary_encoder_diff;
+	if (input->RotaryEncoder_diff) {
+		events.new_tempo_bpm = beat_clock->tempo_bpm + input->RotaryEncoder_diff;
 	}
 
 	/* Tempo display */

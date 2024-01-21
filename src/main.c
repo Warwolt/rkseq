@@ -118,7 +118,7 @@ int main(void) {
 	shift_register_t step_buttons_shift_reg = shift_register_init(spi, step_buttons_latch_pin);
 	// shift_register_t step_leds_shift_reg = shift_register_init(spi, step_leds_latch_pin);
 	button_t step_buttons[16];
-	rotary_encoder_t rotary_encoder = rotary_encoder_init(encoder_a_pin, encoder_b_pin);
+	RotaryEncoder rotary_encoder = RotaryEncoder_init(encoder_a_pin, encoder_b_pin);
 	g_segment_display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin);
 	g_beat_clock = beat_clock_init(DEFAULT_BPM);
 
@@ -136,7 +136,7 @@ int main(void) {
 		/* Input */
 		update_button_states(step_buttons, 8, &step_buttons_shift_reg);
 		const user_interface_input_t user_interface_input = {
-			.rotary_encoder_diff = rotary_encoder_read(&rotary_encoder),
+			.RotaryEncoder_diff = RotaryEncoder_read(&rotary_encoder),
 		};
 
 		/* Update */

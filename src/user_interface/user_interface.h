@@ -11,7 +11,7 @@ typedef struct {
 } user_interface_t;
 
 typedef struct {
-	int8_t rotary_encoder_diff;
+	int8_t RotaryEncoder_diff;
 } user_interface_input_t;
 
 typedef struct {
