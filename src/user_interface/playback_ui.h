@@ -12,6 +12,6 @@ typedef struct {
 	int8_t tempo_diff;
 } playback_control_events_t;
 
-playback_control_events_t playback_control_update(const ui_devices_input_t* input, const beat_clock_t* beat_clock);
+playback_control_events_t playback_ui_update(const ui_devices_input_t* input, const beat_clock_t* beat_clock);
 
 #endif /* PLAYBACK_CONTROL_H */

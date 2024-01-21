@@ -11,7 +11,7 @@
 #include "hardware/timer1.h"
 #include "logging.h"
 #include "sequencer/beat_clock.h"
-#include "user_interface/playback_control.h"
+#include "user_interface/playback_ui.h"
 #include "user_interface/ui_devices.h"
 #include "util/bits.h"
 #include "util/math.h"
@@ -139,7 +139,7 @@ int main(void) {
 
 		/* Update */
 		{
-			const playback_control_events_t playback_events = playback_control_update(&devices_input, &g_beat_clock);
+			const playback_control_events_t playback_events = playback_ui_update(&devices_input, &g_beat_clock);
 			if (playback_events.tempo_diff) {
 				tempo_bpm += playback_events.tempo_diff;
 				update_tempo(&g_beat_clock, tempo_bpm);
