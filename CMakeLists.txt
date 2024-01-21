@@ -92,7 +92,7 @@ add_avr_executable("${PROJECT_NAME}"
   src/hardware/timer1.c
   src/sequencer/beat_clock.c
   src/user_interface/user_interface.c
-  src/util/usec_timer.c
+  src/util/microsecond_timer.c
 )
 avr_target_include_directories("${PROJECT_NAME}" PRIVATE src)
 add_definitions("-DF_CPU=${MCU_SPEED}")

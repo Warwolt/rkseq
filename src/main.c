@@ -14,7 +14,7 @@
 #include "user_interface/user_interface.h"
 #include "util/bits.h"
 #include "util/math.h"
-#include "util/usec_timer.h"
+#include "util/microsecond_timer.h"
 
 #include <avr/interrupt.h>
 #include <avr/io.h>
@@ -71,7 +71,7 @@ static void globally_enable_interrupts(void) {
 	sei();
 }
 
-static void update_Button_states(Button* buttons, uint8_t num_buttons, const ShiftRegister* shift_reg) {
+static void update_button_states(Button* buttons, uint8_t num_buttons, const ShiftRegister* shift_reg) {
 	bool Button_input[256];
 	ShiftRegister_read(shift_reg, Button_input, num_buttons);
 	for (uint8_t i = 0; i < num_buttons; i++) {
@@ -128,13 +128,12 @@ int main(void) {
 	// Start beat timer
 	{
 		set_playback_tempo(&g_beat_clock, DEFAULT_BPM);
-		Timer1_set_period(10417); // set period to 10417 ticks (96 PPQN => 120 BPM)
 		Timer1_start();
 	}
 	LOG_INFO("Program Start\n");
 	while (true) {
 		/* Input */
-		update_Button_states(step_buttons, 8, &step_buttons_shift_reg);
+		update_button_states(step_buttons, 8, &step_buttons_shift_reg);
 		const UserInterfaceInput UserInterface_input = {
 			.RotaryEncoder_diff = RotaryEncoder_read(&rotary_encoder),
 		};

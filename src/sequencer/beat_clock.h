@@ -1,7 +1,7 @@
 #ifndef BEAT_CLOCK_H
 #define BEAT_CLOCK_H
 
-#include "util/usec_timer.h"
+#include "util/microsecond_timer.h"
 
 #include <stdbool.h>
 #include <stdint.h>
