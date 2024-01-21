@@ -94,18 +94,18 @@ static void set_playback_tempo(beat_clock_t* beat_clock, uint8_t bpm) {
 
 int main(void) {
 	/* Setup */
-	// const gpio_pin_t debug_pin1 = gpio_pin_init_mode(&PORTC, 3, PIN_MODE_OUTPUT);
-	// const gpio_pin_t debug_pin2 = gpio_pin_init_mode(&PORTC, 4, PIN_MODE_OUTPUT);
-	// const gpio_pin_t pulse_pin = gpio_pin_init_mode(&PORTC, 5, PIN_MODE_OUTPUT);
-	const gpio_pin_t midi_rx_pin = gpio_pin_init(&PORTD, 2);
-	const gpio_pin_t midi_tx_pin = gpio_pin_init(&PORTD, 3);
-	const gpio_pin_t encoder_a_pin = gpio_pin_init(&PORTD, 4);
-	const gpio_pin_t encoder_b_pin = gpio_pin_init(&PORTD, 5);
-	const gpio_pin_t display_data_pin = gpio_pin_init(&PORTD, 6);
-	const gpio_pin_t display_latch_pin = gpio_pin_init(&PORTD, 7);
-	const gpio_pin_t display_clock_pin = gpio_pin_init(&PORTB, 0);
-	const gpio_pin_t step_buttons_latch_pin = gpio_pin_init(&PORTB, 1);
-	// const gpio_pin_t step_leds_latch_pin = gpio_pin_init(&PORTB, 2);
+	// const GpioPin debug_pin1 = GpioPin_init_mode(&PORTC, 3, PIN_MODE_OUTPUT);
+	// const GpioPin debug_pin2 = GpioPin_init_mode(&PORTC, 4, PIN_MODE_OUTPUT);
+	// const GpioPin pulse_pin = GpioPin_init_mode(&PORTC, 5, PIN_MODE_OUTPUT);
+	const GpioPin midi_rx_pin = GpioPin_init(&PORTD, 2);
+	const GpioPin midi_tx_pin = GpioPin_init(&PORTD, 3);
+	const GpioPin encoder_a_pin = GpioPin_init(&PORTD, 4);
+	const GpioPin encoder_b_pin = GpioPin_init(&PORTD, 5);
+	const GpioPin display_data_pin = GpioPin_init(&PORTD, 6);
+	const GpioPin display_latch_pin = GpioPin_init(&PORTD, 7);
+	const GpioPin display_clock_pin = GpioPin_init(&PORTB, 0);
+	const GpioPin step_buttons_latch_pin = GpioPin_init(&PORTB, 1);
+	// const GpioPin step_leds_latch_pin = GpioPin_init(&PORTB, 2);
 
 	globally_enable_interrupts();
 	// FIXME: refactor timer0 to have similar API as timer1 and make the

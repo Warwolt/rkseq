@@ -9,8 +9,8 @@
 #include <avr/io.h>
 #include <util/delay.h>
 
-static gpio_pin_t g_rx_pin;
-static gpio_pin_t g_tx_pin;
+static GpioPin g_rx_pin;
+static GpioPin g_tx_pin;
 static ring_buffer_t g_rx_buffer;
 
 static uint16_t g_start_bit_delay;
@@ -19,7 +19,7 @@ static uint16_t g_stop_bit_delay;
 static uint16_t g_tx_bit_delay;
 
 void sw_serial_pin_change_irq(void) {
-	if (gpio_pin_read(g_rx_pin) == 0) { // check if start bit is present
+	if (GpioPin_read(g_rx_pin) == 0) { // check if start bit is present
 		clear_bit(PCICR, PCIE2); // disable interrupts while receiving
 		uint8_t byte = 0;
 
@@ -28,7 +28,7 @@ void sw_serial_pin_change_irq(void) {
 			// subtract to compensate for loop and function calls
 			_delay_loop_2(g_data_bit_delay - 23);
 
-			const uint8_t bit = gpio_pin_read(g_rx_pin);
+			const uint8_t bit = GpioPin_read(g_rx_pin);
 			byte |= bit << i;
 		}
 
@@ -39,7 +39,7 @@ void sw_serial_pin_change_irq(void) {
 	}
 }
 
-void sw_serial_initialize(uint16_t baud, gpio_pin_t rx_pin, gpio_pin_t tx_pin) {
+void sw_serial_initialize(uint16_t baud, GpioPin rx_pin, GpioPin tx_pin) {
 	g_rx_pin = rx_pin;
 	g_tx_pin = tx_pin;
 
@@ -50,8 +50,8 @@ void sw_serial_initialize(uint16_t baud, gpio_pin_t rx_pin, gpio_pin_t tx_pin) {
 	g_stop_bit_delay = g_data_bit_delay;
 	g_tx_bit_delay = clamped_subtract(g_data_bit_delay, 36 / 4);
 
-	gpio_pin_configure(g_rx_pin, PIN_MODE_INPUT);
-	gpio_pin_configure(g_tx_pin, PIN_MODE_OUTPUT);
+	GpioPin_configure(g_rx_pin, PIN_MODE_INPUT);
+	GpioPin_configure(g_tx_pin, PIN_MODE_OUTPUT);
 	set_bit(PCICR, PCIE2); // enable pin change interrupts
 
 	// FIXME: this should either be deduced from rx_pin arg or be configured elsewhere!!!
@@ -76,14 +76,14 @@ void sw_serial_read_bytes(uint8_t* byte_buf, uint16_t byte_buf_len) {
 void sw_serial_write(uint8_t byte) {
 	// copy into local variables to make compiler put the
 	// values into registers before disabling interrupts.
-	const gpio_pin_t tx_pin = g_tx_pin;
+	const GpioPin tx_pin = g_tx_pin;
 	const uint16_t bit_delay = g_tx_bit_delay;
 	const uint8_t old_SREG = SREG;
 
 	cli(); // disable interrupts to not mess with timing
 
 	// write start bit
-	gpio_pin_clear(tx_pin);
+	GpioPin_clear(tx_pin);
 	_delay_loop_2(bit_delay);
 
 	// write bits
@@ -98,7 +98,7 @@ void sw_serial_write(uint8_t byte) {
 	}
 
 	// write stop bit
-	gpio_pin_set(tx_pin);
+	GpioPin_set(tx_pin);
 	_delay_loop_2(bit_delay);
 
 	// re-enable interrupts

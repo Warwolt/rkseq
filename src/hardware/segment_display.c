@@ -16,16 +16,16 @@ static int8_t digit_segments[10] = {
 static void segment_display_output_byte(segment_display_t* display, uint8_t byte) {
 	for (uint8_t i = 0; i < 8; i++) {
 		const uint8_t bit = (byte >> ((8 - 1) - i)) & 1;
-		gpio_pin_write(display->data_pin, bit);
-		gpio_pin_set(display->clock_pin);
-		gpio_pin_clear(display->clock_pin);
+		GpioPin_write(display->data_pin, bit);
+		GpioPin_set(display->clock_pin);
+		GpioPin_clear(display->clock_pin);
 	}
 }
 
-segment_display_t segment_display_init(gpio_pin_t clock_pin, gpio_pin_t latch_pin, gpio_pin_t data_pin) {
-	gpio_pin_configure(clock_pin, PIN_MODE_OUTPUT);
-	gpio_pin_configure(latch_pin, PIN_MODE_OUTPUT);
-	gpio_pin_configure(data_pin, PIN_MODE_OUTPUT);
+segment_display_t segment_display_init(GpioPin clock_pin, GpioPin latch_pin, GpioPin data_pin) {
+	GpioPin_configure(clock_pin, PIN_MODE_OUTPUT);
+	GpioPin_configure(latch_pin, PIN_MODE_OUTPUT);
+	GpioPin_configure(data_pin, PIN_MODE_OUTPUT);
 	return (segment_display_t) {
 		.clock_pin = clock_pin,
 		.latch_pin = latch_pin,
@@ -67,8 +67,8 @@ void segment_display_update(segment_display_t* display) {
 	segment_display_output_byte(display, 0x1 << display->digits_index);
 
 	// output digit
-	gpio_pin_set(display->latch_pin);
-	gpio_pin_clear(display->latch_pin);
+	GpioPin_set(display->latch_pin);
+	GpioPin_clear(display->latch_pin);
 
 	// cycle next index, index > 7 outputs no digit which dims the display
 	// since the digits now have a duty cycle less than 100 %
