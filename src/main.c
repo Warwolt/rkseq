@@ -28,6 +28,16 @@
 #define MIDI_CONTINUE_BYTE 0xFB
 #define MIDI_STOP_BYTE 0xFC
 
+typedef struct {
+	BeatClock beat_clock;
+} StepSequencer;
+
+StepSequencer StepSequencer_init(void) {
+	return (StepSequencer) {
+		.beat_clock = BeatClock_init(DEFAULT_BPM),
+	};
+}
+
 /* ----------------------- Interrupt service routines ----------------------- */
 static SegmentDisplay* g_segment_display_ptr;
 static BeatClock* g_beat_clock_ptr;
@@ -79,14 +89,6 @@ static void update_button_states(Button* buttons, uint8_t num_buttons, const Shi
 	}
 }
 
-// static uint8_t read_midi_byte(void) {
-// 	uint8_t midi_byte = 0;
-// 	if (SoftwareSerial_available_bytes() > 0) {
-// 		SoftwareSerial_read(&midi_byte);
-// 	}
-// 	return midi_byte;
-// }
-
 static UserInterfaceInput read_ui_input(RotaryEncoder* rotary_encoder) {
 	return (UserInterfaceInput) {
 		.rotary_encoder_diff = RotaryEncoder_read(rotary_encoder),
@@ -116,9 +118,6 @@ static void update_segment_display(SegmentDisplay* segment_display, char* chars)
 
 int main(void) {
 	/* Setup */
-	// const GpioPin debug_pin1 = GpioPin_init_mode(&PORTC, 3, PIN_MODE_OUTPUT);
-	// const GpioPin debug_pin2 = GpioPin_init_mode(&PORTC, 4, PIN_MODE_OUTPUT);
-	// const GpioPin pulse_pin = GpioPin_init_mode(&PORTC, 5, PIN_MODE_OUTPUT);
 	const GpioPin midi_rx_pin = GpioPin_init(&PORTD, 2);
 	const GpioPin midi_tx_pin = GpioPin_init(&PORTD, 3);
 	const GpioPin encoder_a_pin = GpioPin_init(&PORTD, 4);
@@ -143,31 +142,31 @@ int main(void) {
 	SegmentDisplay segment_display = SegmentDisplay_init(display_clock_pin, display_latch_pin, display_data_pin);
 	Button step_buttons[16];
 
-	BeatClock beat_clock = BeatClock_init(DEFAULT_BPM);
+	StepSequencer step_sequencer = StepSequencer_init();
 	UserInterface user_interface = UserInterface_init();
 
 	g_segment_display_ptr = &segment_display;
-	g_beat_clock_ptr = &beat_clock;
+	g_beat_clock_ptr = &step_sequencer.beat_clock;
 
 	/* Run */
 	LOG_INFO("Program Start\n");
-	set_playback_tempo(&beat_clock, timer1, DEFAULT_BPM);
-	start_playback(&beat_clock, timer1);
+	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_BPM);
+	start_playback(&step_sequencer.beat_clock, timer1);
 	while (true) {
 		/* Input */
 		update_button_states(step_buttons, 8, &step_buttons_shift_reg);
 		const UserInterfaceInput ui_input = read_ui_input(&rotary_encoder);
 
 		/* Update */
-		const UserInterfaceEvents ui_events = UserInterface_update(&user_interface, &ui_input, &beat_clock);
+		const UserInterfaceEvents ui_events = UserInterface_update(&user_interface, &ui_input, &step_sequencer.beat_clock);
 		if (ui_events.new_tempo_bpm) {
-			set_playback_tempo(&beat_clock, timer1, ui_events.new_tempo_bpm);
+			set_playback_tempo(&step_sequencer.beat_clock, timer1, ui_events.new_tempo_bpm);
 		}
 		if (ui_events.start_playback) {
-			start_playback(&beat_clock, timer1);
+			start_playback(&step_sequencer.beat_clock, timer1);
 		}
 		if (ui_events.stop_playback) {
-			stop_playback(&beat_clock, timer1);
+			stop_playback(&step_sequencer.beat_clock, timer1);
 		}
 
 		/* Output */
