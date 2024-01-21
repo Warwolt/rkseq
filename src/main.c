@@ -107,12 +107,10 @@ int main(void) {
 	// const GpioPin step_leds_latch_pin = GpioPin_init(&PORTB, 2);
 
 	globally_enable_interrupts();
-	// FIXME: refactor timer0 to have similar API as timer1 and make the
-	// ms-timer a separate module that gets wired up with timer0 via interrupts
 	Timer0_init();
+	Timer1_init();
 	HardwareSerial_init(9600); // uses PD0 and PD1
 	SoftwareSerial_init(31250, midi_rx_pin, midi_tx_pin);
-	Timer1_init();
 	Spi spi = Spi_init(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
 	ShiftRegister step_buttons_shift_reg = ShiftRegister_init(spi, step_buttons_latch_pin);
 	// ShiftRegister step_leds_shift_reg = ShiftRegister_init(spi, step_leds_latch_pin);
