@@ -1,4 +1,4 @@
-#include "logging.h"
+#include "debug/logging.h"
 
 #include "hardware/hardware_serial.h"
 #include "hardware/timer0.h"
@@ -34,7 +34,7 @@ static void print_string(const char* str) {
 	}
 }
 
-void logging_printf(log_level_t level, const char* file, uint16_t line, const char* fmt, ...) {
+void Logging_printf(log_level_t level, const char* file, uint16_t line, const char* fmt, ...) {
 	/* Print prefix */
 	HardwareSerial_write(log_level_char[level]);
 	HardwareSerial_write(' ');

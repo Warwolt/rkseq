@@ -1,4 +1,5 @@
 #include "data/ring_buffer.h"
+#include "debug/logging.h"
 #include "hardware/gpio.h"
 #include "hardware/hardware_serial.h"
 #include "hardware/rotary_encoder.h"
@@ -10,7 +11,6 @@
 #include "hardware/timer1.h"
 #include "input/button.h"
 #include "input/time.h"
-#include "logging.h"
 #include "sequencer/beat_clock.h"
 #include "user_interface/user_interface.h"
 #include "util/bits.h"
@@ -133,12 +133,12 @@ int main(void) {
 	while (true) {
 		/* Input */
 		update_button_states(step_buttons, 8, &step_buttons_shift_reg);
-		const UserInterfaceInput UserInterface_input = {
+		const UserInterfaceInput ui_input = {
 			.rotary_encoder_diff = RotaryEncoder_read(&rotary_encoder),
 		};
 
 		/* Update */
-		const UserInterfaceEvents ui_events = UserInterface_update(&user_interface, &UserInterface_input, &beat_clock);
+		const UserInterfaceEvents ui_events = UserInterface_update(&user_interface, &ui_input, &beat_clock);
 		if (ui_events.new_tempo_bpm) {
 			set_playback_tempo(&beat_clock, ui_events.new_tempo_bpm);
 		}
