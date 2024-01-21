@@ -39,7 +39,7 @@ ISR(TIMER0_OVF_vect) {
 		last_update++;
 		if (last_update > 5) {
 			last_update = 0;
-			SegmentDisplay_update(g_segment_display_ptr); // cycle to next digit
+			SegmentDisplay_output_next_char(g_segment_display_ptr); // cycle to next digit
 		}
 	}
 }
@@ -86,9 +86,31 @@ static void update_button_states(Button* buttons, uint8_t num_buttons, const Shi
 // 	return midi_byte;
 // }
 
+static UserInterfaceInput read_ui_input(RotaryEncoder* rotary_encoder) {
+	return (UserInterfaceInput) {
+		.rotary_encoder_diff = RotaryEncoder_read(rotary_encoder),
+	};
+}
+
 static void set_playback_tempo(BeatClock* beat_clock, uint8_t bpm) {
 	beat_clock->tempo_bpm = bpm;
 	Timer1_set_period((1e6 * 60) / (BEAT_CLOCK_SEQUENCER_PPQN * bpm) / TIMER1_USEC_PER_TICK);
+}
+
+static void start_playback(BeatClock* beat_clock) {
+	BeatClock_start(beat_clock);
+	Timer1_start();
+}
+
+static void stop_playback(BeatClock* beat_clock) {
+	BeatClock_stop(beat_clock);
+	Timer1_stop();
+}
+
+static void update_segment_display(SegmentDisplay* segment_display, char* chars) {
+	for (int i = 0; i < 4; i++) {
+		SegmentDisplay_set_char(segment_display, i, chars[i]);
+	}
 }
 
 int main(void) {
@@ -109,7 +131,6 @@ int main(void) {
 	globally_enable_interrupts();
 	Timer0_init();
 	Timer1_init();
-	Timer1_start();
 	HardwareSerial_init(9600); // uses PD0 and PD1
 	SoftwareSerial_init(31250, midi_rx_pin, midi_tx_pin);
 	Spi spi = Spi_init(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
@@ -121,7 +142,6 @@ int main(void) {
 	Button step_buttons[16];
 
 	BeatClock beat_clock = BeatClock_init(DEFAULT_BPM);
-	set_playback_tempo(&beat_clock, DEFAULT_BPM);
 	UserInterface user_interface = UserInterface_init();
 
 	g_segment_display_ptr = &segment_display;
@@ -129,12 +149,12 @@ int main(void) {
 
 	/* Run */
 	LOG_INFO("Program Start\n");
+	set_playback_tempo(&beat_clock, DEFAULT_BPM);
+	start_playback(&beat_clock);
 	while (true) {
 		/* Input */
 		update_button_states(step_buttons, 8, &step_buttons_shift_reg);
-		const UserInterfaceInput ui_input = {
-			.rotary_encoder_diff = RotaryEncoder_read(&rotary_encoder),
-		};
+		const UserInterfaceInput ui_input = read_ui_input(&rotary_encoder);
 
 		/* Update */
 		const UserInterfaceEvents ui_events = UserInterface_update(&user_interface, &ui_input, &beat_clock);
@@ -142,17 +162,13 @@ int main(void) {
 			set_playback_tempo(&beat_clock, ui_events.new_tempo_bpm);
 		}
 		if (ui_events.start_playback) {
-			BeatClock_start(&beat_clock);
+			start_playback(&beat_clock);
 		}
 		if (ui_events.stop_playback) {
-			BeatClock_stop(&beat_clock);
+			stop_playback(&beat_clock);
 		}
 
 		/* Output */
-		// Tempo display
-		SegmentDisplay_set_char(&segment_display, 0, user_interface.segment_display_chars[0]);
-		SegmentDisplay_set_char(&segment_display, 1, user_interface.segment_display_chars[1]);
-		SegmentDisplay_set_char(&segment_display, 2, user_interface.segment_display_chars[2]);
-		SegmentDisplay_set_char(&segment_display, 3, user_interface.segment_display_chars[3]);
+		update_segment_display(&segment_display, user_interface.segment_display_chars);
 	}
 }

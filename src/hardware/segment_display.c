@@ -36,7 +36,7 @@ SegmentDisplay SegmentDisplay_init(GpioPin clock_pin, GpioPin latch_pin, GpioPin
 	};
 }
 
-void SegmentDisplay_update(SegmentDisplay* display) {
+void SegmentDisplay_output_next_char(SegmentDisplay* display) {
 	// write segments
 	int8_t byte = 0;
 	if (display->current_character < 4) {
