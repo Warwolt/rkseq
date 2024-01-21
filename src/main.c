@@ -1,4 +1,3 @@
-#include "data/button.h"
 #include "data/ring_buffer.h"
 #include "hardware/gpio.h"
 #include "hardware/hardware_serial.h"
@@ -9,6 +8,7 @@
 #include "hardware/spi.h"
 #include "hardware/timer0.h"
 #include "hardware/timer1.h"
+#include "input/button.h"
 #include "logging.h"
 #include "sequencer/beat_clock.h"
 #include "user_interface/user_interface.h"
@@ -136,14 +136,14 @@ int main(void) {
 		};
 
 		/* Update */
-		const UserInterfaceEvents playback_events = UserInterface_update(&user_interface, &UserInterface_input, &g_beat_clock);
-		if (playback_events.new_tempo_bpm) {
-			set_playback_tempo(&g_beat_clock, playback_events.new_tempo_bpm);
+		const UserInterfaceEvents ui_events = UserInterface_update(&user_interface, &UserInterface_input, &g_beat_clock);
+		if (ui_events.new_tempo_bpm) {
+			set_playback_tempo(&g_beat_clock, ui_events.new_tempo_bpm);
 		}
-		if (playback_events.start_playback) {
+		if (ui_events.start_playback) {
 			BeatClock_start(&g_beat_clock);
 		}
-		if (playback_events.stop_playback) {
+		if (ui_events.stop_playback) {
 			BeatClock_stop(&g_beat_clock);
 		}
 

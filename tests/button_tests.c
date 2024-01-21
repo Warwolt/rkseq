@@ -1,6 +1,6 @@
 #include <rktest/rktest.h>
 
-#include "data/button.h"
+#include "input/button.h"
 
 static uint32_t g_time_now;
 

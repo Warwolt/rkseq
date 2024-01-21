@@ -1,4 +1,4 @@
-#include "data/button.h"
+#include "input/button.h"
 
 static uint32_t debounce_input_state(Button* button, ButtonState input_state, uint32_t time_now_ms) {
 	if (time_now_ms - button->last_stable_signal_ms >= BUTTON_DEBOUNCE_MS) {
