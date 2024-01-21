@@ -1,4 +1,4 @@
-#include "hardware/sw_serial.h"
+#include "hardware/software_serial.h"
 
 #include "data/ring_buffer.h"
 #include "hardware/gpio.h"
@@ -18,7 +18,7 @@ static uint16_t g_data_bit_delay;
 static uint16_t g_stop_bit_delay;
 static uint16_t g_tx_bit_delay;
 
-void sw_serial_pin_change_irq(void) {
+void SoftwareSerial_pin_change_irq(void) {
 	if (GpioPin_read(g_rx_pin) == 0) { // check if start bit is present
 		clear_bit(PCICR, PCIE2); // disable interrupts while receiving
 		uint8_t byte = 0;
@@ -39,7 +39,7 @@ void sw_serial_pin_change_irq(void) {
 	}
 }
 
-void sw_serial_initialize(uint16_t baud, GpioPin rx_pin, GpioPin tx_pin) {
+void SoftwareSerial_initialize(uint16_t baud, GpioPin rx_pin, GpioPin tx_pin) {
 	g_rx_pin = rx_pin;
 	g_tx_pin = tx_pin;
 
@@ -58,22 +58,22 @@ void sw_serial_initialize(uint16_t baud, GpioPin rx_pin, GpioPin tx_pin) {
 	set_bit(PCMSK2, PCINT18); // configure PD2-pin (Rx) to trigger interrupts
 }
 
-uint16_t sw_serial_available_bytes(void) {
+uint16_t SoftwareSerial_available_bytes(void) {
 	return ring_buffer_available_bytes(&g_rx_buffer);
 }
 
-void sw_serial_read(uint8_t* byte) {
+void SoftwareSerial_read(uint8_t* byte) {
 	ring_buffer_read(&g_rx_buffer, byte);
 }
 
-void sw_serial_read_bytes(uint8_t* byte_buf, uint16_t byte_buf_len) {
-	uint16_t bytes_to_read = min(sw_serial_available_bytes(), byte_buf_len);
+void SoftwareSerial_read_bytes(uint8_t* byte_buf, uint16_t byte_buf_len) {
+	uint16_t bytes_to_read = min(SoftwareSerial_available_bytes(), byte_buf_len);
 	for (uint16_t i = 0; i < bytes_to_read; i++) {
 		ring_buffer_read(&g_rx_buffer, &byte_buf[i]);
 	}
 }
 
-void sw_serial_write(uint8_t byte) {
+void SoftwareSerial_write(uint8_t byte) {
 	// copy into local variables to make compiler put the
 	// values into registers before disabling interrupts.
 	const GpioPin tx_pin = g_tx_pin;

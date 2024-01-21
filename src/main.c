@@ -5,8 +5,8 @@
 #include "hardware/rotary_encoder.h"
 #include "hardware/segment_display.h"
 #include "hardware/shift_register.h"
+#include "hardware/software_serial.h"
 #include "hardware/spi.h"
-#include "hardware/sw_serial.h"
 #include "hardware/timer0.h"
 #include "hardware/timer1.h"
 #include "logging.h"
@@ -50,12 +50,12 @@ ISR(TIMER0_OVF_vect) {
 ISR(TIMER1_COMPA_vect) {
 	beat_clock_on_pulse(&g_beat_clock);
 	if (beat_clock_midi_pulse_ready(&g_beat_clock)) {
-		sw_serial_write(MIDI_CLOCK_BYTE);
+		SoftwareSerial_write(MIDI_CLOCK_BYTE);
 	}
 }
 
 ISR(PCINT2_vect) {
-	sw_serial_pin_change_irq();
+	SoftwareSerial_pin_change_irq();
 }
 
 ISR(USART_RX_vect) {
@@ -81,8 +81,8 @@ static void update_button_states(button_t* buttons, uint8_t num_buttons, const S
 
 // static uint8_t read_midi_byte(void) {
 // 	uint8_t midi_byte = 0;
-// 	if (sw_serial_available_bytes() > 0) {
-// 		sw_serial_read(&midi_byte);
+// 	if (SoftwareSerial_available_bytes() > 0) {
+// 		SoftwareSerial_read(&midi_byte);
 // 	}
 // 	return midi_byte;
 // }
@@ -112,7 +112,7 @@ int main(void) {
 	// ms-timer a separate module that gets wired up with timer0 via interrupts
 	timer0_initialize();
 	HardwareSerial_initialize(9600); // uses PD0 and PD1
-	sw_serial_initialize(31250, midi_rx_pin, midi_tx_pin);
+	SoftwareSerial_initialize(31250, midi_rx_pin, midi_tx_pin);
 	timer1_initialize();
 	Spi spi = Spi_initialize(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
 	ShiftRegister step_buttons_shift_reg = ShiftRegister_init(spi, step_buttons_latch_pin);
