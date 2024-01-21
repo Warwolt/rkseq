@@ -110,6 +110,18 @@ static void stop_playback(BeatClock* beat_clock, Timer1 timer1) {
 	Timer1_stop(timer1);
 }
 
+static void handle_ui_events(StepSequencer* step_sequencer, Timer1 timer1, UserInterfaceEvents ui_events) {
+	if (ui_events.new_tempo_bpm) {
+		set_playback_tempo(&step_sequencer->beat_clock, timer1, ui_events.new_tempo_bpm);
+	}
+	if (ui_events.start_playback) {
+		start_playback(&step_sequencer->beat_clock, timer1);
+	}
+	if (ui_events.stop_playback) {
+		stop_playback(&step_sequencer->beat_clock, timer1);
+	}
+}
+
 static void update_segment_display(SegmentDisplay* segment_display, char* chars) {
 	for (int i = 0; i < 4; i++) {
 		SegmentDisplay_set_char(segment_display, i, chars[i]);
@@ -159,15 +171,7 @@ int main(void) {
 
 		/* Update */
 		const UserInterfaceEvents ui_events = UserInterface_update(&user_interface, &ui_input, &step_sequencer.beat_clock);
-		if (ui_events.new_tempo_bpm) {
-			set_playback_tempo(&step_sequencer.beat_clock, timer1, ui_events.new_tempo_bpm);
-		}
-		if (ui_events.start_playback) {
-			start_playback(&step_sequencer.beat_clock, timer1);
-		}
-		if (ui_events.stop_playback) {
-			stop_playback(&step_sequencer.beat_clock, timer1);
-		}
+		handle_ui_events(&step_sequencer, timer1, ui_events);
 
 		/* Output */
 		update_segment_display(&segment_display, user_interface.segment_display_chars);
