@@ -1,7 +1,7 @@
 #include "data/button.h"
 #include "data/ring_buffer.h"
 #include "hardware/gpio.h"
-#include "hardware/hw_serial.h"
+#include "hardware/hardware_serial.h"
 #include "hardware/rotary_encoder.h"
 #include "hardware/segment_display.h"
 #include "hardware/shift_register.h"
@@ -59,11 +59,11 @@ ISR(PCINT2_vect) {
 }
 
 ISR(USART_RX_vect) {
-	hw_serial_rx_complete_irq();
+	HardwareSerial_rx_complete_irq();
 }
 
 ISR(USART_UDRE_vect) {
-	hw_serial_tx_udr_empty_irq();
+	HardwareSerial_tx_udr_empty_irq();
 }
 
 /* ------------------------------ Main Program ------------------------------ */
@@ -111,7 +111,7 @@ int main(void) {
 	// FIXME: refactor timer0 to have similar API as timer1 and make the
 	// ms-timer a separate module that gets wired up with timer0 via interrupts
 	timer0_initialize();
-	hw_serial_initialize(9600); // uses PD0 and PD1
+	HardwareSerial_initialize(9600); // uses PD0 and PD1
 	sw_serial_initialize(31250, midi_rx_pin, midi_tx_pin);
 	timer1_initialize();
 	spi_t spi = spi_initialize(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5

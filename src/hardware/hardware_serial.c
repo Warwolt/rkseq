@@ -1,6 +1,6 @@
 // based on the Arduino Core `Serial` C++ class
 
-#include "hardware/hw_serial.h"
+#include "hardware/hardware_serial.h"
 
 #include "hardware/gpio.h"
 #include "hardware/timer0.h"
@@ -17,7 +17,7 @@
 static ring_buffer_t g_rx_buffer;
 static ring_buffer_t g_tx_buffer;
 
-void hw_serial_rx_complete_irq(void) {
+void HardwareSerial_rx_complete_irq(void) {
 	const uint8_t byte = UDR0;
 	const bool parity_error = bit_is_set(UCSR0A, UPE0);
 	if (parity_error) {
@@ -27,7 +27,7 @@ void hw_serial_rx_complete_irq(void) {
 	ring_buffer_write(&g_rx_buffer, byte);
 }
 
-void hw_serial_tx_udr_empty_irq(void) {
+void HardwareSerial_tx_udr_empty_irq(void) {
 	// If interrupts are enabled, there must be more data in the output
 	// buffer. Send the next byte
 	ring_buffer_read(&g_tx_buffer, (uint8_t*)&UDR0);
@@ -38,7 +38,7 @@ void hw_serial_tx_udr_empty_irq(void) {
 	}
 }
 
-static int hw_serial_read_byte_with_timeout() {
+static int HardwareSerial_read_byte_with_timeout() {
 	const unsigned long timeout_ms = 1000;
 	const unsigned long start_ms = timer0_now_ms();
 	uint8_t byte;
@@ -50,7 +50,7 @@ static int hw_serial_read_byte_with_timeout() {
 	return -1; // timed out
 }
 
-void hw_serial_write(uint8_t byte) {
+void HardwareSerial_write(uint8_t byte) {
 	ring_buffer_write(&g_tx_buffer, byte);
 
 	// If the output buffer is full, there's nothing for it other than to
@@ -62,7 +62,7 @@ void hw_serial_write(uint8_t byte) {
 			// interrupt has happened and call the handler to free up
 			// space for us.
 			if (bit_is_set(UCSR0A, UDRE0)) {
-				hw_serial_tx_udr_empty_irq();
+				HardwareSerial_tx_udr_empty_irq();
 			}
 		} else {
 			// nop, the interrupt handler will free up space for us
@@ -74,20 +74,20 @@ void hw_serial_write(uint8_t byte) {
 	}
 }
 
-void hw_serial_read_buf(uint8_t* buf, size_t buf_len) {
+void HardwareSerial_read_buf(uint8_t* buf, size_t buf_len) {
 	size_t index = 0;
-	int byte = hw_serial_read_byte_with_timeout();
+	int byte = HardwareSerial_read_byte_with_timeout();
 	while (byte >= 0 && index < buf_len) {
 		buf[index++] = (uint8_t)byte;
-		byte = hw_serial_read_byte_with_timeout();
+		byte = HardwareSerial_read_byte_with_timeout();
 	}
 }
 
-uint8_t hw_serial_num_available_bytes(void) {
+uint8_t HardwareSerial_num_available_bytes(void) {
 	return (RING_BUFFER_SIZE + g_rx_buffer.head - g_rx_buffer.tail) % RING_BUFFER_SIZE;
 }
 
-void hw_serial_initialize(int baud) {
+void HardwareSerial_initialize(int baud) {
 	// enable "double the USART transmission speed"
 	UCSR0A = 1 << U2X0;
 
