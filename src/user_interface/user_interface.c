@@ -1,5 +1,7 @@
 #include "user_interface/user_interface.h"
 
+#include "util/math.h"
+
 UserInterface UserInterface_init(void) {
 	return (UserInterface) { 0 };
 }
@@ -9,7 +11,7 @@ UserInterfaceEvents UserInterface_update(UserInterface* ui, const UserInterfaceI
 
 	/* Set Tempo */
 	if (input->RotaryEncoder_diff) {
-		events.new_tempo_bpm = beat_clock->tempo_bpm + input->RotaryEncoder_diff;
+		events.new_tempo_bpm = clamp(beat_clock->tempo_bpm + input->RotaryEncoder_diff, MIN_BPM, MAX_BPM);
 	}
 
 	/* Tempo display */

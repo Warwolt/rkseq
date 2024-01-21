@@ -21,10 +21,7 @@
 #include <stdbool.h>
 #include <util/delay.h>
 
-#define DEFAULT_BPM 120
 #define QUARTERNOTE_PULSE_LENGTH_US 500
-#define MIN_BPM 40
-#define MAX_BPM 200
 
 #define MIDI_CLOCK_BYTE 0xF8
 #define MIDI_START_BYTE 0xFA
