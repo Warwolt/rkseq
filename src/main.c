@@ -122,7 +122,7 @@ int main(void) {
 	g_segment_display = SegmentDisplay_init(display_clock_pin, display_latch_pin, display_data_pin);
 	g_beat_clock = BeatClock_init(DEFAULT_BPM);
 
-	user_interface_t user_interface = user_interface_init();
+	UserInterface user_interface = UserInterface_init();
 
 	/* Run */
 	// Start beat timer
@@ -135,12 +135,12 @@ int main(void) {
 	while (true) {
 		/* Input */
 		update_Button_states(step_buttons, 8, &step_buttons_shift_reg);
-		const user_interface_input_t user_interface_input = {
+		const UserInterfaceInput UserInterface_input = {
 			.RotaryEncoder_diff = RotaryEncoder_read(&rotary_encoder),
 		};
 
 		/* Update */
-		const user_interface_events_t playback_events = user_interface_update(&user_interface, &user_interface_input, &g_beat_clock);
+		const UserInterfaceEvents playback_events = UserInterface_update(&user_interface, &UserInterface_input, &g_beat_clock);
 		if (playback_events.new_tempo_bpm) {
 			set_playback_tempo(&g_beat_clock, playback_events.new_tempo_bpm);
 		}

@@ -1,11 +1,11 @@
 #include "user_interface/user_interface.h"
 
-user_interface_t user_interface_init(void) {
-	return (user_interface_t) { 0 };
+UserInterface UserInterface_init(void) {
+	return (UserInterface) { 0 };
 }
 
-user_interface_events_t user_interface_update(user_interface_t* ui, const user_interface_input_t* input, const BeatClock* beat_clock) {
-	user_interface_events_t events = { 0 };
+UserInterfaceEvents UserInterface_update(UserInterface* ui, const UserInterfaceInput* input, const BeatClock* beat_clock) {
+	UserInterfaceEvents events = { 0 };
 
 	/* Set Tempo */
 	if (input->RotaryEncoder_diff) {
