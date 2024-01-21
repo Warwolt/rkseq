@@ -41,7 +41,7 @@ ISR(TIMER0_OVF_vect) {
 	Timer0_timer_overflow_irq();
 	static uint8_t last_update = 0;
 	last_update++;
-	if (last_update > 10) {
+	if (last_update > 5) {
 		last_update = 0;
 		SegmentDisplay_update(&g_segment_display); // cycle to next digit
 	}
