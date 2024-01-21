@@ -11,7 +11,7 @@
 #include "hardware/timer1.h"
 #include "logging.h"
 #include "sequencer/beat_clock.h"
-#include "user_interface/playback_ui.h"
+#include "user_interface/user_interface.h"
 #include "util/bits.h"
 #include "util/math.h"
 #include "util/usec_timer.h"
@@ -122,7 +122,7 @@ int main(void) {
 	g_segment_display = segment_display_init(display_clock_pin, display_latch_pin, display_data_pin);
 	g_beat_clock = beat_clock_init(DEFAULT_BPM);
 
-	playback_ui_t playback_ui = playback_ui_init();
+	user_interface_t user_interface = user_interface_init();
 
 	/* Run */
 	// Start beat timer
@@ -135,12 +135,12 @@ int main(void) {
 	while (true) {
 		/* Input */
 		update_button_states(step_buttons, 8, &step_buttons_shift_reg);
-		const playback_ui_input_t playback_ui_input = {
+		const user_interface_input_t user_interface_input = {
 			.rotary_encoder_diff = rotary_encoder_read(&rotary_encoder),
 		};
 
 		/* Update */
-		const playback_ui_events_t playback_events = playback_ui_update(&playback_ui, &playback_ui_input, &g_beat_clock);
+		const user_interface_events_t playback_events = user_interface_update(&user_interface, &user_interface_input, &g_beat_clock);
 		if (playback_events.new_tempo_bpm) {
 			set_playback_tempo(&g_beat_clock, playback_events.new_tempo_bpm);
 		}
@@ -153,9 +153,9 @@ int main(void) {
 
 		/* Output */
 		// Tempo display
-		segment_display_set_digit(&g_segment_display, 0, playback_ui.display_digits[0]);
-		segment_display_set_digit(&g_segment_display, 1, playback_ui.display_digits[1]);
-		segment_display_set_digit(&g_segment_display, 2, playback_ui.display_digits[2]);
-		segment_display_set_digit(&g_segment_display, 3, playback_ui.display_digits[3]);
+		segment_display_set_digit(&g_segment_display, 0, user_interface.display_digits[0]);
+		segment_display_set_digit(&g_segment_display, 1, user_interface.display_digits[1]);
+		segment_display_set_digit(&g_segment_display, 2, user_interface.display_digits[2]);
+		segment_display_set_digit(&g_segment_display, 3, user_interface.display_digits[3]);
 	}
 }

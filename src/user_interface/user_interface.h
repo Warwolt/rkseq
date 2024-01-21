@@ -8,19 +8,19 @@
 
 typedef struct {
 	uint8_t display_digits[4];
-} playback_ui_t;
+} user_interface_t;
 
 typedef struct {
 	int8_t rotary_encoder_diff;
-} playback_ui_input_t;
+} user_interface_input_t;
 
 typedef struct {
 	bool start_playback;
 	bool stop_playback;
 	uint16_t new_tempo_bpm;
-} playback_ui_events_t;
+} user_interface_events_t;
 
-playback_ui_t playback_ui_init(void);
-playback_ui_events_t playback_ui_update(playback_ui_t* playback_ui, const playback_ui_input_t* input, const beat_clock_t* beat_clock);
+user_interface_t user_interface_init(void);
+user_interface_events_t user_interface_update(user_interface_t* ui, const user_interface_input_t* input, const beat_clock_t* beat_clock);
 
 #endif /* PLAYBACK_CONTROL_H */
