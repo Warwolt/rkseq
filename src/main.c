@@ -1,4 +1,3 @@
-#include "data/button.h"
 #include "data/ring_buffer.h"
 #include "hardware/gpio.h"
 #include "hardware/hardware_serial.h"
@@ -9,6 +8,8 @@
 #include "hardware/spi.h"
 #include "hardware/timer0.h"
 #include "hardware/timer1.h"
+#include "input/button.h"
+#include "input/time.h"
 #include "logging.h"
 #include "sequencer/beat_clock.h"
 #include "user_interface/user_interface.h"
@@ -35,7 +36,8 @@ static SegmentDisplay g_segment_display;
 
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
-	Timer0_timer_overflow_irq();
+	Time_timer0_overflow_irq();
+
 	static uint8_t last_update = 0;
 	last_update++;
 	if (last_update > 5) {
@@ -72,7 +74,7 @@ static void update_button_states(Button* buttons, uint8_t num_buttons, const Shi
 	bool Button_input[256];
 	ShiftRegister_read(shift_reg, Button_input, num_buttons);
 	for (uint8_t i = 0; i < num_buttons; i++) {
-		Button_update(&buttons[i], Button_input[i], Timer0_now_ms());
+		Button_update(&buttons[i], Button_input[i], Time_now_ms());
 	}
 }
 
@@ -105,12 +107,10 @@ int main(void) {
 	// const GpioPin step_leds_latch_pin = GpioPin_init(&PORTB, 2);
 
 	globally_enable_interrupts();
-	// FIXME: refactor timer0 to have similar API as timer1 and make the
-	// ms-timer a separate module that gets wired up with timer0 via interrupts
 	Timer0_init();
+	Timer1_init();
 	HardwareSerial_init(9600); // uses PD0 and PD1
 	SoftwareSerial_init(31250, midi_rx_pin, midi_tx_pin);
-	Timer1_init();
 	Spi spi = Spi_init(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
 	ShiftRegister step_buttons_shift_reg = ShiftRegister_init(spi, step_buttons_latch_pin);
 	// ShiftRegister step_leds_shift_reg = ShiftRegister_init(spi, step_leds_latch_pin);
@@ -136,14 +136,14 @@ int main(void) {
 		};
 
 		/* Update */
-		const UserInterfaceEvents playback_events = UserInterface_update(&user_interface, &UserInterface_input, &g_beat_clock);
-		if (playback_events.new_tempo_bpm) {
-			set_playback_tempo(&g_beat_clock, playback_events.new_tempo_bpm);
+		const UserInterfaceEvents ui_events = UserInterface_update(&user_interface, &UserInterface_input, &g_beat_clock);
+		if (ui_events.new_tempo_bpm) {
+			set_playback_tempo(&g_beat_clock, ui_events.new_tempo_bpm);
 		}
-		if (playback_events.start_playback) {
+		if (ui_events.start_playback) {
 			BeatClock_start(&g_beat_clock);
 		}
-		if (playback_events.stop_playback) {
+		if (ui_events.stop_playback) {
 			BeatClock_stop(&g_beat_clock);
 		}
 

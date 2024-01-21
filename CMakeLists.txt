@@ -80,16 +80,17 @@ endif()
 add_avr_executable("${PROJECT_NAME}"
   src/main.c
   src/logging.c
-  src/data/button.c
   src/hardware/gpio.c
   src/hardware/hardware_serial.c
   src/hardware/rotary_encoder.c
   src/hardware/segment_display.c
   src/hardware/shift_register.c
-  src/hardware/spi.c
   src/hardware/software_serial.c
+  src/hardware/spi.c
   src/hardware/timer0.c
   src/hardware/timer1.c
+  src/input/button.c
+  src/input/time.c
   src/sequencer/beat_clock.c
   src/user_interface/user_interface.c
   src/util/microsecond_timer.c
@@ -100,7 +101,7 @@ else()
 # -------------------------------- Unit tests -------------------------------- #
 add_subdirectory(external/rktest)
 add_executable(tests
-  src/data/button.c
+  src/input/button.c
   tests/button_tests.c
   tests/ring_buffer_tests.c
 )
