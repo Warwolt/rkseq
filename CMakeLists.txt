@@ -79,7 +79,7 @@ else()
 endif()
 add_avr_executable("${PROJECT_NAME}"
   src/main.c
-  src/logging.c
+  src/debug/logging.c
   src/hardware/gpio.c
   src/hardware/hardware_serial.c
   src/hardware/rotary_encoder.c
