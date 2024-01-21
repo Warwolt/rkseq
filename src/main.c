@@ -29,6 +29,7 @@
 
 /* ----------------------- Interrupt service routines ----------------------- */
 static SegmentDisplay* g_segment_display_ptr;
+static BeatClock* g_beat_clock_ptr;
 
 ISR(TIMER0_OVF_vect) {
 	Time_timer0_overflow_irq();
@@ -42,8 +43,6 @@ ISR(TIMER0_OVF_vect) {
 		}
 	}
 }
-
-static BeatClock* g_beat_clock_ptr;
 
 ISR(TIMER1_COMPA_vect) {
 	if (g_beat_clock_ptr) {
