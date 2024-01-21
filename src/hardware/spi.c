@@ -4,7 +4,7 @@
 
 #include <avr/io.h>
 
-spi_t spi_initialize(spi_data_order_t data_order) {
+Spi Spi_initialize(Spi_data_order_t data_order) {
 	/* Configure pins */
 	set_bit(DDRB, 3); // Set MOSI pin to output
 	clear_bit(DDRB, 4); // Set MISO pin to input
@@ -16,16 +16,16 @@ spi_t spi_initialize(spi_data_order_t data_order) {
 	write_bit(SPCR, DORD, data_order); // Select order bits are sent
 	set_bit(SPCR, SPE); // SPI Enable (must be last!)
 
-	return (spi_t) {};
+	return (Spi) {};
 }
 
-uint8_t spi_send(spi_t spi, uint8_t byte) {
+uint8_t Spi_send(Spi spi, uint8_t byte) {
 	SPDR = byte; // start transmission
 	while (!(SPSR & (1 << SPIF))) { // wait for transmission to completele
 	}
 	return SPDR;
 }
 
-uint8_t spi_receive(spi_t spi) {
-	return spi_send(spi, 0);
+uint8_t Spi_receive(Spi spi) {
+	return Spi_send(spi, 0);
 }

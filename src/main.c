@@ -114,7 +114,7 @@ int main(void) {
 	HardwareSerial_initialize(9600); // uses PD0 and PD1
 	sw_serial_initialize(31250, midi_rx_pin, midi_tx_pin);
 	timer1_initialize();
-	spi_t spi = spi_initialize(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
+	Spi spi = Spi_initialize(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
 	ShiftRegister step_buttons_shift_reg = ShiftRegister_init(spi, step_buttons_latch_pin);
 	// ShiftRegister step_leds_shift_reg = ShiftRegister_init(spi, step_leds_latch_pin);
 	button_t step_buttons[16];
