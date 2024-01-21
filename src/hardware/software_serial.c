@@ -11,7 +11,7 @@
 
 static GpioPin g_rx_pin;
 static GpioPin g_tx_pin;
-static ring_buffer_t g_rx_buffer;
+static RingBuffer g_rx_buffer;
 
 static uint16_t g_start_bit_delay;
 static uint16_t g_data_bit_delay;
@@ -32,7 +32,7 @@ void SoftwareSerial_pin_change_irq(void) {
 			byte |= bit << i;
 		}
 
-		ring_buffer_write(&g_rx_buffer, byte);
+		RingBuffer_write(&g_rx_buffer, byte);
 
 		_delay_loop_2(g_stop_bit_delay);
 		set_bit(PCICR, PCIE2); // re-enable pin change interrupts
@@ -59,17 +59,17 @@ void SoftwareSerial_initialize(uint16_t baud, GpioPin rx_pin, GpioPin tx_pin) {
 }
 
 uint16_t SoftwareSerial_available_bytes(void) {
-	return ring_buffer_available_bytes(&g_rx_buffer);
+	return RingBuffer_available_bytes(&g_rx_buffer);
 }
 
 void SoftwareSerial_read(uint8_t* byte) {
-	ring_buffer_read(&g_rx_buffer, byte);
+	RingBuffer_read(&g_rx_buffer, byte);
 }
 
 void SoftwareSerial_read_bytes(uint8_t* byte_buf, uint16_t byte_buf_len) {
 	uint16_t bytes_to_read = min(SoftwareSerial_available_bytes(), byte_buf_len);
 	for (uint16_t i = 0; i < bytes_to_read; i++) {
-		ring_buffer_read(&g_rx_buffer, &byte_buf[i]);
+		RingBuffer_read(&g_rx_buffer, &byte_buf[i]);
 	}
 }
 

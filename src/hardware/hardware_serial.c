@@ -14,8 +14,8 @@
 #include <stdint.h>
 #include <util/atomic.h>
 
-static ring_buffer_t g_rx_buffer;
-static ring_buffer_t g_tx_buffer;
+static RingBuffer g_rx_buffer;
+static RingBuffer g_tx_buffer;
 
 void HardwareSerial_rx_complete_irq(void) {
 	const uint8_t byte = UDR0;
@@ -24,15 +24,15 @@ void HardwareSerial_rx_complete_irq(void) {
 		return; // Parity error, discard read byte
 	}
 
-	ring_buffer_write(&g_rx_buffer, byte);
+	RingBuffer_write(&g_rx_buffer, byte);
 }
 
 void HardwareSerial_tx_udr_empty_irq(void) {
 	// If interrupts are enabled, there must be more data in the output
 	// buffer. Send the next byte
-	ring_buffer_read(&g_tx_buffer, (uint8_t*)&UDR0);
+	RingBuffer_read(&g_tx_buffer, (uint8_t*)&UDR0);
 
-	if (ring_buffer_is_empty(&g_tx_buffer)) {
+	if (RingBuffer_is_empty(&g_tx_buffer)) {
 		// Buffer empty, so disable interrupts
 		clear_bit(UCSR0B, UDRIE0);
 	}
@@ -43,7 +43,7 @@ static int HardwareSerial_read_byte_with_timeout() {
 	const unsigned long start_ms = Timer0_now_ms();
 	uint8_t byte;
 	do {
-		if (ring_buffer_read(&g_rx_buffer, &byte) == 0) {
+		if (RingBuffer_read(&g_rx_buffer, &byte) == 0) {
 			return byte;
 		}
 	} while (Timer0_now_ms() - start_ms < timeout_ms);
@@ -51,11 +51,11 @@ static int HardwareSerial_read_byte_with_timeout() {
 }
 
 void HardwareSerial_write(uint8_t byte) {
-	ring_buffer_write(&g_tx_buffer, byte);
+	RingBuffer_write(&g_tx_buffer, byte);
 
 	// If the output buffer is full, there's nothing for it other than to
 	// wait for the interrupt handler to empty it a bit
-	while (ring_buffer_is_full(&g_tx_buffer)) {
+	while (RingBuffer_is_full(&g_tx_buffer)) {
 		if (bit_is_clear(SREG, SREG_I)) {
 			// Interrupts are disabled, so we'll have to poll the data
 			// register empty flag ourselves. If it is set, pretend an
