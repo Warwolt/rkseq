@@ -12,7 +12,6 @@
 #include "logging.h"
 #include "sequencer/beat_clock.h"
 #include "user_interface/playback_ui.h"
-#include "user_interface/ui_devices.h"
 #include "util/bits.h"
 #include "util/math.h"
 #include "util/usec_timer.h"
@@ -117,11 +116,15 @@ int main(void) {
 	g_beat_clock = beat_clock_init(DEFAULT_BPM);
 	uint8_t led_state = 0;
 
+	playback_ui_t playback_ui = playback_ui_init();
+
 	/* Run */
 	// Start beat timer
-	update_tempo(&g_beat_clock, DEFAULT_BPM);
-	timer1_set_period(10417); // set period to 10417 ticks (96 PPQN => 120 BPM)
-	timer1_start();
+	{
+		update_tempo(&g_beat_clock, DEFAULT_BPM);
+		timer1_set_period(10417); // set period to 10417 ticks (96 PPQN => 120 BPM)
+		timer1_start();
+	}
 	bool playback_is_playing = false;
 	uint8_t midi_clock_pulses = 0;
 	uint8_t tempo_bpm = DEFAULT_BPM;
@@ -132,14 +135,14 @@ int main(void) {
 		// button_update(&ui_devices.start_button, gpio_pin_read(start_button_pin), timer0_now_ms()); // TODO use shift register for this
 		segment_display_update(&segment_display); // cycle to next digit
 		const uint8_t midi_byte = read_midi_byte();
-		const ui_devices_input_t devices_input = {
-			.rotary_diff = rotary_encoder_read(&rotary_encoder),
+		const playback_ui_input_t playback_ui_input = {
+			.rotary_encoder_diff = rotary_encoder_read(&rotary_encoder),
 			.start_button_pressed_now = false,
 		};
 
 		/* Update */
 		{
-			const playback_control_events_t playback_events = playback_ui_update(&devices_input, &g_beat_clock);
+			const playback_ui_events_t playback_events = playback_ui_update(&playback_ui, &playback_ui_input, &g_beat_clock);
 			if (playback_events.tempo_diff) {
 				tempo_bpm += playback_events.tempo_diff;
 				update_tempo(&g_beat_clock, tempo_bpm);

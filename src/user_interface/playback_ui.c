@@ -1,7 +1,11 @@
 #include "user_interface/playback_ui.h"
 
-playback_control_events_t playback_ui_update(const ui_devices_input_t* input, const beat_clock_t* beat_clock) {
-	playback_control_events_t events = { 0 };
+playback_ui_t playback_ui_init(void) {
+	return (playback_ui_t) { 0 };
+}
+
+playback_ui_events_t playback_ui_update(playback_ui_t* playback_ui, const playback_ui_input_t* input, const beat_clock_t* beat_clock) {
+	playback_ui_events_t events = { 0 };
 
 	/* Start / Stop Playback */
 	if (input->start_button_pressed_now) {
@@ -13,7 +17,8 @@ playback_control_events_t playback_ui_update(const ui_devices_input_t* input, co
 	}
 
 	/* Update Tempo */
-	events.tempo_diff = input->rotary_diff;
+
+	events.tempo_diff = input->rotary_encoder_diff;
 
 	return events;
 }
