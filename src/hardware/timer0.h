@@ -3,10 +3,8 @@
 
 #include <stdint.h>
 
-void Timer0_timer_overflow_irq(void);
+#define TIMER0_PRESCALER 8
 
 void Timer0_init(void);
-uint32_t Timer0_now_ms(void);
-uint64_t Timer0_now_us(void);
 
 #endif /* TIMER0_H */

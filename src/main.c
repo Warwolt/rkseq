@@ -9,6 +9,7 @@
 #include "hardware/timer0.h"
 #include "hardware/timer1.h"
 #include "input/button.h"
+#include "input/time.h"
 #include "logging.h"
 #include "sequencer/beat_clock.h"
 #include "user_interface/user_interface.h"
@@ -35,7 +36,8 @@ static SegmentDisplay g_segment_display;
 
 /* ----------------------- Interrupt service routines ----------------------- */
 ISR(TIMER0_OVF_vect) {
-	Timer0_timer_overflow_irq();
+	Time_timer0_overflow_irq();
+
 	static uint8_t last_update = 0;
 	last_update++;
 	if (last_update > 5) {
@@ -72,7 +74,7 @@ static void update_button_states(Button* buttons, uint8_t num_buttons, const Shi
 	bool Button_input[256];
 	ShiftRegister_read(shift_reg, Button_input, num_buttons);
 	for (uint8_t i = 0; i < num_buttons; i++) {
-		Button_update(&buttons[i], Button_input[i], Timer0_now_ms());
+		Button_update(&buttons[i], Button_input[i], Time_now_ms());
 	}
 }
 
