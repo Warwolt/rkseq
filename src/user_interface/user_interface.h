@@ -7,7 +7,7 @@
 #include <stdint.h>
 
 typedef struct {
-	uint8_t display_digits[4];
+	uint8_t segment_display_char[4];
 } UserInterface;
 
 typedef struct {

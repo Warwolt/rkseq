@@ -149,9 +149,9 @@ int main(void) {
 
 		/* Output */
 		// Tempo display
-		SegmentDisplay_set_digit(&g_segment_display, 0, user_interface.display_digits[0]);
-		SegmentDisplay_set_digit(&g_segment_display, 1, user_interface.display_digits[1]);
-		SegmentDisplay_set_digit(&g_segment_display, 2, user_interface.display_digits[2]);
-		SegmentDisplay_set_digit(&g_segment_display, 3, user_interface.display_digits[3]);
+		SegmentDisplay_set_char(&g_segment_display, 0, user_interface.segment_display_char[0]);
+		SegmentDisplay_set_char(&g_segment_display, 1, user_interface.segment_display_char[1]);
+		SegmentDisplay_set_char(&g_segment_display, 2, user_interface.segment_display_char[2]);
+		SegmentDisplay_set_char(&g_segment_display, 3, user_interface.segment_display_char[3]);
 	}
 }
