@@ -7,6 +7,9 @@
 #include <stdint.h>
 
 #define BEAT_CLOCK_SEQUENCER_PPQN 96
+#define DEFAULT_BPM 120
+#define MIN_BPM 40
+#define MAX_BPM 200
 
 typedef struct {
 	bool is_playing;

@@ -21,10 +21,7 @@
 #include <stdbool.h>
 #include <util/delay.h>
 
-#define DEFAULT_BPM 120
 #define QUARTERNOTE_PULSE_LENGTH_US 500
-#define MIN_BPM 40
-#define MAX_BPM 200
 
 #define MIDI_CLOCK_BYTE 0xF8
 #define MIDI_START_BYTE 0xFA
@@ -41,7 +38,7 @@ ISR(TIMER0_OVF_vect) {
 	Timer0_timer_overflow_irq();
 	static uint8_t last_update = 0;
 	last_update++;
-	if (last_update > 10) {
+	if (last_update > 5) {
 		last_update = 0;
 		SegmentDisplay_update(&g_segment_display); // cycle to next digit
 	}
@@ -152,9 +149,9 @@ int main(void) {
 
 		/* Output */
 		// Tempo display
-		SegmentDisplay_set_digit(&g_segment_display, 0, user_interface.display_digits[0]);
-		SegmentDisplay_set_digit(&g_segment_display, 1, user_interface.display_digits[1]);
-		SegmentDisplay_set_digit(&g_segment_display, 2, user_interface.display_digits[2]);
-		SegmentDisplay_set_digit(&g_segment_display, 3, user_interface.display_digits[3]);
+		SegmentDisplay_set_char(&g_segment_display, 0, user_interface.segment_display_chars[0]);
+		SegmentDisplay_set_char(&g_segment_display, 1, user_interface.segment_display_chars[1]);
+		SegmentDisplay_set_char(&g_segment_display, 2, user_interface.segment_display_chars[2]);
+		SegmentDisplay_set_char(&g_segment_display, 3, user_interface.segment_display_chars[3]);
 	}
 }
