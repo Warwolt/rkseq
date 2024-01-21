@@ -29,6 +29,11 @@
 #define MIDI_STOP_BYTE 0xFC
 
 typedef struct {
+	RotaryEncoder rotary_encoder;
+	SegmentDisplay segment_display;
+} InterfaceDevices;
+
+typedef struct {
 	BeatClock beat_clock;
 } StepSequencer;
 
@@ -81,17 +86,9 @@ static void globally_enable_interrupts(void) {
 	sei();
 }
 
-static void update_button_states(Button* buttons, uint8_t num_buttons, const ShiftRegister* shift_reg) {
-	bool Button_input[256];
-	ShiftRegister_read(shift_reg, Button_input, num_buttons);
-	for (uint8_t i = 0; i < num_buttons; i++) {
-		Button_update(&buttons[i], Button_input[i], Time_now_ms());
-	}
-}
-
-static UserInterfaceInput read_ui_input(RotaryEncoder* rotary_encoder) {
+static UserInterfaceInput read_ui_input(InterfaceDevices* interface_devices) {
 	return (UserInterfaceInput) {
-		.rotary_encoder_diff = RotaryEncoder_read(rotary_encoder),
+		.rotary_encoder_diff = RotaryEncoder_read(&interface_devices->rotary_encoder),
 	};
 }
 
@@ -149,15 +146,18 @@ int main(void) {
 
 	ShiftRegister step_buttons_shift_reg = ShiftRegister_init(spi, step_buttons_latch_pin);
 	ShiftRegister step_leds_shift_reg = ShiftRegister_init(spi, step_leds_latch_pin);
+	UNUSED(step_buttons_shift_reg);
 	UNUSED(step_leds_shift_reg);
-	RotaryEncoder rotary_encoder = RotaryEncoder_init(encoder_a_pin, encoder_b_pin);
-	SegmentDisplay segment_display = SegmentDisplay_init(display_clock_pin, display_latch_pin, display_data_pin);
-	Button step_buttons[16];
 
+	InterfaceDevices interface_devices = {
+		.rotary_encoder = RotaryEncoder_init(encoder_a_pin, encoder_b_pin),
+		.segment_display = SegmentDisplay_init(display_clock_pin, display_latch_pin, display_data_pin),
+	};
 	StepSequencer step_sequencer = StepSequencer_init();
 	UserInterface user_interface = UserInterface_init();
 
-	g_segment_display_ptr = &segment_display;
+	// Setup pointers for interrupts
+	g_segment_display_ptr = &interface_devices.segment_display;
 	g_beat_clock_ptr = &step_sequencer.beat_clock;
 
 	/* Run */
@@ -165,15 +165,9 @@ int main(void) {
 	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_BPM);
 	start_playback(&step_sequencer.beat_clock, timer1);
 	while (true) {
-		/* Input */
-		update_button_states(step_buttons, 8, &step_buttons_shift_reg);
-		const UserInterfaceInput ui_input = read_ui_input(&rotary_encoder);
-
-		/* Update */
+		const UserInterfaceInput ui_input = read_ui_input(&interface_devices);
 		const UserInterfaceEvents ui_events = UserInterface_update(&user_interface, &ui_input, &step_sequencer.beat_clock);
 		handle_ui_events(&step_sequencer, timer1, ui_events);
-
-		/* Output */
-		update_segment_display(&segment_display, user_interface.segment_display_chars);
+		update_segment_display(&interface_devices.segment_display, user_interface.segment_display_chars);
 	}
 }
