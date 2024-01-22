@@ -1,5 +1,5 @@
-#ifndef USEC_TIMER_H
-#define USEC_TIMER_H
+#ifndef TIMER_H
+#define TIMER_H
 
 #include "hardware/gpio.h"
 
@@ -11,8 +11,17 @@ typedef struct {
 	uint64_t period_us;
 } MicrosecondTimer;
 
+typedef struct {
+	uint32_t start_time_ms;
+	uint32_t period_ms;
+} MillisecondTimer;
+
 MicrosecondTimer MicrosecondTimer_init(uint64_t period_us);
 void MicrosecondTimer_reset(MicrosecondTimer* timer);
 bool MicrosecondTimer_period_has_elapsed(const MicrosecondTimer* timer);
 
-#endif /* USEC_TIMER_H */
+MillisecondTimer MillisecondTimer_init(uint32_t period_ms);
+void MillisecondTimer_reset(MillisecondTimer* timer);
+bool MillisecondTimer_period_has_elapsed(const MillisecondTimer* timer);
+
+#endif /* TIMER_H */

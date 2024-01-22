@@ -15,7 +15,7 @@
 #include "user_interface/user_interface.h"
 #include "util/bits.h"
 #include "util/math.h"
-#include "util/microsecond_timer.h"
+#include "util/timer.h"
 #include "util/unused.h"
 
 #include <avr/interrupt.h>
@@ -169,5 +169,8 @@ int main(void) {
 		const UserInterfaceEvents ui_events = UserInterface_update(&user_interface, &ui_input, &step_sequencer.beat_clock);
 		handle_ui_events(&step_sequencer, timer1, ui_events);
 		update_segment_display(&interface_devices.segment_display, user_interface.segment_display_chars);
+
+		// if received MIDI Clock byte then switch to external clock mode
+		// if MIDI Clock timeout > (1 second) then switch to internal clock mode
 	}
 }
