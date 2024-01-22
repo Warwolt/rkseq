@@ -102,6 +102,7 @@ else()
 add_subdirectory(external/rktest)
 add_executable(tests
   src/input/button.c
+  tests/mock/time_mock.c
   tests/button_tests.c
   tests/ring_buffer_tests.c
 )

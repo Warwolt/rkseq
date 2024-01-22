@@ -181,23 +181,25 @@ int main(void) {
 		const UserInterfaceEvents ui_events = UserInterface_update(&user_interface, &ui_input, &step_sequencer.beat_clock);
 		handle_ui_events(&step_sequencer, timer1, ui_events);
 
-		if (midi_byte == MIDI_CLOCK_BYTE) {
-			MillisecondTimer_reset(&midi_clock_rx_timer);
-		}
+		{
+			if (midi_byte == MIDI_CLOCK_BYTE) {
+				MillisecondTimer_reset(&midi_clock_rx_timer);
+			}
 
-		switch (step_sequencer.beat_clock.source) {
-			case BEAT_CLOCK_SOURCE_INTERNAL:
-				if (midi_byte == MIDI_CLOCK_BYTE) {
-					LOG_INFO("Switched to internal clock\n");
-					step_sequencer.beat_clock.source = BEAT_CLOCK_SOURCE_EXTERNAL;
-				}
-				break;
-			case BEAT_CLOCK_SOURCE_EXTERNAL:
-				if (MillisecondTimer_elapsed(&midi_clock_rx_timer)) {
-					LOG_INFO("Switched to external clock\n");
-					step_sequencer.beat_clock.source = BEAT_CLOCK_SOURCE_INTERNAL;
-				}
-				break;
+			switch (step_sequencer.beat_clock.source) {
+				case BEAT_CLOCK_SOURCE_INTERNAL:
+					if (midi_byte == MIDI_CLOCK_BYTE) {
+						LOG_INFO("Switched to internal clock\n");
+						step_sequencer.beat_clock.source = BEAT_CLOCK_SOURCE_EXTERNAL;
+					}
+					break;
+				case BEAT_CLOCK_SOURCE_EXTERNAL:
+					if (MillisecondTimer_elapsed(&midi_clock_rx_timer)) {
+						LOG_INFO("Switched to external clock\n");
+						step_sequencer.beat_clock.source = BEAT_CLOCK_SOURCE_INTERNAL;
+					}
+					break;
+			}
 		}
 
 		update_segment_display(&interface_devices.segment_display, user_interface.segment_display_chars);

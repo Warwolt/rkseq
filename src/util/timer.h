@@ -1,8 +1,6 @@
 #ifndef TIMER_H
 #define TIMER_H
 
-#include "hardware/gpio.h"
-
 #include <stdbool.h>
 #include <stdint.h>
 
