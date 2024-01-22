@@ -144,6 +144,40 @@ static uint8_t maybe_read_midi_byte(void) {
 	return byte;
 }
 
+static void handle_ui_events(Timer1 timer1, StepSequencer* step_sequencer, const UserInterfaceEvents* ui_events) {
+	if (ui_events->new_tempo_bpm) {
+		set_playback_tempo(&step_sequencer->beat_clock, timer1, ui_events->new_tempo_bpm);
+	}
+	if (ui_events->start_playback) {
+		start_playback(&step_sequencer->beat_clock, timer1);
+	}
+	if (ui_events->stop_playback) {
+		stop_playback(&step_sequencer->beat_clock, timer1);
+	}
+}
+
+static void handle_midi_control_events(Timer1 timer1, StepSequencer* step_sequencer, const MidiControlEvents* midi_events) {
+	switch (step_sequencer->beat_clock.source) {
+		// Internal -> External
+		case BEAT_CLOCK_SOURCE_INTERNAL:
+			if (midi_events->switch_to_external_clock) {
+				LOG_INFO("Switched to external beat clock\n");
+				step_sequencer->beat_clock.source = BEAT_CLOCK_SOURCE_EXTERNAL;
+				Timer1_stop(timer1);
+			}
+			break;
+
+		// External -> Internal
+		case BEAT_CLOCK_SOURCE_EXTERNAL:
+			if (midi_events->switch_to_internal_clock) {
+				LOG_INFO("Switched to internal beat clock\n");
+				step_sequencer->beat_clock.source = BEAT_CLOCK_SOURCE_INTERNAL;
+				Timer1_start(timer1);
+			}
+			break;
+	}
+}
+
 int main(void) {
 	/* Setup */
 	const GpioPin midi_rx_pin = GpioPin_init(&PORTD, 2);
@@ -188,38 +222,12 @@ int main(void) {
 		/* User Interface */
 		const UserInterfaceInput ui_input = read_ui_input(&interface_devices);
 		const UserInterfaceEvents ui_events = UserInterface_update(&user_interface, &ui_input, &step_sequencer.beat_clock);
-		if (ui_events.new_tempo_bpm) {
-			set_playback_tempo(&step_sequencer.beat_clock, timer1, ui_events.new_tempo_bpm);
-		}
-		if (ui_events.start_playback) {
-			start_playback(&step_sequencer.beat_clock, timer1);
-		}
-		if (ui_events.stop_playback) {
-			stop_playback(&step_sequencer.beat_clock, timer1);
-		}
+		handle_ui_events(timer1, &step_sequencer, &ui_events);
 		update_segment_display(&interface_devices.segment_display, user_interface.segment_display_chars);
 
 		/* MIDI Control */
 		const uint8_t midi_byte = maybe_read_midi_byte();
 		const MidiControlEvents midi_events = MidiControl_update(&midi_control, midi_byte);
-		switch (step_sequencer.beat_clock.source) {
-			// Internal -> External
-			case BEAT_CLOCK_SOURCE_INTERNAL:
-				if (midi_events.switch_to_external_clock) {
-					LOG_INFO("Switched to external beat clock\n");
-					step_sequencer.beat_clock.source = BEAT_CLOCK_SOURCE_EXTERNAL;
-					Timer1_stop(timer1);
-				}
-				break;
-
-			// External -> Internal
-			case BEAT_CLOCK_SOURCE_EXTERNAL:
-				if (midi_events.switch_to_internal_clock) {
-					LOG_INFO("Switched to internal beat clock\n");
-					step_sequencer.beat_clock.source = BEAT_CLOCK_SOURCE_INTERNAL;
-					Timer1_start(timer1);
-				}
-				break;
-		}
+		handle_midi_control_events(timer1, &step_sequencer, &midi_events);
 	}
 }
