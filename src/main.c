@@ -190,7 +190,7 @@ int main(void) {
 				}
 				break;
 			case BEAT_CLOCK_SOURCE_EXTERNAL:
-				if (MillisecondTimer_period_has_elapsed(&midi_clock_rx_timer)) {
+				if (MillisecondTimer_elapsed(&midi_clock_rx_timer)) {
 					LOG_INFO("Switched to external clock");
 					step_sequencer.beat_clock.source = BEAT_CLOCK_SOURCE_INTERNAL;
 				}

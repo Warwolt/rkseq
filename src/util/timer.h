@@ -18,10 +18,10 @@ typedef struct {
 
 MicrosecondTimer MicrosecondTimer_init(uint64_t period_us);
 void MicrosecondTimer_reset(MicrosecondTimer* timer);
-bool MicrosecondTimer_period_has_elapsed(const MicrosecondTimer* timer);
+bool MicrosecondTimer_elapsed(const MicrosecondTimer* timer);
 
 MillisecondTimer MillisecondTimer_init(uint32_t period_ms);
 void MillisecondTimer_reset(MillisecondTimer* timer);
-bool MillisecondTimer_period_has_elapsed(const MillisecondTimer* timer);
+bool MillisecondTimer_elapsed(const MillisecondTimer* timer);
 
 #endif /* TIMER_H */
