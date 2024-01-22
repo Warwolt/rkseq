@@ -12,6 +12,7 @@
 #include "input/button.h"
 #include "input/time.h"
 #include "sequencer/beat_clock.h"
+#include "sequencer/step_sequencer.h"
 #include "user_interface/user_interface.h"
 #include "util/bits.h"
 #include "util/math.h"
@@ -32,16 +33,6 @@ typedef struct {
 	RotaryEncoder rotary_encoder;
 	SegmentDisplay segment_display;
 } InterfaceDevices;
-
-typedef struct {
-	BeatClock beat_clock;
-} StepSequencer;
-
-StepSequencer StepSequencer_init(void) {
-	return (StepSequencer) {
-		.beat_clock = BeatClock_init(DEFAULT_BPM),
-	};
-}
 
 /* ----------------------- Interrupt service routines ----------------------- */
 static SegmentDisplay* g_segment_display_ptr;

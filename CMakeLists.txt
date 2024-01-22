@@ -92,6 +92,7 @@ add_avr_executable("${PROJECT_NAME}"
   src/input/button.c
   src/input/time.c
   src/sequencer/beat_clock.c
+  src/sequencer/step_sequencer.c
   src/user_interface/user_interface.c
   src/util/timer.c
 )
