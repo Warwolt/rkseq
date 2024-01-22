@@ -12,6 +12,7 @@
 #include "input/button.h"
 #include "input/time.h"
 #include "sequencer/beat_clock.h"
+#include "sequencer/midi_control.h"
 #include "sequencer/step_sequencer.h"
 #include "user_interface/user_interface.h"
 #include "util/bits.h"
@@ -24,47 +25,10 @@
 #include <stdbool.h>
 #include <util/delay.h>
 
-#define MIDI_CLOCK_BYTE 0xF8
-#define MIDI_START_BYTE 0xFA
-#define MIDI_CONTINUE_BYTE 0xFB
-#define MIDI_STOP_BYTE 0xFC
-
 typedef struct {
 	RotaryEncoder rotary_encoder;
 	SegmentDisplay segment_display;
 } InterfaceDevices;
-
-#define MIDI_CONTROL_CLOCK_TIMEOUT_MS 1000
-
-typedef struct {
-	bool switch_to_internal_clock;
-	bool switch_to_external_clock;
-} MidiControlEvents;
-
-typedef struct {
-	MillisecondTimer midi_clock_timeout_timer;
-} MidiControl;
-
-static MidiControl MidiControl_init(void) {
-	return (MidiControl) {
-		.midi_clock_timeout_timer = MillisecondTimer_init(MIDI_CONTROL_CLOCK_TIMEOUT_MS),
-	};
-}
-
-static MidiControlEvents MidiControl_update(MidiControl* midi_control, uint8_t midi_byte) {
-	MidiControlEvents events = { 0 };
-
-	if (midi_byte == MIDI_CLOCK_BYTE) {
-		events.switch_to_external_clock = true;
-		MillisecondTimer_reset(&midi_control->midi_clock_timeout_timer);
-	}
-
-	if (MillisecondTimer_elapsed(&midi_control->midi_clock_timeout_timer)) {
-		events.switch_to_internal_clock = true;
-	}
-
-	return events;
-}
 
 /* ----------------------- Interrupt service routines ----------------------- */
 static SegmentDisplay* g_segment_display_ptr;
@@ -84,6 +48,9 @@ ISR(TIMER0_OVF_vect) {
 }
 
 ISR(TIMER1_COMPA_vect) {
+	// FIXME: Move this out into a local function that is used as callback here
+	// Motivation: allows us to set everything up in main and make the entire
+	// program understandable by reading it starting from main.
 	if (g_beat_clock_ptr) {
 		BeatClock_on_pulse(g_beat_clock_ptr);
 		if (BeatClock_midi_pulse_ready(g_beat_clock_ptr)) {
@@ -223,11 +190,13 @@ int main(void) {
 		const UserInterfaceInput ui_input = read_ui_input(&interface_devices);
 		const UserInterfaceEvents ui_events = UserInterface_update(&user_interface, &ui_input, &step_sequencer.beat_clock);
 		handle_ui_events(timer1, &step_sequencer, &ui_events);
-		update_segment_display(&interface_devices.segment_display, user_interface.segment_display_chars);
 
 		/* MIDI Control */
 		const uint8_t midi_byte = maybe_read_midi_byte();
 		const MidiControlEvents midi_events = MidiControl_update(&midi_control, midi_byte);
 		handle_midi_control_events(timer1, &step_sequencer, &midi_events);
+
+		/* Interface Devices */
+		update_segment_display(&interface_devices.segment_display, user_interface.segment_display_chars);
 	}
 }
