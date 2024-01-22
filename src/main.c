@@ -61,7 +61,7 @@ ISR(TIMER0_OVF_vect) {
 }
 
 ISR(TIMER1_COMPA_vect) {
-	if (g_beat_clock_ptr) {
+	if (g_beat_clock_ptr && g_beat_clock_ptr->source == BEAT_CLOCK_SOURCE_INTERNAL) {
 		BeatClock_on_pulse(g_beat_clock_ptr);
 		if (BeatClock_midi_pulse_ready(g_beat_clock_ptr)) {
 			SoftwareSerial_write(MIDI_CLOCK_BYTE);
@@ -125,6 +125,14 @@ static void update_segment_display(SegmentDisplay* segment_display, char* chars)
 	}
 }
 
+static uint8_t read_midi_byte(void) {
+	uint8_t byte = 0;
+	if (SoftwareSerial_available_bytes() > 0) {
+		SoftwareSerial_read(&byte);
+	}
+	return byte;
+}
+
 int main(void) {
 	/* Setup */
 	const GpioPin midi_rx_pin = GpioPin_init(&PORTD, 2);
@@ -160,17 +168,35 @@ int main(void) {
 	g_segment_display_ptr = &interface_devices.segment_display;
 	g_beat_clock_ptr = &step_sequencer.beat_clock;
 
+	MillisecondTimer midi_clock_rx_timer = MillisecondTimer_init(1000);
+
 	/* Run */
 	LOG_INFO("Program Start\n");
 	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_BPM);
 	start_playback(&step_sequencer.beat_clock, timer1);
 	while (true) {
+		const uint8_t midi_byte = read_midi_byte();
 		const UserInterfaceInput ui_input = read_ui_input(&interface_devices);
+
 		const UserInterfaceEvents ui_events = UserInterface_update(&user_interface, &ui_input, &step_sequencer.beat_clock);
 		handle_ui_events(&step_sequencer, timer1, ui_events);
-		update_segment_display(&interface_devices.segment_display, user_interface.segment_display_chars);
 
-		// if received MIDI Clock byte then switch to external clock mode
-		// if MIDI Clock timeout > (1 second) then switch to internal clock mode
+		switch (step_sequencer.beat_clock.source) {
+			case BEAT_CLOCK_SOURCE_INTERNAL:
+				if (midi_byte == MIDI_CLOCK_BYTE) {
+					LOG_INFO("Switched to internal clock");
+					step_sequencer.beat_clock.source = BEAT_CLOCK_SOURCE_EXTERNAL;
+					MillisecondTimer_reset(&midi_clock_rx_timer);
+				}
+				break;
+			case BEAT_CLOCK_SOURCE_EXTERNAL:
+				if (MillisecondTimer_period_has_elapsed(&midi_clock_rx_timer)) {
+					LOG_INFO("Switched to external clock");
+					step_sequencer.beat_clock.source = BEAT_CLOCK_SOURCE_INTERNAL;
+				}
+				break;
+		}
+
+		update_segment_display(&interface_devices.segment_display, user_interface.segment_display_chars);
 	}
 }
