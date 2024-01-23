@@ -25,7 +25,7 @@ TEST(UserInterface, shows_bpm_on_display_when_beat_clock_source_is_internal) {
 	// set BPM to 120.3
 	step_sequencer.beat_clock.source = BEAT_CLOCK_SOURCE_INTERNAL;
 	step_sequencer.beat_clock.tempo_bpm = 120;
-	step_sequencer.beat_clock.tempo_centi_bpm = 3;
+	step_sequencer.beat_clock.tempo_deci_bpm = 3;
 	UserInterface_update(&user_interface, &input, &step_sequencer);
 
 	EXPECT_CHAR_EQ(user_interface.segment_display_chars[0], '3');

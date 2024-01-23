@@ -19,8 +19,8 @@ typedef enum {
 typedef struct {
 	bool is_playing;
 	uint8_t beat_pulses;
-	uint16_t tempo_bpm;
-	uint8_t tempo_centi_bpm;
+	uint8_t tempo_bpm;
+	uint8_t tempo_deci_bpm;
 	BeatClockSource source;
 } BeatClock;
 

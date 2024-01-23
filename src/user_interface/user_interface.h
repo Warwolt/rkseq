@@ -18,7 +18,7 @@ typedef struct {
 typedef struct {
 	bool start_playback;
 	bool stop_playback;
-	uint16_t new_tempo_bpm;
+	uint8_t new_tempo_bpm;
 } UserInterfaceEvents;
 
 UserInterface UserInterface_init(void);

@@ -62,6 +62,14 @@ void SegmentDisplay_set_char(SegmentDisplay* display, uint8_t position, char cha
 	display->characters[position] = character;
 }
 
+void SegmentDisplay_set_period(SegmentDisplay* display, uint8_t number, bool enabled) {
+	if (enabled) {
+		SegmentDisplay_enable_period(display, number);
+	} else {
+		SegmentDisplay_disable_period(display, number);
+	}
+}
+
 void SegmentDisplay_enable_period(SegmentDisplay* display, uint8_t number) {
 	if (number < 4) {
 		display->period_enabled[number] = 1;
