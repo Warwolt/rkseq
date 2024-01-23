@@ -12,10 +12,12 @@
 #include "input/button.h"
 #include "input/time.h"
 #include "sequencer/beat_clock.h"
+#include "sequencer/midi_control.h"
+#include "sequencer/step_sequencer.h"
 #include "user_interface/user_interface.h"
 #include "util/bits.h"
 #include "util/math.h"
-#include "util/microsecond_timer.h"
+#include "util/timer.h"
 #include "util/unused.h"
 
 #include <avr/interrupt.h>
@@ -23,25 +25,10 @@
 #include <stdbool.h>
 #include <util/delay.h>
 
-#define MIDI_CLOCK_BYTE 0xF8
-#define MIDI_START_BYTE 0xFA
-#define MIDI_CONTINUE_BYTE 0xFB
-#define MIDI_STOP_BYTE 0xFC
-
 typedef struct {
 	RotaryEncoder rotary_encoder;
 	SegmentDisplay segment_display;
 } InterfaceDevices;
-
-typedef struct {
-	BeatClock beat_clock;
-} StepSequencer;
-
-StepSequencer StepSequencer_init(void) {
-	return (StepSequencer) {
-		.beat_clock = BeatClock_init(DEFAULT_BPM),
-	};
-}
 
 /* ----------------------- Interrupt service routines ----------------------- */
 static SegmentDisplay* g_segment_display_ptr;
@@ -61,6 +48,9 @@ ISR(TIMER0_OVF_vect) {
 }
 
 ISR(TIMER1_COMPA_vect) {
+	// FIXME: Move this out into a local function that is used as callback here
+	// Motivation: allows us to set everything up in main and make the entire
+	// program understandable by reading it starting from main.
 	if (g_beat_clock_ptr) {
 		BeatClock_on_pulse(g_beat_clock_ptr);
 		if (BeatClock_midi_pulse_ready(g_beat_clock_ptr)) {
@@ -107,21 +97,47 @@ static void stop_playback(BeatClock* beat_clock, Timer1 timer1) {
 	Timer1_stop(timer1);
 }
 
-static void handle_ui_events(StepSequencer* step_sequencer, Timer1 timer1, UserInterfaceEvents ui_events) {
-	if (ui_events.new_tempo_bpm) {
-		set_playback_tempo(&step_sequencer->beat_clock, timer1, ui_events.new_tempo_bpm);
+static void update_segment_display(SegmentDisplay* segment_display, char* chars) {
+	for (int i = 0; i < 4; i++) {
+		SegmentDisplay_set_char(segment_display, i, chars[i]);
 	}
-	if (ui_events.start_playback) {
+}
+
+static uint8_t maybe_read_midi_byte(void) {
+	uint8_t byte = 0;
+	if (SoftwareSerial_available_bytes() > 0) {
+		SoftwareSerial_read(&byte);
+	}
+	return byte;
+}
+
+static void handle_ui_events(Timer1 timer1, StepSequencer* step_sequencer, const UserInterfaceEvents* ui_events) {
+	if (ui_events->new_tempo_bpm) {
+		set_playback_tempo(&step_sequencer->beat_clock, timer1, ui_events->new_tempo_bpm);
+	}
+	if (ui_events->start_playback) {
 		start_playback(&step_sequencer->beat_clock, timer1);
 	}
-	if (ui_events.stop_playback) {
+	if (ui_events->stop_playback) {
 		stop_playback(&step_sequencer->beat_clock, timer1);
 	}
 }
 
-static void update_segment_display(SegmentDisplay* segment_display, char* chars) {
-	for (int i = 0; i < 4; i++) {
-		SegmentDisplay_set_char(segment_display, i, chars[i]);
+static void handle_midi_control_events(Timer1 timer1, StepSequencer* step_sequencer, const MidiControlEvents* midi_events) {
+	if (midi_events->switch_to_external_clock) {
+		if (step_sequencer->beat_clock.source == BEAT_CLOCK_SOURCE_INTERNAL) {
+			LOG_INFO("Switched to external beat clock\n");
+			step_sequencer->beat_clock.source = BEAT_CLOCK_SOURCE_EXTERNAL;
+			Timer1_stop(timer1);
+		}
+	}
+
+	if (midi_events->switch_to_internal_clock) {
+		if (step_sequencer->beat_clock.source == BEAT_CLOCK_SOURCE_EXTERNAL) {
+			LOG_INFO("Switched to internal beat clock\n");
+			step_sequencer->beat_clock.source = BEAT_CLOCK_SOURCE_INTERNAL;
+			Timer1_start(timer1);
+		}
 	}
 }
 
@@ -154,6 +170,7 @@ int main(void) {
 		.segment_display = SegmentDisplay_init(display_clock_pin, display_latch_pin, display_data_pin),
 	};
 	StepSequencer step_sequencer = StepSequencer_init();
+	MidiControl midi_control = MidiControl_init();
 	UserInterface user_interface = UserInterface_init();
 
 	// Setup pointers for interrupts
@@ -162,12 +179,20 @@ int main(void) {
 
 	/* Run */
 	LOG_INFO("Program Start\n");
-	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_BPM);
-	start_playback(&step_sequencer.beat_clock, timer1);
+	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_BPM); // set initial tempo
+	start_playback(&step_sequencer.beat_clock, timer1); // HACK, start playback immediately
 	while (true) {
+		/* User Interface */
 		const UserInterfaceInput ui_input = read_ui_input(&interface_devices);
 		const UserInterfaceEvents ui_events = UserInterface_update(&user_interface, &ui_input, &step_sequencer.beat_clock);
-		handle_ui_events(&step_sequencer, timer1, ui_events);
+		handle_ui_events(timer1, &step_sequencer, &ui_events);
+
+		/* MIDI Control */
+		const uint8_t midi_byte = maybe_read_midi_byte();
+		const MidiControlEvents midi_events = MidiControl_update(&midi_control, midi_byte);
+		handle_midi_control_events(timer1, &step_sequencer, &midi_events);
+
+		/* Interface Devices */
 		update_segment_display(&interface_devices.segment_display, user_interface.segment_display_chars);
 	}
 }

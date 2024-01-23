@@ -8,7 +8,8 @@ BeatClock BeatClock_init(uint8_t tempo_bpm) {
 	return (BeatClock) {
 		.beat_pulses = 0,
 		.is_playing = false,
-		.tempo_bpm = tempo_bpm
+		.tempo_bpm = tempo_bpm,
+		.source = BEAT_CLOCK_SOURCE_INTERNAL,
 	};
 }
 

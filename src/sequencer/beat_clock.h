@@ -1,7 +1,7 @@
 #ifndef BEAT_CLOCK_H
 #define BEAT_CLOCK_H
 
-#include "util/microsecond_timer.h"
+#include "util/timer.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -11,10 +11,16 @@
 #define MIN_BPM 40
 #define MAX_BPM 200
 
+typedef enum {
+	BEAT_CLOCK_SOURCE_INTERNAL,
+	BEAT_CLOCK_SOURCE_EXTERNAL,
+} BeatClockSource;
+
 typedef struct {
 	bool is_playing;
 	uint8_t beat_pulses;
 	uint16_t tempo_bpm;
+	BeatClockSource source;
 } BeatClock;
 
 BeatClock BeatClock_init(uint8_t tempo_bpm);

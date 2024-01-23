@@ -71,15 +71,8 @@ if(AVR)
 endif(AVR)
 
 # ---------------------------- Program executable ---------------------------- #
-if(AVR)
-if(STRICT_MODE)
-  add_compile_options(-Os -Wall -Werror -Wno-missing-braces -Wmissing-field-initializers)
-else()
-  add_compile_options(-Os -Wall -Wno-missing-braces -Wmissing-field-initializers)
-endif()
-add_avr_executable("${PROJECT_NAME}"
-  src/main.c
-  src/debug/logging.c
+# AVR dependend source
+set(PLATFORM_SRC
   src/hardware/gpio.c
   src/hardware/hardware_serial.c
   src/hardware/rotary_encoder.c
@@ -89,22 +82,47 @@ add_avr_executable("${PROJECT_NAME}"
   src/hardware/spi.c
   src/hardware/timer0.c
   src/hardware/timer1.c
-  src/input/button.c
   src/input/time.c
+)
+
+# Application source (platform agnostic)
+set(APP_SOURCE
+  src/input/button.c
   src/sequencer/beat_clock.c
+  src/sequencer/midi_control.c
+  src/sequencer/step_sequencer.c
   src/user_interface/user_interface.c
-  src/util/microsecond_timer.c
+  src/util/timer.c
+)
+
+if(AVR)
+if(STRICT_MODE)
+  add_compile_options(-Os -Wall -Werror -Wno-missing-braces -Wmissing-field-initializers)
+else()
+  add_compile_options(-Os -Wall -Wno-missing-braces -Wmissing-field-initializers)
+endif()
+add_avr_executable("${PROJECT_NAME}"
+  src/main.c
+  src/debug/logging.c
+  ${PLATFORM_SRC}
+  ${APP_SOURCE}
 )
 avr_target_include_directories("${PROJECT_NAME}" PRIVATE src)
 add_definitions("-DF_CPU=${MCU_SPEED}")
 else()
 # -------------------------------- Unit tests -------------------------------- #
-add_subdirectory(external/rktest)
-add_executable(tests
-  src/input/button.c
+# Unit tests
+set(TEST_SOURCE
   tests/button_tests.c
+  tests/midi_control_tests.c
+  tests/mock/mock_time.c
   tests/ring_buffer_tests.c
 )
+add_subdirectory(external/rktest)
+add_executable(tests
+  ${APP_SOURCE}
+  ${TEST_SOURCE}
+)
 target_link_libraries(tests rktest)
-target_include_directories(tests PRIVATE src)
+target_include_directories(tests PRIVATE src tests)
 endif()
