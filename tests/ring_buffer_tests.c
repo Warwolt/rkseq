@@ -3,17 +3,17 @@
 #define RING_BUFFER_SIZE 4
 #include "data/ring_buffer.h"
 
-TEST(RingBuffer_tests, zero_initialized_buffer_is_empty) {
+TEST(RingBuffer, zero_initialized_buffer_is_empty) {
 	RingBuffer buffer = { 0 };
 	EXPECT_TRUE(RingBuffer_is_empty(&buffer));
 }
 
-TEST(RingBuffer_tests, zero_initialized_buffer_is_not_full) {
+TEST(RingBuffer, zero_initialized_buffer_is_not_full) {
 	RingBuffer buffer = { 0 };
 	EXPECT_FALSE(RingBuffer_is_full(&buffer));
 }
 
-TEST(RingBuffer_tests, reading_after_writing_gives_back_written_byte) {
+TEST(RingBuffer, reading_after_writing_gives_back_written_byte) {
 	RingBuffer buffer = { 0 };
 
 	RingBuffer_write(&buffer, 123);
@@ -23,7 +23,7 @@ TEST(RingBuffer_tests, reading_after_writing_gives_back_written_byte) {
 	EXPECT_EQ(byte, 123);
 }
 
-TEST(RingBuffer_tests, writing_makes_buffer_non_empty) {
+TEST(RingBuffer, writing_makes_buffer_non_empty) {
 	RingBuffer buffer = { 0 };
 
 	RingBuffer_write(&buffer, 123);
@@ -31,7 +31,7 @@ TEST(RingBuffer_tests, writing_makes_buffer_non_empty) {
 	EXPECT_FALSE(RingBuffer_is_empty(&buffer));
 }
 
-TEST(RingBuffer_tests, writing_to_capacity_makes_buffer_full) {
+TEST(RingBuffer, writing_to_capacity_makes_buffer_full) {
 	RingBuffer buffer = { 0 };
 
 	for (uint8_t i = 0; i < RING_BUFFER_SIZE; i++) {
@@ -41,7 +41,7 @@ TEST(RingBuffer_tests, writing_to_capacity_makes_buffer_full) {
 	EXPECT_TRUE(RingBuffer_is_full(&buffer));
 }
 
-TEST(RingBuffer_tests, all_bytes_written_until_full_can_be_read) {
+TEST(RingBuffer, all_bytes_written_until_full_can_be_read) {
 	RingBuffer buffer = { 0 };
 	uint8_t output[RING_BUFFER_SIZE] = { 0 };
 
@@ -58,7 +58,7 @@ TEST(RingBuffer_tests, all_bytes_written_until_full_can_be_read) {
 	}
 }
 
-TEST(RingBuffer_tests, writing_past_buffer_discards_bytes) {
+TEST(RingBuffer, writing_past_buffer_discards_bytes) {
 	RingBuffer buffer = { 0 };
 
 	for (uint8_t i = 0; i < RING_BUFFER_SIZE; i++) {
@@ -76,7 +76,7 @@ TEST(RingBuffer_tests, writing_past_buffer_discards_bytes) {
 	EXPECT_EQ_INFO(byte, RING_BUFFER_SIZE - 1, "Expected last write to have been discarded");
 }
 
-TEST(RingBuffer_tests, reading_from_empty_buffer_gives_nothing) {
+TEST(RingBuffer, reading_from_empty_buffer_gives_nothing) {
 	RingBuffer buffer = { 0 };
 
 	uint8_t byte = 123;
@@ -85,7 +85,7 @@ TEST(RingBuffer_tests, reading_from_empty_buffer_gives_nothing) {
 	EXPECT_EQ_INFO(byte, 123, "Byte should not have been written to");
 }
 
-TEST(RingBuffer_tests, writing_increases_available_bytes) {
+TEST(RingBuffer, writing_increases_available_bytes) {
 	RingBuffer buffer = { 0 };
 
 	RingBuffer_write(&buffer, 11);
@@ -96,7 +96,7 @@ TEST(RingBuffer_tests, writing_increases_available_bytes) {
 	EXPECT_EQ(available_bytes, 3);
 }
 
-TEST(RingBuffer_tests, reading_decreases_available_bytes) {
+TEST(RingBuffer, reading_decreases_available_bytes) {
 	RingBuffer buffer = { 0 };
 
 	uint8_t byte;
