@@ -1,7 +1,7 @@
 #ifndef PLAYBACK_CONTROL_H
 #define PLAYBACK_CONTROL_H
 
-#include "sequencer/beat_clock.h"
+#include "sequencer/step_sequencer.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -21,6 +21,6 @@ typedef struct {
 } UserInterfaceEvents;
 
 UserInterface UserInterface_init(void);
-UserInterfaceEvents UserInterface_update(UserInterface* ui, const UserInterfaceInput* input, const BeatClock* beat_clock);
+UserInterfaceEvents UserInterface_update(UserInterface* ui, const UserInterfaceInput* input, const StepSequencer* step_sequencer);
 
 #endif /* PLAYBACK_CONTROL_H */
