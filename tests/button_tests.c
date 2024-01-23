@@ -10,18 +10,18 @@ static void debounced_button_update(Button* button, ButtonState state) {
 	Button_update(button, state, g_time_now);
 }
 
-TEST_SETUP(Button_tests) {
+TEST_SETUP(Button) {
 	g_time_now = 0;
 }
 
-TEST(Button_tests, button_initially_released) {
+TEST(Button, button_initially_released) {
 	Button button = Button_init();
 
 	EXPECT_FALSE(Button_is_pressed(&button));
 	EXPECT_FALSE(Button_just_pressed(&button));
 }
 
-TEST(Button_tests, pressing_released_Button_becomes_just_pressed) {
+TEST(Button, pressing_released_Button_becomes_just_pressed) {
 	Button button = Button_init();
 
 	debounced_button_update(&button, BUTTON_STATE_PRESSED);
@@ -32,7 +32,7 @@ TEST(Button_tests, pressing_released_Button_becomes_just_pressed) {
 	EXPECT_FALSE(Button_is_relased(&button));
 }
 
-TEST(Button_tests, pressing_pressed_button_remains_pressed) {
+TEST(Button, pressing_pressed_button_remains_pressed) {
 	Button button = Button_init();
 
 	debounced_button_update(&button, BUTTON_STATE_PRESSED);
@@ -44,7 +44,7 @@ TEST(Button_tests, pressing_pressed_button_remains_pressed) {
 	EXPECT_FALSE(Button_is_relased(&button));
 }
 
-TEST(Button_tests, releasing_pressed_button_becomes_just_released) {
+TEST(Button, releasing_pressed_button_becomes_just_released) {
 	Button button = Button_init();
 
 	debounced_button_update(&button, BUTTON_STATE_PRESSED);
@@ -56,7 +56,7 @@ TEST(Button_tests, releasing_pressed_button_becomes_just_released) {
 	EXPECT_TRUE(Button_is_relased(&button));
 }
 
-TEST(Button_tests, releasing_released_button_remains_released) {
+TEST(Button, releasing_released_button_remains_released) {
 	Button button = Button_init();
 
 	debounced_button_update(&button, BUTTON_STATE_PRESSED);
@@ -69,7 +69,7 @@ TEST(Button_tests, releasing_released_button_remains_released) {
 	EXPECT_TRUE(Button_is_relased(&button));
 }
 
-TEST(Button_tests, released_button_bouncing_while_pressed_remains_released) {
+TEST(Button, released_button_bouncing_while_pressed_remains_released) {
 	Button button = Button_init();
 
 	Button_update(&button, BUTTON_STATE_PRESSED, 0);
@@ -80,7 +80,7 @@ TEST(Button_tests, released_button_bouncing_while_pressed_remains_released) {
 	EXPECT_FALSE(Button_is_pressed(&button));
 }
 
-TEST(Button_tests, pressed_button_bouncing_while_released_remains_pressed) {
+TEST(Button, pressed_button_bouncing_while_released_remains_pressed) {
 	Button button = Button_init();
 
 	debounced_button_update(&button, BUTTON_STATE_PRESSED);
