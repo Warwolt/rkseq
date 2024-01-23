@@ -1,6 +1,6 @@
 #include "input/time.h"
 
-#include "mock_time.h "
+#include "mock/mock_time.h"
 
 static uint32_t g_now_ms = 0;
 static uint64_t g_now_us = 0;
