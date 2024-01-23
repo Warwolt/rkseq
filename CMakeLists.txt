@@ -84,6 +84,7 @@ set(PLATFORM_SRC
   src/hardware/timer1.c
   src/input/time.c
 )
+
 # Application source (platform agnostic)
 set(APP_SOURCE
   src/input/button.c
@@ -114,7 +115,7 @@ else()
 set(TEST_SOURCE
   tests/button_tests.c
   tests/midi_control_tests.c
-  tests/mock/time_mock.c
+  tests/mock/mock_time.c
   tests/ring_buffer_tests.c
 )
 add_subdirectory(external/rktest)
@@ -123,5 +124,5 @@ add_executable(tests
   ${TEST_SOURCE}
 )
 target_link_libraries(tests rktest)
-target_include_directories(tests PRIVATE src)
+target_include_directories(tests PRIVATE src tests)
 endif()

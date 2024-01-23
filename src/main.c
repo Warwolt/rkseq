@@ -124,24 +124,20 @@ static void handle_ui_events(Timer1 timer1, StepSequencer* step_sequencer, const
 }
 
 static void handle_midi_control_events(Timer1 timer1, StepSequencer* step_sequencer, const MidiControlEvents* midi_events) {
-	switch (step_sequencer->beat_clock.source) {
-		// Internal -> External
-		case BEAT_CLOCK_SOURCE_INTERNAL:
-			if (midi_events->switch_to_external_clock) {
-				LOG_INFO("Switched to external beat clock\n");
-				step_sequencer->beat_clock.source = BEAT_CLOCK_SOURCE_EXTERNAL;
-				Timer1_stop(timer1);
-			}
-			break;
+	if (midi_events->switch_to_external_clock) {
+		if (step_sequencer->beat_clock.source == BEAT_CLOCK_SOURCE_INTERNAL) {
+			LOG_INFO("Switched to external beat clock\n");
+			step_sequencer->beat_clock.source = BEAT_CLOCK_SOURCE_EXTERNAL;
+			Timer1_stop(timer1);
+		}
+	}
 
-		// External -> Internal
-		case BEAT_CLOCK_SOURCE_EXTERNAL:
-			if (midi_events->switch_to_internal_clock) {
-				LOG_INFO("Switched to internal beat clock\n");
-				step_sequencer->beat_clock.source = BEAT_CLOCK_SOURCE_INTERNAL;
-				Timer1_start(timer1);
-			}
-			break;
+	if (midi_events->switch_to_internal_clock) {
+		if (step_sequencer->beat_clock.source == BEAT_CLOCK_SOURCE_EXTERNAL) {
+			LOG_INFO("Switched to internal beat clock\n");
+			step_sequencer->beat_clock.source = BEAT_CLOCK_SOURCE_INTERNAL;
+			Timer1_start(timer1);
+		}
 	}
 }
 

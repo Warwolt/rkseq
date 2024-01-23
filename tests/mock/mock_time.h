@@ -1,7 +1,7 @@
 #ifndef TIME_MOCK
 #define TIME_MOCK
 
-#include "src/input/time.h"
+#include "input/time.h"
 
 #include <stdint.h>
 

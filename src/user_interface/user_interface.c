@@ -12,6 +12,7 @@ UserInterfaceEvents UserInterface_update(UserInterface* ui, const UserInterfaceI
 	UserInterfaceEvents events = { 0 };
 
 	/* Set Tempo */
+	// FIXME: write a unit test that covers that tempo can only be changed if internal clock
 	if (input->rotary_encoder_diff) {
 		events.new_tempo_bpm = clamp(beat_clock->tempo_bpm + input->rotary_encoder_diff, MIN_BPM, MAX_BPM);
 	}
