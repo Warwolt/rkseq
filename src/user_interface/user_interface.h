@@ -8,6 +8,7 @@
 
 typedef struct {
 	char segment_display_chars[4];
+	bool segment_display_period_enabled[4];
 } UserInterface;
 
 typedef struct {
