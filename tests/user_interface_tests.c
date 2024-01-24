@@ -34,3 +34,27 @@ TEST(UserInterface, shows_bpm_on_display_when_beat_clock_source_is_internal) {
 	EXPECT_CHAR_EQ(user_interface.segment_display_chars[3], '1');
 	EXPECT_TRUE(user_interface.segment_display_period_enabled[1]);
 }
+
+TEST(UserInterface, rotary_encoder_changes_tempo_when_clock_source_is_internal) {
+	const UserInterfaceInput input = { .rotary_encoder_diff = 1 };
+	UserInterface user_interface = UserInterface_init();
+	StepSequencer step_sequencer = StepSequencer_init();
+
+	step_sequencer.beat_clock.source = BEAT_CLOCK_SOURCE_INTERNAL;
+	step_sequencer.beat_clock.tempo_bpm = 120;
+	UserInterfaceEvents events = UserInterface_update(&user_interface, &input, &step_sequencer);
+
+	EXPECT_EQ(events.new_tempo_bpm, 121);
+}
+
+TEST(UserInterface, rotary_encoder_does_not_change_tempo_when_clock_source_is_external) {
+	const UserInterfaceInput input = { .rotary_encoder_diff = 1 };
+	UserInterface user_interface = UserInterface_init();
+	StepSequencer step_sequencer = StepSequencer_init();
+
+	step_sequencer.beat_clock.source = BEAT_CLOCK_SOURCE_EXTERNAL;
+	step_sequencer.beat_clock.tempo_bpm = 120;
+	UserInterfaceEvents events = UserInterface_update(&user_interface, &input, &step_sequencer);
+
+	EXPECT_EQ(events.new_tempo_bpm, 0);
+}

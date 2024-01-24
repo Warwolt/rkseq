@@ -10,15 +10,15 @@ UserInterface UserInterface_init(void) {
 
 UserInterfaceEvents UserInterface_update(UserInterface* ui, const UserInterfaceInput* input, const StepSequencer* step_sequencer) {
 	UserInterfaceEvents events = { 0 };
+	const BeatClockSource clock_source = step_sequencer->beat_clock.source;
 
 	/* Set Tempo */
-	// FIXME: write a unit test that covers that tempo can only be changed if internal clock
-	if (input->rotary_encoder_diff) {
+	if (clock_source == BEAT_CLOCK_SOURCE_INTERNAL) {
 		events.new_tempo_bpm = clamp(step_sequencer->beat_clock.tempo_bpm + input->rotary_encoder_diff, MIN_BPM, MAX_BPM);
 	}
 
 	/* Tempo display */
-	switch (step_sequencer->beat_clock.source) {
+	switch (clock_source) {
 		case BEAT_CLOCK_SOURCE_INTERNAL: {
 			// Display BPM
 			const uint16_t number = step_sequencer->beat_clock.tempo_bpm * 10;
