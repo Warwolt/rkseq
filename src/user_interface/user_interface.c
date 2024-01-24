@@ -34,6 +34,7 @@ UserInterfaceEvents UserInterface_update(UserInterface* ui, const UserInterfaceI
 			ui->segment_display_chars[1] = '-';
 			ui->segment_display_chars[2] = '-';
 			ui->segment_display_chars[3] = '-';
+			ui->segment_display_period_enabled[1] = false;
 		} break;
 	}
 
