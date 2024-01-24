@@ -40,8 +40,7 @@ TEST(UserInterface, shows_bpm_on_display_when_beat_clock_source_is_internal) {
 
 	// set BPM to 120.3
 	step_sequencer.beat_clock.source = BEAT_CLOCK_SOURCE_INTERNAL;
-	step_sequencer.beat_clock.tempo_bpm = 120;
-	step_sequencer.beat_clock.tempo_deci_bpm = 3;
+	step_sequencer.beat_clock.tempo_deci_bpm = 1203;
 	UserInterface_update(&user_interface, &input, &step_sequencer);
 
 	const char expected_chars[5] = "1203";
@@ -56,10 +55,10 @@ TEST(UserInterface, rotary_encoder_changes_tempo_when_clock_source_is_internal) 
 	StepSequencer step_sequencer = StepSequencer_init();
 
 	step_sequencer.beat_clock.source = BEAT_CLOCK_SOURCE_INTERNAL;
-	step_sequencer.beat_clock.tempo_bpm = 120;
+	step_sequencer.beat_clock.tempo_deci_bpm = 1200;
 	UserInterfaceEvents events = UserInterface_update(&user_interface, &input, &step_sequencer);
 
-	EXPECT_EQ(events.new_tempo_bpm, 121);
+	EXPECT_EQ(events.new_tempo_deci_bpm, 1210);
 }
 
 TEST(UserInterface, rotary_encoder_does_not_change_tempo_when_clock_source_is_external) {
@@ -68,8 +67,8 @@ TEST(UserInterface, rotary_encoder_does_not_change_tempo_when_clock_source_is_ex
 	StepSequencer step_sequencer = StepSequencer_init();
 
 	step_sequencer.beat_clock.source = BEAT_CLOCK_SOURCE_EXTERNAL;
-	step_sequencer.beat_clock.tempo_bpm = 120;
+	step_sequencer.beat_clock.tempo_deci_bpm = 1200;
 	UserInterfaceEvents events = UserInterface_update(&user_interface, &input, &step_sequencer);
 
-	EXPECT_EQ(events.new_tempo_bpm, 0);
+	EXPECT_EQ(events.new_tempo_deci_bpm, 0);
 }

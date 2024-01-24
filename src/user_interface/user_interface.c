@@ -14,14 +14,14 @@ UserInterfaceEvents UserInterface_update(UserInterface* ui, const UserInterfaceI
 
 	/* Set Tempo */
 	if (clock_source == BEAT_CLOCK_SOURCE_INTERNAL) {
-		events.new_tempo_bpm = clamp(step_sequencer->beat_clock.tempo_bpm + input->rotary_encoder_diff, MIN_BPM, MAX_BPM);
+		events.new_tempo_deci_bpm = clamp(step_sequencer->beat_clock.tempo_deci_bpm + 10 * input->rotary_encoder_diff, MIN_TEMPO, MAX_TEMPO);
 	}
 
 	/* Tempo display */
 	switch (clock_source) {
 		case BEAT_CLOCK_SOURCE_INTERNAL: {
 			// Display BPM
-			const uint16_t number = step_sequencer->beat_clock.tempo_bpm * 10;
+			const uint16_t number = step_sequencer->beat_clock.tempo_deci_bpm;
 			ui->segment_display_chars[0] = number > 999 ? digit_to_string(number / 1000 % 10) : ' ';
 			ui->segment_display_chars[1] = digit_to_string(number / 100 % 10);
 			ui->segment_display_chars[2] = digit_to_string(number / 10 % 10);

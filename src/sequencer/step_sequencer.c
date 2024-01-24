@@ -2,6 +2,6 @@
 
 StepSequencer StepSequencer_init(void) {
 	return (StepSequencer) {
-		.beat_clock = BeatClock_init(DEFAULT_BPM),
+		.beat_clock = BeatClock_init(DEFAULT_TEMPO),
 	};
 }

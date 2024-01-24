@@ -85,12 +85,9 @@ static UserInterfaceInput read_ui_input(InterfaceDevices* interface_devices) {
 #define MICROSECONDS_PER_SECOND 1e6
 #define BPM_PER_HZ 60
 
-static void set_playback_tempo(BeatClock* beat_clock, Timer1 timer1, uint8_t bpm, uint8_t deci_bpm) {
-	beat_clock->tempo_bpm = bpm;
-	beat_clock->tempo_deci_bpm = deci_bpm;
-	const uint16_t total_deci_bpm = bpm * 10 + deci_bpm;
-
-	const uint32_t usec_per_pulse = MICROSECONDS_PER_SECOND * BPM_PER_HZ / ((BEAT_CLOCK_SEQUENCER_PPQN * (total_deci_bpm / 10)));
+static void set_playback_tempo(BeatClock* beat_clock, Timer1 timer1, uint16_t new_tempo_deci_bpm) {
+	beat_clock->tempo_deci_bpm = new_tempo_deci_bpm;
+	const uint32_t usec_per_pulse = MICROSECONDS_PER_SECOND * BPM_PER_HZ / ((BEAT_CLOCK_SEQUENCER_PPQN * (new_tempo_deci_bpm / 10)));
 	const uint16_t ticks_per_pulse = usec_per_pulse / TIMER1_USEC_PER_TICK;
 	Timer1_set_period(timer1, ticks_per_pulse);
 }
@@ -121,8 +118,8 @@ static uint8_t maybe_read_midi_byte(void) {
 }
 
 static void handle_ui_events(Timer1 timer1, StepSequencer* step_sequencer, const UserInterfaceEvents* ui_events) {
-	if (ui_events->new_tempo_bpm) {
-		set_playback_tempo(&step_sequencer->beat_clock, timer1, ui_events->new_tempo_bpm, 0);
+	if (ui_events->new_tempo_deci_bpm) {
+		set_playback_tempo(&step_sequencer->beat_clock, timer1, ui_events->new_tempo_deci_bpm);
 	}
 	if (ui_events->start_playback) {
 		start_playback(&step_sequencer->beat_clock, timer1);
@@ -188,7 +185,7 @@ int main(void) {
 
 	/* Run */
 	LOG_INFO("Program Start\n");
-	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_BPM, 0); // set initial tempo
+	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_TEMPO); // set initial tempo
 	start_playback(&step_sequencer.beat_clock, timer1); // HACK, start playback immediately
 	while (true) {
 		/* User Interface */
