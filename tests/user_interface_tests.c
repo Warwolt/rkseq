@@ -2,6 +2,17 @@
 
 #include "sequencer/step_sequencer.h"
 #include "user_interface/user_interface.h"
+#include "util/math.h"
+
+#define EXPECT_ARRAY_EQ(lhs, rhs, len)                 \
+	for (int i = 0; i < len; i++) {                    \
+		EXPECT_EQ_INFO(lhs[i], rhs[i], "i = %d\n", i); \
+	}
+
+#define EXPECT_CHAR_ARRAY_EQ(lhs, rhs, len)                 \
+	for (int i = 0; i < len; i++) {                         \
+		EXPECT_CHAR_EQ_INFO(lhs[i], rhs[i], "i = %d\n", i); \
+	}
 
 TEST(UserInterface, shows_dashes_on_display_when_beat_clock_source_is_external) {
 	const UserInterfaceInput input = { 0 };
@@ -16,14 +27,10 @@ TEST(UserInterface, shows_dashes_on_display_when_beat_clock_source_is_external) 
 	step_sequencer.beat_clock.source = BEAT_CLOCK_SOURCE_EXTERNAL;
 	UserInterface_update(&user_interface, &input, &step_sequencer);
 
-	EXPECT_CHAR_EQ(user_interface.segment_display_chars[0], '-');
-	EXPECT_CHAR_EQ(user_interface.segment_display_chars[1], '-');
-	EXPECT_CHAR_EQ(user_interface.segment_display_chars[2], '-');
-	EXPECT_CHAR_EQ(user_interface.segment_display_chars[3], '-');
-	EXPECT_FALSE(user_interface.segment_display_period_enabled[0]);
-	EXPECT_FALSE(user_interface.segment_display_period_enabled[1]);
-	EXPECT_FALSE(user_interface.segment_display_period_enabled[2]);
-	EXPECT_FALSE(user_interface.segment_display_period_enabled[3]);
+	const char expected_chars[5] = "----";
+	const bool expected_periods[4] = { false, false, false, false };
+	EXPECT_CHAR_ARRAY_EQ(user_interface.segment_display_chars, expected_chars, 4);
+	EXPECT_ARRAY_EQ(user_interface.segment_display_period_enabled, expected_periods, 4);
 }
 
 TEST(UserInterface, shows_bpm_on_display_when_beat_clock_source_is_internal) {
