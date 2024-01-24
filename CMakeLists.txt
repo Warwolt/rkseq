@@ -117,6 +117,7 @@ set(TEST_SOURCE
   tests/midi_control_tests.c
   tests/mock/mock_time.c
   tests/ring_buffer_tests.c
+  tests/user_interface_tests.c
 )
 add_subdirectory(external/rktest)
 add_executable(tests

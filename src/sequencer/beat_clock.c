@@ -4,11 +4,11 @@
 
 #define MIDI_PPQN 24
 
-BeatClock BeatClock_init(uint8_t tempo_bpm) {
+BeatClock BeatClock_init(uint16_t tempo_deci_bpm) {
 	return (BeatClock) {
 		.beat_pulses = 0,
 		.is_playing = false,
-		.tempo_bpm = tempo_bpm,
+		.tempo_deci_bpm = tempo_deci_bpm,
 		.source = BEAT_CLOCK_SOURCE_INTERNAL,
 	};
 }

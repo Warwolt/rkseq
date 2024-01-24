@@ -82,9 +82,14 @@ static UserInterfaceInput read_ui_input(InterfaceDevices* interface_devices) {
 	};
 }
 
-static void set_playback_tempo(BeatClock* beat_clock, Timer1 timer1, uint8_t bpm) {
-	beat_clock->tempo_bpm = bpm;
-	Timer1_set_period(timer1, (1e6 * 60) / (BEAT_CLOCK_SEQUENCER_PPQN * bpm) / TIMER1_USEC_PER_TICK);
+#define MICROSECONDS_PER_SECOND 1e6
+#define BPM_PER_HZ 60
+
+static void set_playback_tempo(BeatClock* beat_clock, Timer1 timer1, uint16_t new_tempo_deci_bpm) {
+	beat_clock->tempo_deci_bpm = new_tempo_deci_bpm;
+	const uint32_t usec_per_pulse = MICROSECONDS_PER_SECOND * BPM_PER_HZ / ((BEAT_CLOCK_SEQUENCER_PPQN * (new_tempo_deci_bpm / 10)));
+	const uint16_t ticks_per_pulse = usec_per_pulse / TIMER1_USEC_PER_TICK;
+	Timer1_set_period(timer1, ticks_per_pulse);
 }
 
 static void start_playback(BeatClock* beat_clock, Timer1 timer1) {
@@ -97,9 +102,10 @@ static void stop_playback(BeatClock* beat_clock, Timer1 timer1) {
 	Timer1_stop(timer1);
 }
 
-static void update_segment_display(SegmentDisplay* segment_display, char* chars) {
+static void update_segment_display(SegmentDisplay* segment_display, const UserInterface* user_interface) {
 	for (int i = 0; i < 4; i++) {
-		SegmentDisplay_set_char(segment_display, i, chars[i]);
+		SegmentDisplay_set_char(segment_display, i, user_interface->segment_display_chars[i]);
+		SegmentDisplay_set_period(segment_display, i, user_interface->segment_display_period_enabled[i]);
 	}
 }
 
@@ -112,8 +118,8 @@ static uint8_t maybe_read_midi_byte(void) {
 }
 
 static void handle_ui_events(Timer1 timer1, StepSequencer* step_sequencer, const UserInterfaceEvents* ui_events) {
-	if (ui_events->new_tempo_bpm) {
-		set_playback_tempo(&step_sequencer->beat_clock, timer1, ui_events->new_tempo_bpm);
+	if (ui_events->new_tempo_deci_bpm) {
+		set_playback_tempo(&step_sequencer->beat_clock, timer1, ui_events->new_tempo_deci_bpm);
 	}
 	if (ui_events->start_playback) {
 		start_playback(&step_sequencer->beat_clock, timer1);
@@ -179,12 +185,12 @@ int main(void) {
 
 	/* Run */
 	LOG_INFO("Program Start\n");
-	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_BPM); // set initial tempo
+	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_TEMPO); // set initial tempo
 	start_playback(&step_sequencer.beat_clock, timer1); // HACK, start playback immediately
 	while (true) {
 		/* User Interface */
 		const UserInterfaceInput ui_input = read_ui_input(&interface_devices);
-		const UserInterfaceEvents ui_events = UserInterface_update(&user_interface, &ui_input, &step_sequencer.beat_clock);
+		const UserInterfaceEvents ui_events = UserInterface_update(&user_interface, &ui_input, &step_sequencer);
 		handle_ui_events(timer1, &step_sequencer, &ui_events);
 
 		/* MIDI Control */
@@ -193,6 +199,6 @@ int main(void) {
 		handle_midi_control_events(timer1, &step_sequencer, &midi_events);
 
 		/* Interface Devices */
-		update_segment_display(&interface_devices.segment_display, user_interface.segment_display_chars);
+		update_segment_display(&interface_devices.segment_display, &user_interface);
 	}
 }
