@@ -22,11 +22,11 @@ UserInterfaceEvents UserInterface_update(UserInterface* ui, const UserInterfaceI
 		case BEAT_CLOCK_SOURCE_INTERNAL: {
 			// Display BPM
 			const uint16_t number = step_sequencer->beat_clock.tempo_bpm * 10;
-			ui->segment_display_chars[0] = digit_to_string(step_sequencer->beat_clock.tempo_deci_bpm % 10);
-			ui->segment_display_chars[1] = digit_to_string(number / 10 % 10);
-			ui->segment_display_chars[2] = digit_to_string(number / 100 % 10);
-			ui->segment_display_chars[3] = number > 999 ? digit_to_string(number / 1000 % 10) : ' ';
-			ui->segment_display_period_enabled[1] = true;
+			ui->segment_display_chars[0] = number > 999 ? digit_to_string(number / 1000 % 10) : ' ';
+			ui->segment_display_chars[1] = digit_to_string(number / 100 % 10);
+			ui->segment_display_chars[2] = digit_to_string(number / 10 % 10);
+			ui->segment_display_chars[3] = digit_to_string(step_sequencer->beat_clock.tempo_deci_bpm % 10);
+			ui->segment_display_period_enabled[2] = true;
 		} break;
 
 		case BEAT_CLOCK_SOURCE_EXTERNAL: {
@@ -34,7 +34,7 @@ UserInterfaceEvents UserInterface_update(UserInterface* ui, const UserInterfaceI
 			ui->segment_display_chars[1] = '-';
 			ui->segment_display_chars[2] = '-';
 			ui->segment_display_chars[3] = '-';
-			ui->segment_display_period_enabled[1] = false;
+			ui->segment_display_period_enabled[2] = false;
 		} break;
 	}
 

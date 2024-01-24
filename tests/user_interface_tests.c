@@ -44,14 +44,10 @@ TEST(UserInterface, shows_bpm_on_display_when_beat_clock_source_is_internal) {
 	step_sequencer.beat_clock.tempo_deci_bpm = 3;
 	UserInterface_update(&user_interface, &input, &step_sequencer);
 
-	EXPECT_CHAR_EQ(user_interface.segment_display_chars[0], '3');
-	EXPECT_CHAR_EQ(user_interface.segment_display_chars[1], '0');
-	EXPECT_CHAR_EQ(user_interface.segment_display_chars[2], '2');
-	EXPECT_CHAR_EQ(user_interface.segment_display_chars[3], '1');
-	EXPECT_FALSE(user_interface.segment_display_period_enabled[0]);
-	EXPECT_TRUE(user_interface.segment_display_period_enabled[1]);
-	EXPECT_FALSE(user_interface.segment_display_period_enabled[2]);
-	EXPECT_FALSE(user_interface.segment_display_period_enabled[3]);
+	const char expected_chars[5] = "1203";
+	const bool expected_periods[4] = { false, false, true, false };
+	EXPECT_CHAR_ARRAY_EQ(user_interface.segment_display_chars, expected_chars, 4);
+	EXPECT_ARRAY_EQ(user_interface.segment_display_period_enabled, expected_periods, 4);
 }
 
 TEST(UserInterface, rotary_encoder_changes_tempo_when_clock_source_is_internal) {

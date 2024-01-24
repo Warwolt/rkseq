@@ -41,9 +41,9 @@ void SegmentDisplay_output_next_char(SegmentDisplay* display) {
 	// write segments
 	int8_t byte = 0;
 	if (display->current_character < 4) {
-		const uint8_t digit = display->characters[display->current_character];
+		const uint8_t digit = display->characters[4 - display->current_character - 1];
 		const uint8_t segments = character_segments[digit];
-		const uint8_t period = display->period_enabled[display->current_character] << (8 - 1);
+		const uint8_t period = display->period_enabled[4 - display->current_character - 1] << (8 - 1);
 		byte = ~(segments | period);
 	}
 	SegmentDisplay_output_byte(display, byte);
