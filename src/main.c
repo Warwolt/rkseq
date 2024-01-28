@@ -47,6 +47,11 @@ ISR(TIMER0_OVF_vect) {
 	}
 }
 
+#define MIDI_BYTE_NOTE_ON(channel) ((uint8_t)(0x90 | (channel)))
+#define MIDI_BYTE_NOTE_OFF(channel) ((uint8_t)(0x80 | (channel)))
+#define MIDI_BYTE_NOTE_NUMBER(note) ((uint8_t)(note))
+#define MIDI_BYTE_VELOCITY(velocity) ((uint8_t)(velocity))
+
 ISR(TIMER1_COMPA_vect) {
 	// FIXME: Move this out into a local function that is used as callback here
 	// Motivation: allows us to set everything up in main and make the entire
@@ -55,6 +60,15 @@ ISR(TIMER1_COMPA_vect) {
 		BeatClock_on_pulse(g_beat_clock_ptr);
 		if (BeatClock_midi_pulse_ready(g_beat_clock_ptr)) {
 			SoftwareSerial_write(MIDI_CLOCK_BYTE);
+		}
+		if (BeatClock_sixteenth_note_ready(g_beat_clock_ptr)) {
+			static bool note_on = true;
+
+			SoftwareSerial_write(note_on ? MIDI_BYTE_NOTE_ON(0) : MIDI_BYTE_NOTE_OFF(0));
+			SoftwareSerial_write(MIDI_BYTE_NOTE_NUMBER(64));
+			SoftwareSerial_write(MIDI_BYTE_VELOCITY(64));
+
+			note_on = !note_on;
 		}
 	}
 }
