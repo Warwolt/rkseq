@@ -75,6 +75,7 @@ endif(AVR)
 set(PLATFORM_SRC
   src/hardware/gpio.c
   src/hardware/hardware_serial.c
+  src/hardware/midi_transmit.c
   src/hardware/rotary_encoder.c
   src/hardware/segment_display.c
   src/hardware/shift_register.c

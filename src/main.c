@@ -2,6 +2,7 @@
 #include "debug/logging.h"
 #include "hardware/gpio.h"
 #include "hardware/hardware_serial.h"
+#include "hardware/midi_transmit.h"
 #include "hardware/rotary_encoder.h"
 #include "hardware/segment_display.h"
 #include "hardware/shift_register.h"
@@ -47,11 +48,6 @@ ISR(TIMER0_OVF_vect) {
 	}
 }
 
-#define MIDI_BYTE_NOTE_ON(channel) ((uint8_t)(0x90 | (channel)))
-#define MIDI_BYTE_NOTE_OFF(channel) ((uint8_t)(0x80 | (channel)))
-#define MIDI_BYTE_NOTE_NUMBER(note) ((uint8_t)(note))
-#define MIDI_BYTE_VELOCITY(velocity) ((uint8_t)(velocity))
-
 ISR(TIMER1_COMPA_vect) {
 	// FIXME: Move this out into a local function that is used as callback here
 	// Motivation: allows us to set everything up in main and make the entire
@@ -64,9 +60,16 @@ ISR(TIMER1_COMPA_vect) {
 		if (BeatClock_sixteenth_note_ready(g_beat_clock_ptr)) {
 			static bool note_on = true;
 
-			SoftwareSerial_write(note_on ? MIDI_BYTE_NOTE_ON(0) : MIDI_BYTE_NOTE_OFF(0));
-			SoftwareSerial_write(MIDI_BYTE_NOTE_NUMBER(64));
-			SoftwareSerial_write(MIDI_BYTE_VELOCITY(64));
+			const uint8_t channel = 0;
+			const uint8_t note = 64;
+			const uint8_t velocity = 64;
+
+			if (note_on) {
+				MidiTransmit_send_message(MIDI_MESSAGE_NOTE_ON(channel, note, velocity));
+			} else {
+				// FIXME: remove velocity from off message
+				MidiTransmit_send_message(MIDI_MESSAGE_NOTE_OFF(channel, note, 64));
+			}
 
 			note_on = !note_on;
 		}
