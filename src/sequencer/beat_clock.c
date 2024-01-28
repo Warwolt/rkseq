@@ -26,7 +26,7 @@ void BeatClock_stop(BeatClock* beat_clock) {
 }
 
 bool BeatClock_sixteenth_note_ready(const BeatClock* beat_clock) {
-	return beat_clock->beat_pulses == 0;
+	return (beat_clock->beat_pulses % (BEAT_CLOCK_SEQUENCER_PPQN / 4)) == 0;
 }
 
 bool BeatClock_midi_pulse_ready(const BeatClock* beat_clock) {
