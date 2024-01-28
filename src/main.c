@@ -31,10 +31,13 @@ typedef struct {
 	SegmentDisplay segment_display;
 } InterfaceDevices;
 
+typedef struct {
+	bool note_on;
+	StepSequencer* step_sequencer;
+} OnBeatPulseContext;
+
 /* ----------------------- Interrupt service routines ----------------------- */
 static SegmentDisplay* g_segment_display_ptr;
-static BeatClock* g_beat_clock_ptr;
-
 ISR(TIMER0_OVF_vect) {
 	Time_timer0_overflow_irq();
 
@@ -48,11 +51,11 @@ ISR(TIMER0_OVF_vect) {
 	}
 }
 
-static void (*g_timer1_compa_callback)(void);
-
+static OnBeatPulseContext g_timer1_compa_callback_context;
+static void (*g_timer1_compa_callback)(OnBeatPulseContext* context);
 ISR(TIMER1_COMPA_vect) {
 	if (g_timer1_compa_callback) {
-		g_timer1_compa_callback();
+		g_timer1_compa_callback(&g_timer1_compa_callback_context);
 	}
 }
 
@@ -144,28 +147,26 @@ static void handle_midi_control_events(Timer1 timer1, StepSequencer* step_sequen
 	}
 }
 
-void on_beat_clock_pulse(void) {
-	if (g_beat_clock_ptr) {
-		BeatClock_on_pulse(g_beat_clock_ptr);
+void on_beat_pulse(OnBeatPulseContext* ctx) {
+	if (ctx->step_sequencer) {
+		BeatClock_on_pulse(&ctx->step_sequencer->beat_clock);
 
-		if (BeatClock_midi_pulse_ready(g_beat_clock_ptr)) {
+		if (BeatClock_midi_pulse_ready(&ctx->step_sequencer->beat_clock)) {
 			SoftwareSerial_write(MIDI_CLOCK_BYTE);
 		}
 
-		if (BeatClock_sixteenth_note_ready(g_beat_clock_ptr)) {
-			static bool note_on = true;
-
+		if (BeatClock_sixteenth_note_ready(&ctx->step_sequencer->beat_clock)) {
 			const uint8_t channel = 0;
 			const uint8_t note = 64;
 			const uint8_t velocity = 64;
 
-			if (note_on) {
+			if (ctx->note_on) {
 				MidiTransmit_send_message(MIDI_MESSAGE_NOTE_ON(channel, note, velocity));
 			} else {
 				MidiTransmit_send_message(MIDI_MESSAGE_NOTE_OFF(channel, note));
 			}
 
-			note_on = !note_on;
+			ctx->note_on = !ctx->note_on;
 		}
 	}
 }
@@ -204,8 +205,11 @@ int main(void) {
 
 	// Setup pointers for interrupts
 	g_segment_display_ptr = &interface_devices.segment_display;
-	g_beat_clock_ptr = &step_sequencer.beat_clock;
-	g_timer1_compa_callback = &on_beat_clock_pulse;
+	g_timer1_compa_callback_context = (OnBeatPulseContext) {
+		.note_on = true,
+		.step_sequencer = &step_sequencer
+	};
+	g_timer1_compa_callback = &on_beat_pulse;
 
 	/* Run */
 	LOG_INFO("Program Start\n");
