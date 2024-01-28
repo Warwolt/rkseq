@@ -9,7 +9,7 @@ MidiControl MidiControl_init(void) {
 MidiControlEvents MidiControl_update(MidiControl* midi_control, uint8_t midi_byte) {
 	MidiControlEvents events = { 0 };
 
-	if (midi_byte == MIDI_CLOCK_BYTE) {
+	if (midi_byte == MIDI_TIMING_CLOCK) {
 		events.switch_to_external_clock = true;
 		MillisecondTimer_reset(&midi_control->midi_clock_timeout_timer);
 	}
