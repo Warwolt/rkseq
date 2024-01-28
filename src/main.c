@@ -163,7 +163,7 @@ void on_tempo_tick(OnTempoTickContext* ctx) {
 		BeatClock_on_pulse(&ctx->step_sequencer->beat_clock);
 
 		if (BeatClock_midi_pulse_ready(&ctx->step_sequencer->beat_clock)) {
-			SoftwareSerial_write(MIDI_CLOCK_BYTE);
+			MidiTransmit_send_message(MIDI_MESSAGE_TIMING_CLOCK);
 		}
 
 		if (BeatClock_sixteenth_note_ready(&ctx->step_sequencer->beat_clock)) {

@@ -4,8 +4,9 @@
 #include <stdint.h>
 
 typedef enum {
-	MIDI_MESSAGE_TYPE_NOTE_ON,
+	MIDI_MESSAGE_TYPE_TIMING_CLOCK,
 	MIDI_MESSAGE_TYPE_NOTE_OFF,
+	MIDI_MESSAGE_TYPE_NOTE_ON,
 } MidiMessageType;
 
 typedef struct {
@@ -26,6 +27,11 @@ typedef struct {
 		MidiNoteOff note_off;
 	} data;
 } MidiMessage;
+
+#define MIDI_MESSAGE_TIMING_CLOCK               \
+	((MidiMessage) {                            \
+		.type = MIDI_MESSAGE_TYPE_TIMING_CLOCK, \
+		.data = { 0 } })
 
 #define MIDI_MESSAGE_NOTE_ON(channel_, note_number_, velocity_) \
 	((MidiMessage) {                                            \

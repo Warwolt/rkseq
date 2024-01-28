@@ -1,17 +1,12 @@
 #ifndef MIDI_CONTROL_H
 #define MIDI_CONTROL_H
 
+#include "data/midi.h"
 #include "util/timer.h"
 
 #include <stdbool.h>
 
 #define MIDI_CONTROL_CLOCK_TIMEOUT_MS 1000
-
-#define MIDI_NO_MSG_BYTE 0x00
-#define MIDI_CLOCK_BYTE 0xF8
-#define MIDI_START_BYTE 0xFA
-#define MIDI_CONTINUE_BYTE 0xFB
-#define MIDI_STOP_BYTE 0xFC
 
 typedef struct {
 	bool switch_to_internal_clock;
