@@ -10,7 +10,7 @@
 TEST(MidiControl, empty_input_gives_no_events) {
 	MidiControl midi_control = MidiControl_init();
 
-	const MidiControlEvents events = MidiControl_update(&midi_control, MIDI_NO_MSG_BYTE);
+	const MidiControlEvents events = MidiControl_update(&midi_control, MIDI_NO_MSG);
 
 	const MidiControlEvents expected = { 0 };
 	EXPECT_MIDI_CONTROL_EVENTS_EQ(events, expected);
@@ -19,7 +19,7 @@ TEST(MidiControl, empty_input_gives_no_events) {
 TEST(MidiControl, when_receiving_a_midi_clock_byte_then_switches_to_external_clock) {
 	MidiControl midi_control = MidiControl_init();
 
-	const MidiControlEvents events = MidiControl_update(&midi_control, MIDI_CLOCK_BYTE);
+	const MidiControlEvents events = MidiControl_update(&midi_control, MIDI_TIMING_CLOCK);
 
 	EXPECT_TRUE(events.switch_to_external_clock);
 }
@@ -27,13 +27,13 @@ TEST(MidiControl, when_receiving_a_midi_clock_byte_then_switches_to_external_clo
 TEST(MidiControl, if_no_midi_clock_and_timeout_then_switch_to_internal_clock) {
 	MidiControl midi_control = MidiControl_init();
 
-	// send MIDI_CLOCK at time 0
+	// send MIDI_TIMING_CLOCK at time 0
 	MockTime_set_now_ms(1234 + 0);
-	MidiControl_update(&midi_control, MIDI_CLOCK_BYTE);
+	MidiControl_update(&midi_control, MIDI_TIMING_CLOCK);
 
 	// no clock received after timeout elapsed
 	MockTime_set_now_ms(1234 + MIDI_CONTROL_CLOCK_TIMEOUT_MS);
-	const MidiControlEvents events = MidiControl_update(&midi_control, MIDI_NO_MSG_BYTE);
+	const MidiControlEvents events = MidiControl_update(&midi_control, MIDI_NO_MSG);
 
 	EXPECT_TRUE(events.switch_to_internal_clock);
 }
@@ -41,13 +41,13 @@ TEST(MidiControl, if_no_midi_clock_and_timeout_then_switch_to_internal_clock) {
 TEST(MidiControl, if_no_midi_clock_and_no_timeout_then_does_not_switch_to_internal_clock) {
 	MidiControl midi_control = MidiControl_init();
 
-	// send MIDI_CLOCK at time 0
+	// send MIDI_TIMING_CLOCK at time 0
 	MockTime_set_now_ms(1234 + 0);
-	MidiControl_update(&midi_control, MIDI_CLOCK_BYTE);
+	MidiControl_update(&midi_control, MIDI_TIMING_CLOCK);
 
 	// no clock received, but timeout has not elapsed yet
 	MockTime_set_now_ms(1234 + MIDI_CONTROL_CLOCK_TIMEOUT_MS - 1);
-	const MidiControlEvents events = MidiControl_update(&midi_control, MIDI_NO_MSG_BYTE);
+	const MidiControlEvents events = MidiControl_update(&midi_control, MIDI_NO_MSG);
 
 	EXPECT_FALSE(events.switch_to_internal_clock);
 }
