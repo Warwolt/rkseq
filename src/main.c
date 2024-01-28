@@ -54,9 +54,11 @@ ISR(TIMER1_COMPA_vect) {
 	// program understandable by reading it starting from main.
 	if (g_beat_clock_ptr) {
 		BeatClock_on_pulse(g_beat_clock_ptr);
+
 		if (BeatClock_midi_pulse_ready(g_beat_clock_ptr)) {
 			SoftwareSerial_write(MIDI_CLOCK_BYTE);
 		}
+
 		if (BeatClock_sixteenth_note_ready(g_beat_clock_ptr)) {
 			static bool note_on = true;
 
@@ -67,8 +69,7 @@ ISR(TIMER1_COMPA_vect) {
 			if (note_on) {
 				MidiTransmit_send_message(MIDI_MESSAGE_NOTE_ON(channel, note, velocity));
 			} else {
-				// FIXME: remove velocity from off message
-				MidiTransmit_send_message(MIDI_MESSAGE_NOTE_OFF(channel, note, 64));
+				MidiTransmit_send_message(MIDI_MESSAGE_NOTE_OFF(channel, note));
 			}
 
 			note_on = !note_on;

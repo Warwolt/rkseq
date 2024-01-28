@@ -17,7 +17,6 @@ typedef struct {
 typedef struct {
 	uint8_t channel;
 	uint8_t note_number;
-	uint8_t velocity;
 } MidiNoteOff;
 
 typedef struct {
@@ -31,12 +30,19 @@ typedef struct {
 #define MIDI_MESSAGE_NOTE_ON(channel_, note_number_, velocity_) \
 	((MidiMessage) {                                            \
 		.type = MIDI_MESSAGE_TYPE_NOTE_ON,                      \
-		.data.note_on = { .channel = channel_, note_number_, .velocity = velocity_ } })
+		.data.note_on = {                                       \
+			.channel = channel_,                                \
+			.note_number = note_number_,                        \
+			.velocity = velocity_,                              \
+		} })
 
-#define MIDI_MESSAGE_NOTE_OFF(channel_, note_number_, velocity_) \
-	((MidiMessage) {                                             \
-		.type = MIDI_MESSAGE_TYPE_NOTE_OFF,                      \
-		.data.note_on = { .channel = channel_, note_number_, .velocity = velocity_ } })
+#define MIDI_MESSAGE_NOTE_OFF(channel_, note_number_) \
+	((MidiMessage) {                                  \
+		.type = MIDI_MESSAGE_TYPE_NOTE_OFF,           \
+		.data.note_off = {                            \
+			.channel = channel_,                      \
+			.note_number = note_number_,              \
+		} })
 
 void MidiTransmit_send_message(MidiMessage msg);
 
