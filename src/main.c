@@ -32,27 +32,26 @@ typedef struct {
 } InterfaceDevices;
 
 typedef struct {
+	uint8_t last_update;
+	SegmentDisplay* segment_display;
+} OnTimeTickContext;
+
+typedef struct {
 	bool note_on;
 	StepSequencer* step_sequencer;
-} OnBeatPulseContext;
+} OnTempoTickContext;
 
 /* ----------------------- Interrupt service routines ----------------------- */
-static SegmentDisplay* g_segment_display_ptr;
+static OnTimeTickContext g_timer0_ovf_callback_context;
+static void (*g_timer0_ovf_callback)(OnTimeTickContext* context);
 ISR(TIMER0_OVF_vect) {
-	Time_timer0_overflow_irq();
-
-	if (g_segment_display_ptr) {
-		static uint8_t last_update = 0;
-		last_update++;
-		if (last_update > 5) {
-			last_update = 0;
-			SegmentDisplay_output_next_char(g_segment_display_ptr); // cycle to next digit
-		}
+	if (g_timer0_ovf_callback) {
+		g_timer0_ovf_callback(&g_timer0_ovf_callback_context);
 	}
 }
 
-static OnBeatPulseContext g_timer1_compa_callback_context;
-static void (*g_timer1_compa_callback)(OnBeatPulseContext* context);
+static OnTempoTickContext g_timer1_compa_callback_context;
+static void (*g_timer1_compa_callback)(OnTempoTickContext* context);
 ISR(TIMER1_COMPA_vect) {
 	if (g_timer1_compa_callback) {
 		g_timer1_compa_callback(&g_timer1_compa_callback_context);
@@ -147,7 +146,19 @@ static void handle_midi_control_events(Timer1 timer1, StepSequencer* step_sequen
 	}
 }
 
-void on_beat_pulse(OnBeatPulseContext* ctx) {
+void on_time_tick(OnTimeTickContext* ctx) {
+	Time_on_timer0_overflow();
+
+	if (ctx->segment_display) {
+		ctx->last_update++;
+		if (ctx->last_update > 5) {
+			ctx->last_update = 0;
+			SegmentDisplay_output_next_char(ctx->segment_display);
+		}
+	}
+}
+
+void on_tempo_tick(OnTempoTickContext* ctx) {
 	if (ctx->step_sequencer) {
 		BeatClock_on_pulse(&ctx->step_sequencer->beat_clock);
 
@@ -203,17 +214,22 @@ int main(void) {
 	MidiControl midi_control = MidiControl_init();
 	UserInterface user_interface = UserInterface_init();
 
-	// Setup pointers for interrupts
-	g_segment_display_ptr = &interface_devices.segment_display;
-	g_timer1_compa_callback_context = (OnBeatPulseContext) {
-		.note_on = true,
-		.step_sequencer = &step_sequencer
+	/* Setup timer based interrupts */
+	g_timer0_ovf_callback_context = (OnTimeTickContext) {
+		.last_update = 0,
+		.segment_display = &interface_devices.segment_display,
 	};
-	g_timer1_compa_callback = &on_beat_pulse;
+	g_timer0_ovf_callback = &on_time_tick;
+
+	g_timer1_compa_callback_context = (OnTempoTickContext) {
+		.note_on = true,
+		.step_sequencer = &step_sequencer,
+	};
+	g_timer1_compa_callback = &on_tempo_tick;
 
 	/* Run */
 	LOG_INFO("Program Start\n");
-	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_TEMPO); // set initial tempo
+	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_TEMPO);
 	start_playback(&step_sequencer.beat_clock, timer1); // HACK, start playback immediately
 	while (true) {
 		/* User Interface */

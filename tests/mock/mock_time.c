@@ -12,7 +12,7 @@ void MockTime_set_now_us(uint64_t now_us) {
 	g_now_us = now_us;
 }
 
-void Time_timer0_overflow_irq(void) {
+void Time_on_timer0_overflow(void) {
 }
 
 uint32_t Time_now_ms(void) {

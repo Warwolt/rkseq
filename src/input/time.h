@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-void Time_timer0_overflow_irq(void);
+void Time_on_timer0_overflow(void);
 uint32_t Time_now_ms(void);
 uint64_t Time_now_us(void);
 

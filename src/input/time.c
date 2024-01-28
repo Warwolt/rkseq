@@ -14,7 +14,7 @@
 static volatile uint16_t g_us = 0;
 static volatile uint32_t g_ms = 0;
 
-void Time_timer0_overflow_irq(void) {
+void Time_on_timer0_overflow(void) {
 	// copy these to local variables so they can be stored in registers
 	// (volatile variables must be read from memory on every access)
 	uint16_t us = g_us;
