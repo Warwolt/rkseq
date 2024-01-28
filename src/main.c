@@ -31,49 +31,30 @@ typedef struct {
 	SegmentDisplay segment_display;
 } InterfaceDevices;
 
+typedef struct {
+	uint8_t last_update;
+	SegmentDisplay* segment_display;
+} OnTimeTickContext;
+
+typedef struct {
+	bool note_on;
+	StepSequencer* step_sequencer;
+} OnTempoTickContext;
+
 /* ----------------------- Interrupt service routines ----------------------- */
-static SegmentDisplay* g_segment_display_ptr;
-static BeatClock* g_beat_clock_ptr;
-
+static OnTimeTickContext g_timer0_ovf_callback_context;
+static void (*g_timer0_ovf_callback)(OnTimeTickContext* context);
 ISR(TIMER0_OVF_vect) {
-	Time_timer0_overflow_irq();
-
-	if (g_segment_display_ptr) {
-		static uint8_t last_update = 0;
-		last_update++;
-		if (last_update > 5) {
-			last_update = 0;
-			SegmentDisplay_output_next_char(g_segment_display_ptr); // cycle to next digit
-		}
+	if (g_timer0_ovf_callback) {
+		g_timer0_ovf_callback(&g_timer0_ovf_callback_context);
 	}
 }
 
+static OnTempoTickContext g_timer1_compa_callback_context;
+static void (*g_timer1_compa_callback)(OnTempoTickContext* context);
 ISR(TIMER1_COMPA_vect) {
-	// FIXME: Move this out into a local function that is used as callback here
-	// Motivation: allows us to set everything up in main and make the entire
-	// program understandable by reading it starting from main.
-	if (g_beat_clock_ptr) {
-		BeatClock_on_pulse(g_beat_clock_ptr);
-
-		if (BeatClock_midi_pulse_ready(g_beat_clock_ptr)) {
-			SoftwareSerial_write(MIDI_CLOCK_BYTE);
-		}
-
-		if (BeatClock_sixteenth_note_ready(g_beat_clock_ptr)) {
-			static bool note_on = true;
-
-			const uint8_t channel = 0;
-			const uint8_t note = 64;
-			const uint8_t velocity = 64;
-
-			if (note_on) {
-				MidiTransmit_send_message(MIDI_MESSAGE_NOTE_ON(channel, note, velocity));
-			} else {
-				MidiTransmit_send_message(MIDI_MESSAGE_NOTE_OFF(channel, note));
-			}
-
-			note_on = !note_on;
-		}
+	if (g_timer1_compa_callback) {
+		g_timer1_compa_callback(&g_timer1_compa_callback_context);
 	}
 }
 
@@ -165,6 +146,42 @@ static void handle_midi_control_events(Timer1 timer1, StepSequencer* step_sequen
 	}
 }
 
+void on_time_tick(OnTimeTickContext* ctx) {
+	Time_on_timer0_overflow();
+
+	if (ctx->segment_display) {
+		ctx->last_update++;
+		if (ctx->last_update > 5) {
+			ctx->last_update = 0;
+			SegmentDisplay_output_next_char(ctx->segment_display);
+		}
+	}
+}
+
+void on_tempo_tick(OnTempoTickContext* ctx) {
+	if (ctx->step_sequencer) {
+		BeatClock_on_pulse(&ctx->step_sequencer->beat_clock);
+
+		if (BeatClock_midi_pulse_ready(&ctx->step_sequencer->beat_clock)) {
+			SoftwareSerial_write(MIDI_CLOCK_BYTE);
+		}
+
+		if (BeatClock_sixteenth_note_ready(&ctx->step_sequencer->beat_clock)) {
+			const uint8_t channel = 0;
+			const uint8_t note = 64;
+			const uint8_t velocity = 64;
+
+			if (ctx->note_on) {
+				MidiTransmit_send_message(MIDI_MESSAGE_NOTE_ON(channel, note, velocity));
+			} else {
+				MidiTransmit_send_message(MIDI_MESSAGE_NOTE_OFF(channel, note));
+			}
+
+			ctx->note_on = !ctx->note_on;
+		}
+	}
+}
+
 int main(void) {
 	/* Setup */
 	const GpioPin midi_rx_pin = GpioPin_init(&PORTD, 2);
@@ -197,13 +214,22 @@ int main(void) {
 	MidiControl midi_control = MidiControl_init();
 	UserInterface user_interface = UserInterface_init();
 
-	// Setup pointers for interrupts
-	g_segment_display_ptr = &interface_devices.segment_display;
-	g_beat_clock_ptr = &step_sequencer.beat_clock;
+	/* Setup timer based interrupts */
+	g_timer0_ovf_callback_context = (OnTimeTickContext) {
+		.last_update = 0,
+		.segment_display = &interface_devices.segment_display,
+	};
+	g_timer0_ovf_callback = &on_time_tick;
+
+	g_timer1_compa_callback_context = (OnTempoTickContext) {
+		.note_on = true,
+		.step_sequencer = &step_sequencer,
+	};
+	g_timer1_compa_callback = &on_tempo_tick;
 
 	/* Run */
 	LOG_INFO("Program Start\n");
-	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_TEMPO); // set initial tempo
+	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_TEMPO);
 	start_playback(&step_sequencer.beat_clock, timer1); // HACK, start playback immediately
 	while (true) {
 		/* User Interface */
