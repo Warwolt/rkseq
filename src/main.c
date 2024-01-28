@@ -48,32 +48,11 @@ ISR(TIMER0_OVF_vect) {
 	}
 }
 
+static void (*g_timer1_compa_callback)(void);
+
 ISR(TIMER1_COMPA_vect) {
-	// FIXME: Move this out into a local function that is used as callback here
-	// Motivation: allows us to set everything up in main and make the entire
-	// program understandable by reading it starting from main.
-	if (g_beat_clock_ptr) {
-		BeatClock_on_pulse(g_beat_clock_ptr);
-
-		if (BeatClock_midi_pulse_ready(g_beat_clock_ptr)) {
-			SoftwareSerial_write(MIDI_CLOCK_BYTE);
-		}
-
-		if (BeatClock_sixteenth_note_ready(g_beat_clock_ptr)) {
-			static bool note_on = true;
-
-			const uint8_t channel = 0;
-			const uint8_t note = 64;
-			const uint8_t velocity = 64;
-
-			if (note_on) {
-				MidiTransmit_send_message(MIDI_MESSAGE_NOTE_ON(channel, note, velocity));
-			} else {
-				MidiTransmit_send_message(MIDI_MESSAGE_NOTE_OFF(channel, note));
-			}
-
-			note_on = !note_on;
-		}
+	if (g_timer1_compa_callback) {
+		g_timer1_compa_callback();
 	}
 }
 
@@ -165,6 +144,32 @@ static void handle_midi_control_events(Timer1 timer1, StepSequencer* step_sequen
 	}
 }
 
+void on_beat_clock_pulse(void) {
+	if (g_beat_clock_ptr) {
+		BeatClock_on_pulse(g_beat_clock_ptr);
+
+		if (BeatClock_midi_pulse_ready(g_beat_clock_ptr)) {
+			SoftwareSerial_write(MIDI_CLOCK_BYTE);
+		}
+
+		if (BeatClock_sixteenth_note_ready(g_beat_clock_ptr)) {
+			static bool note_on = true;
+
+			const uint8_t channel = 0;
+			const uint8_t note = 64;
+			const uint8_t velocity = 64;
+
+			if (note_on) {
+				MidiTransmit_send_message(MIDI_MESSAGE_NOTE_ON(channel, note, velocity));
+			} else {
+				MidiTransmit_send_message(MIDI_MESSAGE_NOTE_OFF(channel, note));
+			}
+
+			note_on = !note_on;
+		}
+	}
+}
+
 int main(void) {
 	/* Setup */
 	const GpioPin midi_rx_pin = GpioPin_init(&PORTD, 2);
@@ -200,6 +205,7 @@ int main(void) {
 	// Setup pointers for interrupts
 	g_segment_display_ptr = &interface_devices.segment_display;
 	g_beat_clock_ptr = &step_sequencer.beat_clock;
+	g_timer1_compa_callback = &on_beat_clock_pulse;
 
 	/* Run */
 	LOG_INFO("Program Start\n");
