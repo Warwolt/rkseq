@@ -214,7 +214,7 @@ int main(void) {
 		.segment_display = SegmentDisplay_init(display_clock_pin, display_latch_pin, display_data_pin),
 	};
 	StepSequencer step_sequencer = StepSequencer_init();
-	MidiControl midi_control = MidiControl_init();
+	MidiControl midi_control = MidiControl_init(timer0);
 	UserInterface user_interface = UserInterface_init();
 
 	/* Setup timer based interrupts */

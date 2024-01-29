@@ -16,6 +16,7 @@
 
 static RingBuffer g_rx_buffer;
 static RingBuffer g_tx_buffer;
+static Timer0* g_timer0;
 
 void HardwareSerial_rx_complete_irq(void) {
 	const uint8_t byte = UDR0;
@@ -39,14 +40,18 @@ void HardwareSerial_tx_udr_empty_irq(void) {
 }
 
 static int HardwareSerial_read_byte_with_timeout() {
+	if (!g_timer0) {
+		return -2; // not initialized
+	}
+
 	const unsigned long timeout_ms = 1000;
-	const unsigned long start_ms = Time_now_ms();
+	const unsigned long start_ms = Time_now_ms(*g_timer0);
 	uint8_t byte;
 	do {
 		if (RingBuffer_read(&g_rx_buffer, &byte) == 0) {
 			return byte;
 		}
-	} while (Time_now_ms() - start_ms < timeout_ms);
+	} while (Time_now_ms(*g_timer0) - start_ms < timeout_ms);
 	return -1; // timed out
 }
 

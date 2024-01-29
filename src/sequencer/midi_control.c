@@ -1,8 +1,8 @@
 #include "sequencer/midi_control.h"
 
-MidiControl MidiControl_init(void) {
+MidiControl MidiControl_init(Timer0 timer0) {
 	return (MidiControl) {
-		.midi_clock_timeout_timer = MillisecondTimer_init(MIDI_CONTROL_CLOCK_TIMEOUT_MS),
+		.midi_clock_timeout_timer = MillisecondTimer_init(timer0, MIDI_CONTROL_CLOCK_TIMEOUT_MS),
 	};
 }
 

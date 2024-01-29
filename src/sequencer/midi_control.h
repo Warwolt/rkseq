@@ -2,6 +2,7 @@
 #define MIDI_CONTROL_H
 
 #include "data/midi.h"
+#include "hardware/timer0.h"
 #include "util/timer.h"
 
 #include <stdbool.h>
@@ -17,7 +18,7 @@ typedef struct {
 	MillisecondTimer midi_clock_timeout_timer;
 } MidiControl;
 
-MidiControl MidiControl_init(void);
+MidiControl MidiControl_init(Timer0 timer0);
 MidiControlEvents MidiControl_update(MidiControl* midi_control, uint8_t midi_byte);
 
 #endif /* MIDI_CONTROL_H */
