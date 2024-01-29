@@ -5,6 +5,10 @@
 
 #define TIMER0_PRESCALER 8
 
-void Timer0_init(void);
+typedef struct {
+	int: 0;
+} Timer0;
+
+Timer0 Timer0_init(void);
 
 #endif /* TIMER0_H */
