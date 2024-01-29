@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include "hardware/software_serial.h"
+
 typedef enum {
 	MIDI_MESSAGE_TYPE_TIMING_CLOCK,
 	MIDI_MESSAGE_TYPE_NOTE_OFF,
@@ -50,6 +52,6 @@ typedef struct {
 			.note_number = note_number_,              \
 		} })
 
-void MidiTransmit_send_message(MidiMessage msg);
+void MidiTransmit_send_message(SoftwareSerial sw_serial, MidiMessage msg);
 
 #endif /* MIDI_TRANSMIT_H */

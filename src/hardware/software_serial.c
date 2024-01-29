@@ -39,7 +39,7 @@ void SoftwareSerial_pin_change_irq(void) {
 	}
 }
 
-void SoftwareSerial_init(uint16_t baud, GpioPin rx_pin, GpioPin tx_pin) {
+SoftwareSerial SoftwareSerial_init(uint16_t baud, GpioPin rx_pin, GpioPin tx_pin) {
 	g_rx_pin = rx_pin;
 	g_tx_pin = tx_pin;
 
@@ -56,24 +56,26 @@ void SoftwareSerial_init(uint16_t baud, GpioPin rx_pin, GpioPin tx_pin) {
 
 	// FIXME: this should either be deduced from rx_pin arg or be configured elsewhere!!!
 	set_bit(PCMSK2, PCINT18); // configure PD2-pin (Rx) to trigger interrupts
+
+	return (SoftwareSerial) {};
 }
 
-uint16_t SoftwareSerial_available_bytes(void) {
+uint16_t SoftwareSerial_available_bytes(SoftwareSerial sw_serial) {
 	return RingBuffer_available_bytes(&g_rx_buffer);
 }
 
-void SoftwareSerial_read(uint8_t* byte) {
+void SoftwareSerial_read(SoftwareSerial sw_serial, uint8_t* byte) {
 	RingBuffer_read(&g_rx_buffer, byte);
 }
 
-void SoftwareSerial_read_bytes(uint8_t* byte_buf, uint16_t byte_buf_len) {
-	uint16_t bytes_to_read = min(SoftwareSerial_available_bytes(), byte_buf_len);
+void SoftwareSerial_read_bytes(SoftwareSerial sw_serial, uint8_t* byte_buf, uint16_t byte_buf_len) {
+	uint16_t bytes_to_read = min(SoftwareSerial_available_bytes(sw_serial), byte_buf_len);
 	for (uint16_t i = 0; i < bytes_to_read; i++) {
 		RingBuffer_read(&g_rx_buffer, &byte_buf[i]);
 	}
 }
 
-void SoftwareSerial_write(uint8_t byte) {
+void SoftwareSerial_write(SoftwareSerial sw_serial, uint8_t byte) {
 	// copy into local variables to make compiler put the
 	// values into registers before disabling interrupts.
 	const GpioPin tx_pin = g_tx_pin;
