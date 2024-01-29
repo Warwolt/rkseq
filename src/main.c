@@ -203,11 +203,10 @@ int main(void) {
 	Timer1 timer1 = Timer1_init();
 	HardwareSerial_init(9600); // uses PD0 and PD1
 	SoftwareSerial sw_serial = SoftwareSerial_init(31250, midi_rx_pin, midi_tx_pin);
-	Spi spi = Spi_init(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
+	Spi spi = Spi_init(SPI_DATA_ORDER_MSB_FIRST); // uses PB3 (MOSI), PB4 (MISO), and PB5 (SCK)
 
 	ShiftRegister step_buttons_shift_reg = ShiftRegister_init(spi, step_buttons_latch_pin);
 	ShiftRegister step_leds_shift_reg = ShiftRegister_init(spi, step_leds_latch_pin);
-	UNUSED(step_buttons_shift_reg);
 	UNUSED(step_leds_shift_reg);
 	InterfaceDevices interface_devices = {
 		.rotary_encoder = RotaryEncoder_init(encoder_a_pin, encoder_b_pin),
@@ -239,6 +238,10 @@ int main(void) {
 	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_TEMPO);
 	start_playback(&step_sequencer.beat_clock, timer1); // HACK, start playback immediately
 	while (true) {
+		// Update buttons and leds
+		bool button_states[8] = { 0 };
+		ShiftRegister_read(&step_buttons_shift_reg, &button_states[0], 8);
+
 		/* User Interface */
 		const UserInterfaceInput ui_input = read_ui_input(&interface_devices);
 		const UserInterfaceEvents ui_events = UserInterface_update(&user_interface, &ui_input, &step_sequencer);
