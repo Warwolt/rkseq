@@ -1,5 +1,6 @@
 #include <rktest/rktest.h>
 
+#include "hardware/timer0.h"
 #include "mock/mock_time.h"
 #include "sequencer/midi_control.h"
 
@@ -7,8 +8,13 @@
 	EXPECT_EQ(lhs.switch_to_internal_clock, rhs.switch_to_internal_clock); \
 	EXPECT_EQ(lhs.switch_to_external_clock, rhs.switch_to_external_clock);
 
+Timer0 MockTimer0_init() {
+	return (Timer0) { .dummy = 0 };
+}
+
 TEST(MidiControl, empty_input_gives_no_events) {
-	MidiControl midi_control = MidiControl_init();
+	const Timer0 timer0 = MockTimer0_init();
+	MidiControl midi_control = MidiControl_init(timer0);
 
 	const MidiControlEvents events = MidiControl_update(&midi_control, MIDI_NO_MSG);
 
@@ -17,7 +23,8 @@ TEST(MidiControl, empty_input_gives_no_events) {
 }
 
 TEST(MidiControl, when_receiving_a_midi_clock_byte_then_switches_to_external_clock) {
-	MidiControl midi_control = MidiControl_init();
+	const Timer0 timer0 = MockTimer0_init();
+	MidiControl midi_control = MidiControl_init(timer0);
 
 	const MidiControlEvents events = MidiControl_update(&midi_control, MIDI_TIMING_CLOCK);
 
@@ -25,7 +32,8 @@ TEST(MidiControl, when_receiving_a_midi_clock_byte_then_switches_to_external_clo
 }
 
 TEST(MidiControl, if_no_midi_clock_and_timeout_then_switch_to_internal_clock) {
-	MidiControl midi_control = MidiControl_init();
+	const Timer0 timer0 = MockTimer0_init();
+	MidiControl midi_control = MidiControl_init(timer0);
 
 	// send MIDI_TIMING_CLOCK at time 0
 	MockTime_set_now_ms(1234 + 0);
@@ -39,7 +47,8 @@ TEST(MidiControl, if_no_midi_clock_and_timeout_then_switch_to_internal_clock) {
 }
 
 TEST(MidiControl, if_no_midi_clock_and_no_timeout_then_does_not_switch_to_internal_clock) {
-	MidiControl midi_control = MidiControl_init();
+	const Timer0 timer0 = MockTimer0_init();
+	MidiControl midi_control = MidiControl_init(timer0);
 
 	// send MIDI_TIMING_CLOCK at time 0
 	MockTime_set_now_ms(1234 + 0);

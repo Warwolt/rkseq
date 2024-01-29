@@ -6,7 +6,7 @@
 #define TIMER0_PRESCALER 8
 
 typedef struct {
-	int: 0;
+	char dummy;
 } Timer0;
 
 Timer0 Timer0_init(void);
