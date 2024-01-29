@@ -33,6 +33,7 @@ typedef struct {
 
 typedef struct {
 	uint8_t last_update;
+	Timer0* timer0;
 	SegmentDisplay* segment_display;
 } OnTimeTickContext;
 
@@ -148,7 +149,9 @@ static void handle_midi_control_events(Timer1 timer1, StepSequencer* step_sequen
 }
 
 void on_time_tick(OnTimeTickContext* ctx) {
-	Time_on_timer0_overflow();
+	if (ctx->timer0) {
+		Time_on_timer0_overflow(*ctx->timer0);
+	}
 
 	if (ctx->segment_display) {
 		ctx->last_update++;
@@ -196,7 +199,7 @@ int main(void) {
 	const GpioPin step_leds_latch_pin = GpioPin_init(&PORTB, 2);
 
 	globally_enable_interrupts();
-	Timer0_init();
+	Timer0 timer0 = Timer0_init();
 	Timer1 timer1 = Timer1_init();
 	HardwareSerial_init(9600); // uses PD0 and PD1
 	SoftwareSerial sw_serial = SoftwareSerial_init(31250, midi_rx_pin, midi_tx_pin);
@@ -206,28 +209,30 @@ int main(void) {
 	ShiftRegister step_leds_shift_reg = ShiftRegister_init(spi, step_leds_latch_pin);
 	UNUSED(step_buttons_shift_reg);
 	UNUSED(step_leds_shift_reg);
-
 	InterfaceDevices interface_devices = {
 		.rotary_encoder = RotaryEncoder_init(encoder_a_pin, encoder_b_pin),
 		.segment_display = SegmentDisplay_init(display_clock_pin, display_latch_pin, display_data_pin),
 	};
 	StepSequencer step_sequencer = StepSequencer_init();
-	MidiControl midi_control = MidiControl_init();
+	MidiControl midi_control = MidiControl_init(timer0);
 	UserInterface user_interface = UserInterface_init();
 
 	/* Setup timer based interrupts */
-	g_timer0_ovf_callback_context = (OnTimeTickContext) {
-		.last_update = 0,
-		.segment_display = &interface_devices.segment_display,
-	};
-	g_timer0_ovf_callback = &on_time_tick;
+	{
+		g_timer0_ovf_callback_context = (OnTimeTickContext) {
+			.last_update = 0,
+			.timer0 = &timer0,
+			.segment_display = &interface_devices.segment_display,
+		};
+		g_timer0_ovf_callback = &on_time_tick;
 
-	g_timer1_compa_callback_context = (OnTempoTickContext) {
-		.note_on = true,
-		.step_sequencer = &step_sequencer,
-		.sw_serial = &sw_serial,
-	};
-	g_timer1_compa_callback = &on_tempo_tick;
+		g_timer1_compa_callback_context = (OnTempoTickContext) {
+			.note_on = true,
+			.step_sequencer = &step_sequencer,
+			.sw_serial = &sw_serial,
+		};
+		g_timer1_compa_callback = &on_tempo_tick;
+	}
 
 	/* Run */
 	LOG_INFO("Program Start\n");

@@ -14,7 +14,7 @@
 static volatile uint16_t g_us = 0;
 static volatile uint32_t g_ms = 0;
 
-void Time_on_timer0_overflow(void) {
+void Time_on_timer0_overflow(Timer0 timer0) {
 	// copy these to local variables so they can be stored in registers
 	// (volatile variables must be read from memory on every access)
 	uint16_t us = g_us;
@@ -31,7 +31,7 @@ void Time_on_timer0_overflow(void) {
 }
 
 // Number of elapsed milliseconds since program start
-uint32_t Time_now_ms() {
+uint32_t Time_now_ms(Timer0 timer0) {
 	uint32_t now_ms;
 
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
@@ -42,7 +42,7 @@ uint32_t Time_now_ms() {
 }
 
 // Number of elapsed microseconds since program start
-uint64_t Time_now_us(void) {
+uint64_t Time_now_us(Timer0 timer0) {
 	uint64_t now_us;
 
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
