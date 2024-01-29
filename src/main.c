@@ -38,6 +38,7 @@ typedef struct {
 
 typedef struct {
 	bool note_on;
+	SoftwareSerial* sw_serial;
 	StepSequencer* step_sequencer;
 } OnTempoTickContext;
 
@@ -108,10 +109,10 @@ static void update_segment_display(SegmentDisplay* segment_display, const UserIn
 	}
 }
 
-static uint8_t maybe_read_midi_byte(void) {
+static uint8_t maybe_read_midi_byte(SoftwareSerial sw_serial) {
 	uint8_t byte = 0;
-	if (SoftwareSerial_available_bytes() > 0) {
-		SoftwareSerial_read(&byte);
+	if (SoftwareSerial_available_bytes(sw_serial) > 0) {
+		SoftwareSerial_read(sw_serial, &byte);
 	}
 	return byte;
 }
@@ -159,11 +160,11 @@ void on_time_tick(OnTimeTickContext* ctx) {
 }
 
 void on_tempo_tick(OnTempoTickContext* ctx) {
-	if (ctx->step_sequencer) {
+	if (ctx->step_sequencer && ctx->sw_serial) {
 		BeatClock_on_pulse(&ctx->step_sequencer->beat_clock);
 
 		if (BeatClock_midi_pulse_ready(&ctx->step_sequencer->beat_clock)) {
-			MidiTransmit_send_message(MIDI_MESSAGE_TIMING_CLOCK);
+			MidiTransmit_send_message(*ctx->sw_serial, MIDI_MESSAGE_TIMING_CLOCK);
 		}
 
 		if (BeatClock_sixteenth_note_ready(&ctx->step_sequencer->beat_clock)) {
@@ -172,9 +173,9 @@ void on_tempo_tick(OnTempoTickContext* ctx) {
 			const uint8_t velocity = 64;
 
 			if (ctx->note_on) {
-				MidiTransmit_send_message(MIDI_MESSAGE_NOTE_ON(channel, note, velocity));
+				MidiTransmit_send_message(*ctx->sw_serial, MIDI_MESSAGE_NOTE_ON(channel, note, velocity));
 			} else {
-				MidiTransmit_send_message(MIDI_MESSAGE_NOTE_OFF(channel, note));
+				MidiTransmit_send_message(*ctx->sw_serial, MIDI_MESSAGE_NOTE_OFF(channel, note));
 			}
 
 			ctx->note_on = !ctx->note_on;
@@ -198,7 +199,7 @@ int main(void) {
 	Timer0_init();
 	Timer1 timer1 = Timer1_init();
 	HardwareSerial_init(9600); // uses PD0 and PD1
-	SoftwareSerial_init(31250, midi_rx_pin, midi_tx_pin);
+	SoftwareSerial sw_serial = SoftwareSerial_init(31250, midi_rx_pin, midi_tx_pin);
 	Spi spi = Spi_init(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
 
 	ShiftRegister step_buttons_shift_reg = ShiftRegister_init(spi, step_buttons_latch_pin);
@@ -224,6 +225,7 @@ int main(void) {
 	g_timer1_compa_callback_context = (OnTempoTickContext) {
 		.note_on = true,
 		.step_sequencer = &step_sequencer,
+		.sw_serial = &sw_serial,
 	};
 	g_timer1_compa_callback = &on_tempo_tick;
 
@@ -238,7 +240,7 @@ int main(void) {
 		handle_ui_events(timer1, &step_sequencer, &ui_events);
 
 		/* MIDI Control */
-		const uint8_t midi_byte = maybe_read_midi_byte();
+		const uint8_t midi_byte = maybe_read_midi_byte(sw_serial);
 		const MidiControlEvents midi_events = MidiControl_update(&midi_control, midi_byte);
 		handle_midi_control_events(timer1, &step_sequencer, &midi_events);
 
