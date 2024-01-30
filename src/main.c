@@ -155,7 +155,7 @@ void on_time_tick(OnTimeTickContext* ctx) {
 
 	if (ctx->segment_display) {
 		ctx->last_update++;
-		if (ctx->last_update > 5) {
+		if (ctx->last_update > 1) {
 			ctx->last_update = 0;
 			SegmentDisplay_output_next_char(ctx->segment_display);
 		}
@@ -207,7 +207,6 @@ int main(void) {
 
 	ShiftRegister step_buttons_shift_reg = ShiftRegister_init(spi, step_buttons_latch_pin);
 	ShiftRegister step_leds_shift_reg = ShiftRegister_init(spi, step_leds_latch_pin);
-	UNUSED(step_leds_shift_reg);
 	InterfaceDevices interface_devices = {
 		.rotary_encoder = RotaryEncoder_init(encoder_a_pin, encoder_b_pin),
 		.segment_display = SegmentDisplay_init(display_clock_pin, display_latch_pin, display_data_pin),
@@ -239,8 +238,14 @@ int main(void) {
 	start_playback(&step_sequencer.beat_clock, timer1); // HACK, start playback immediately
 	while (true) {
 		// Update buttons and leds
+		// WIP: this code needs to be verified once the hardware has been wired up
 		bool button_states[8] = { 0 };
-		ShiftRegister_read(&step_buttons_shift_reg, &button_states[0], 8);
+		ShiftRegister_read(&step_buttons_shift_reg, button_states, 8);
+		uint8_t led_states = 0;
+		for (int i = 0; i < 8; i++) {
+			led_states |= button_states[i] << i;
+		}
+		ShiftRegister_write(&step_leds_shift_reg, &led_states, 8);
 
 		/* User Interface */
 		const UserInterfaceInput ui_input = read_ui_input(&interface_devices);
