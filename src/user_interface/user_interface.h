@@ -13,15 +13,15 @@ typedef struct {
 
 typedef struct {
 	int8_t rotary_encoder_diff;
-} UserInterfaceInput;
+} UserInterfaceEvents;
 
 typedef struct {
 	bool start_playback;
 	bool stop_playback;
-	uint16_t new_tempo_deci_bpm;
-} UserInterfaceEvents;
+	uint16_t set_new_tempo_deci_bpm;
+} UserInterfaceCommands;
 
 UserInterface UserInterface_init(void);
-UserInterfaceEvents UserInterface_update(UserInterface* ui, const UserInterfaceInput* input, const StepSequencer* step_sequencer);
+UserInterfaceCommands UserInterface_update(UserInterface* ui, const UserInterfaceEvents* events, const StepSequencer* step_sequencer);
 
 #endif /* PLAYBACK_CONTROL_H */

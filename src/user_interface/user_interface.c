@@ -8,13 +8,13 @@ UserInterface UserInterface_init(void) {
 	return (UserInterface) { 0 };
 }
 
-UserInterfaceEvents UserInterface_update(UserInterface* ui, const UserInterfaceInput* input, const StepSequencer* step_sequencer) {
-	UserInterfaceEvents events = { 0 };
+UserInterfaceCommands UserInterface_update(UserInterface* ui, const UserInterfaceEvents* events, const StepSequencer* step_sequencer) {
+	UserInterfaceCommands commands = { 0 };
 	const BeatClockSource clock_source = step_sequencer->beat_clock.source;
 
 	/* Set Tempo */
 	if (clock_source == BEAT_CLOCK_SOURCE_INTERNAL) {
-		events.new_tempo_deci_bpm = clamp(step_sequencer->beat_clock.tempo_deci_bpm + 10 * input->rotary_encoder_diff, MIN_TEMPO, MAX_TEMPO);
+		commands.set_new_tempo_deci_bpm = clamp(step_sequencer->beat_clock.tempo_deci_bpm + 10 * events->rotary_encoder_diff, MIN_TEMPO, MAX_TEMPO);
 	}
 
 	/* Tempo display */
@@ -38,5 +38,5 @@ UserInterfaceEvents UserInterface_update(UserInterface* ui, const UserInterfaceI
 		} break;
 	}
 
-	return events;
+	return commands;
 }
