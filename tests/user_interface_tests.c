@@ -56,9 +56,9 @@ TEST(UserInterface, rotary_encoder_changes_tempo_when_clock_source_is_internal) 
 
 	step_sequencer.beat_clock.source = BEAT_CLOCK_SOURCE_INTERNAL;
 	step_sequencer.beat_clock.tempo_deci_bpm = 1200;
-	UserInterfaceCommands events = UserInterface_update(&user_interface, &input, &step_sequencer);
+	UserInterfaceCommands commands = UserInterface_update(&user_interface, &input, &step_sequencer);
 
-	EXPECT_EQ(events.set_new_tempo_deci_bpm, 1210);
+	EXPECT_EQ(commands.set_new_tempo_deci_bpm, 1210);
 }
 
 TEST(UserInterface, rotary_encoder_does_not_change_tempo_when_clock_source_is_external) {
@@ -68,7 +68,7 @@ TEST(UserInterface, rotary_encoder_does_not_change_tempo_when_clock_source_is_ex
 
 	step_sequencer.beat_clock.source = BEAT_CLOCK_SOURCE_EXTERNAL;
 	step_sequencer.beat_clock.tempo_deci_bpm = 1200;
-	UserInterfaceCommands events = UserInterface_update(&user_interface, &input, &step_sequencer);
+	UserInterfaceCommands commands = UserInterface_update(&user_interface, &input, &step_sequencer);
 
-	EXPECT_EQ(events.set_new_tempo_deci_bpm, 0);
+	EXPECT_EQ(commands.set_new_tempo_deci_bpm, 0);
 }
