@@ -245,7 +245,7 @@ int main(void) {
 		for (int i = 0; i < 8; i++) {
 			led_states |= button_states[i] << i;
 		}
-		ShiftRegister_write(&step_leds_shift_reg, &led_states, 8);
+		ShiftRegister_write(&step_leds_shift_reg, &led_states, 1);
 
 		/* User Interface */
 		const UserInterfaceInput ui_input = read_ui_input(&interface_devices);
