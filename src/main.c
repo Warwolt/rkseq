@@ -234,16 +234,21 @@ int main(void) {
 
 	/* Run */
 	LOG_INFO("Program Start\n");
+	Button buttons[8] = { 0 };
+	uint8_t led_states = 0; // each bit is an LED
 	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_TEMPO);
 	start_playback(&step_sequencer.beat_clock, timer1); // HACK, start playback immediately
 	while (true) {
 		// Update buttons and leds
-		// WIP: this code needs to be verified once the hardware has been wired up
 		bool button_states[8] = { 0 };
 		ShiftRegister_read(&step_buttons_shift_reg, button_states, 8);
-		uint8_t led_states = 0;
 		for (int i = 0; i < 8; i++) {
-			led_states |= button_states[i] << i;
+			Button_update(&buttons[i], button_states[i], Time_now_ms(timer0));
+		}
+		for (int i = 0; i < 8; i++) {
+			if (Button_just_pressed(&buttons[i])) {
+				led_states ^= 0x1 << i;
+			}
 		}
 		ShiftRegister_write(&step_leds_shift_reg, &led_states, 1);
 
