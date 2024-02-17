@@ -240,10 +240,10 @@ int main(void) {
 	start_playback(&step_sequencer.beat_clock, timer1); // HACK, start playback immediately
 	while (true) {
 		// Update buttons and leds
-		bool button_states[8] = { 0 };
-		ShiftRegister_read(&step_buttons_shift_reg, button_states, 8);
+		uint8_t button_state_byte = 0;
+		ShiftRegister_read(&step_buttons_shift_reg, &button_state_byte, 1);
 		for (int i = 0; i < 8; i++) {
-			Button_update(&buttons[i], button_states[i], Time_now_ms(timer0));
+			Button_update(&buttons[i], (button_state_byte >> i) & 0x1, Time_now_ms(timer0));
 		}
 		for (int i = 0; i < 8; i++) {
 			if (Button_just_pressed(&buttons[i])) {
