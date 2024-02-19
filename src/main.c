@@ -234,23 +234,29 @@ int main(void) {
 
 	/* Run */
 	LOG_INFO("Program Start\n");
-	Button buttons[8] = { 0 };
-	uint8_t led_states = 0; // each bit is an LED
+	Button step_buttons[8] = { 0 };
+	uint8_t led_states[2] = { 0 }; // each bit is an LED
 	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_TEMPO);
 	start_playback(&step_sequencer.beat_clock, timer1); // HACK, start playback immediately
+	// MillisecondTimer debug_timer = MillisecondTimer_init(timer0, 500);
 	while (true) {
 		// Update buttons and leds
 		uint8_t button_state_byte = 0;
 		ShiftRegister_read(&step_buttons_shift_reg, &button_state_byte, 1);
 		for (int i = 0; i < 8; i++) {
-			Button_update(&buttons[i], (button_state_byte >> i) & 0x1, Time_now_ms(timer0));
+			Button_update(&step_buttons[i], (button_state_byte >> i) & 0x1, Time_now_ms(timer0));
 		}
 		for (int i = 0; i < 8; i++) {
-			if (Button_just_pressed(&buttons[i])) {
-				led_states ^= 0x1 << i;
+			if (Button_just_pressed(&step_buttons[i])) {
+				led_states[1] ^= 0x1 << i;
 			}
 		}
-		ShiftRegister_write(&step_leds_shift_reg, &led_states, 1);
+		// if (MillisecondTimer_elapsed(&debug_timer)) {
+		// 	MillisecondTimer_reset(&debug_timer);
+		// 	led_states[0] = ~led_states[0];
+		// 	led_states[1] = ~led_states[1];
+		// }
+		ShiftRegister_write(&step_leds_shift_reg, led_states, 2);
 
 		/* User Interface */
 		const UserInterfaceInput ui_input = read_ui_input(&interface_devices);
