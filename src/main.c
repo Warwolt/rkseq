@@ -234,29 +234,44 @@ int main(void) {
 
 	/* Run */
 	LOG_INFO("Program Start\n");
-	Button step_buttons[8] = { 0 };
-	uint8_t led_states[2] = { 0 }; // each bit is an LED
+
+	// logical buttons & leds
+	Button step_buttons[16] = { 0 };
+	bool step_leds[16] = { 0 };
+
 	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_TEMPO);
 	start_playback(&step_sequencer.beat_clock, timer1); // HACK, start playback immediately
 	// MillisecondTimer debug_timer = MillisecondTimer_init(timer0, 500);
 	while (true) {
-		// Update buttons and leds
-		uint8_t button_state_byte = 0;
-		ShiftRegister_read(&step_buttons_shift_reg, &button_state_byte, 1);
-		for (int i = 0; i < 8; i++) {
-			Button_update(&step_buttons[i], (button_state_byte >> i) & 0x1, Time_now_ms(timer0));
-		}
-		for (int i = 0; i < 8; i++) {
-			if (Button_just_pressed(&step_buttons[i])) {
-				led_states[1] ^= 0x1 << i;
-			}
-		}
-		// if (MillisecondTimer_elapsed(&debug_timer)) {
-		// 	MillisecondTimer_reset(&debug_timer);
-		// 	led_states[0] = ~led_states[0];
-		// 	led_states[1] = ~led_states[1];
+		// Read physical button staates
+		// uint8_t button_state_bytes[2] = { 0 };
+		// ShiftRegister_read(&step_buttons_shift_reg, button_state_bytes, 2);
+
+		// // Update logical buttons
+		// for (int i = 0; i < 8; i++) {
+		// 	Button_update(&step_buttons[i], (button_state_bytes[0] >> i) & 0x1, Time_now_ms(timer0));
 		// }
-		ShiftRegister_write(&step_leds_shift_reg, led_states, 2);
+		// for (int i = 8; i < 16; i++) {
+		// 	Button_update(&step_buttons[i], (button_state_bytes[1] >> i) & 0x1, Time_now_ms(timer0));
+		// }
+
+		// // Update logical LEDs
+		// for (int i = 0; i < 16; i++) {
+		// 	if (Button_just_pressed(&step_buttons[i])) {
+		// 		step_leds[i] = !step_leds[i];
+		// 	}
+		// }
+
+		// Write physical LEDs
+		// uint8_t led_state_bytes[2] = { 1 }; // each bit is an LED
+		// for (int i = 0; i < 8; i++) {
+		// 	led_state_bytes[0] |= (0x1 && step_leds[i]) << i;
+		// }
+		// for (int i = 8; i < 16; i++) {
+		// 	led_state_bytes[1] |= (0x1 && step_leds[i]) << i;
+		// }
+		uint8_t led_state_bytes[2] = { 0b11111111, 0b01010101 }; // each bit is an LED
+		ShiftRegister_write(&step_leds_shift_reg, led_state_bytes, 2);
 
 		/* User Interface */
 		const UserInterfaceInput ui_input = read_ui_input(&interface_devices);
