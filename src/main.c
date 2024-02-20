@@ -237,7 +237,7 @@ int main(void) {
 
 	// logical buttons & leds
 	Button step_buttons[16] = { 0 };
-	bool step_leds[16] = { 0 };
+	// bool step_leds[16] = { 0 };
 
 	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_TEMPO);
 	start_playback(&step_sequencer.beat_clock, timer1); // HACK, start playback immediately
@@ -263,14 +263,32 @@ int main(void) {
 		// }
 
 		// Write physical LEDs
-		// uint8_t led_state_bytes[2] = { 1 }; // each bit is an LED
-		// for (int i = 0; i < 8; i++) {
-		// 	led_state_bytes[0] |= (0x1 && step_leds[i]) << i;
-		// }
-		// for (int i = 8; i < 16; i++) {
-		// 	led_state_bytes[1] |= (0x1 && step_leds[i]) << i;
-		// }
-		uint8_t led_state_bytes[2] = { 0b11111111, 0b01010101 }; // each bit is an LED
+		bool step_leds[16] = {
+			1,
+			0,
+			1,
+			0,
+			1,
+			0,
+			1,
+			0,
+			//
+			1,
+			1,
+			0,
+			1,
+			1,
+			0,
+			1,
+			1,
+		};
+		uint8_t led_state_bytes[2] = { 0 }; // each bit is an LED
+		for (int i = 0; i < 8; i++) {
+			led_state_bytes[0] |= (0x1 && step_leds[i]) << i;
+		}
+		for (int i = 0; i < 8; i++) {
+			led_state_bytes[1] |= (0x1 && step_leds[8 + i]) << i;
+		}
 		ShiftRegister_write(&step_leds_shift_reg, led_state_bytes, 2);
 
 		/* User Interface */
