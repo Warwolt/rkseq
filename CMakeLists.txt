@@ -88,6 +88,7 @@ set(PLATFORM_SRC
 
 # Application source (platform agnostic)
 set(APP_SOURCE
+  src/data/serialize.c
   src/input/button.c
   src/sequencer/beat_clock.c
   src/sequencer/midi_control.c
@@ -118,6 +119,7 @@ set(TEST_SOURCE
   tests/midi_control_tests.c
   tests/mock/mock_time.c
   tests/ring_buffer_tests.c
+  tests/serialize_tests.c
   tests/user_interface_tests.c
 )
 add_subdirectory(external/rktest)

@@ -1,7 +1,7 @@
 #include <rktest/rktest.h>
 
 #include "sequencer/step_sequencer.h"
-#include "tests/test_assertions.h"
+#include "test_assertions.h"
 #include "user_interface/user_interface.h"
 #include "util/math.h"
 

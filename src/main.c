@@ -263,32 +263,35 @@ int main(void) {
 		// }
 
 		// Write physical LEDs
-		bool step_leds[16] = {
-			1,
-			0,
-			1,
-			0,
-			1,
-			0,
-			1,
-			0,
-			//
-			1,
-			1,
-			0,
-			1,
-			1,
-			0,
-			1,
-			1,
-		};
-		uint8_t led_state_bytes[2] = { 0 }; // each bit is an LED
-		for (int i = 0; i < 8; i++) {
-			led_state_bytes[0] |= (0x1 && step_leds[i]) << i;
-		}
-		for (int i = 0; i < 8; i++) {
-			led_state_bytes[1] |= (0x1 && step_leds[8 + i]) << i;
-		}
+		// bool step_leds[16] = {
+		// 	1,
+		// 	0,
+		// 	0,
+		// 	0,
+		// 	0,
+		// 	0,
+		// 	0,
+		// 	0,
+		// 	//
+		// 	0,
+		// 	0,
+		// 	0,
+		// 	0,
+		// 	0,
+		// 	0,
+		// 	0,
+		// 	0,
+		// };
+		// uint8_t led_state_bytes[2] = { 0 }; // each bit is an LED
+		// for (int i = 0; i < 8; i++) {
+		// 	led_state_bytes[0] |= (0x1 && step_leds[i]) << i;
+		// }
+		// for (int i = 0; i < 8; i++) {
+		// 	led_state_bytes[1] |= (0x1 && step_leds[8 + i]) << i;
+		// }
+		uint8_t led_state_bytes[2];
+		led_state_bytes[0] = 0b10000000;
+		led_state_bytes[1] = 0b10000000;
 		ShiftRegister_write(&step_leds_shift_reg, led_state_bytes, 2);
 
 		/* User Interface */
