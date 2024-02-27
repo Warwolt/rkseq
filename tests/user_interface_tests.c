@@ -1,18 +1,9 @@
 #include <rktest/rktest.h>
 
 #include "sequencer/step_sequencer.h"
+#include "tests/test_assertions.h"
 #include "user_interface/user_interface.h"
 #include "util/math.h"
-
-#define EXPECT_ARRAY_EQ(lhs, rhs, len)                 \
-	for (int i = 0; i < len; i++) {                    \
-		EXPECT_EQ_INFO(lhs[i], rhs[i], "i = %d\n", i); \
-	}
-
-#define EXPECT_CHAR_ARRAY_EQ(lhs, rhs, len)                 \
-	for (int i = 0; i < len; i++) {                         \
-		EXPECT_CHAR_EQ_INFO(lhs[i], rhs[i], "i = %d\n", i); \
-	}
 
 TEST(UserInterface, shows_dashes_on_display_when_beat_clock_source_is_external) {
 	const UserInterfaceInput input = { 0 };
@@ -27,10 +18,10 @@ TEST(UserInterface, shows_dashes_on_display_when_beat_clock_source_is_external) 
 	step_sequencer.beat_clock.source = BEAT_CLOCK_SOURCE_EXTERNAL;
 	UserInterface_update(&user_interface, &input, &step_sequencer);
 
-	const char expected_chars[5] = "----";
+	const char expected_chars[4] = { '-', '-', '-', '-' };
 	const bool expected_periods[4] = { false, false, false, false };
-	EXPECT_CHAR_ARRAY_EQ(user_interface.segment_display_chars, expected_chars, 4);
-	EXPECT_ARRAY_EQ(user_interface.segment_display_period_enabled, expected_periods, 4);
+	EXPECT_CHAR_ARRAY_EQ(user_interface.segment_display_chars, expected_chars);
+	EXPECT_ARRAY_EQ(user_interface.segment_display_period_enabled, expected_periods);
 }
 
 TEST(UserInterface, shows_bpm_on_display_when_beat_clock_source_is_internal) {
@@ -43,10 +34,10 @@ TEST(UserInterface, shows_bpm_on_display_when_beat_clock_source_is_internal) {
 	step_sequencer.beat_clock.tempo_deci_bpm = 1203;
 	UserInterface_update(&user_interface, &input, &step_sequencer);
 
-	const char expected_chars[5] = "1203";
+	const char expected_chars[4] = { '1', '2', '0', '3' };
 	const bool expected_periods[4] = { false, false, true, false };
-	EXPECT_CHAR_ARRAY_EQ(user_interface.segment_display_chars, expected_chars, 4);
-	EXPECT_ARRAY_EQ(user_interface.segment_display_period_enabled, expected_periods, 4);
+	EXPECT_CHAR_ARRAY_EQ(user_interface.segment_display_chars, expected_chars);
+	EXPECT_ARRAY_EQ(user_interface.segment_display_period_enabled, expected_periods);
 }
 
 TEST(UserInterface, rotary_encoder_changes_tempo_when_clock_source_is_internal) {
