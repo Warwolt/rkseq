@@ -238,48 +238,38 @@ int main(void) {
 
 	// logical buttons & leds
 	Button step_buttons[16] = { 0 };
-	bool step_leds[16] = {
-		1,
-		0,
-		0,
-		0,
-		1,
-		0,
-		0,
-		0,
-		//
-		1,
-		0,
-		0,
-		0,
-		1,
-		0,
-		0,
-		0,
-	};
+	bool step_leds[16] = { 0 };
+
+	step_leds[0] = 1;
+	step_leds[8] = 1;
 
 	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_TEMPO);
 	start_playback(&step_sequencer.beat_clock, timer1); // HACK, start playback immediately
-	// MillisecondTimer debug_timer = MillisecondTimer_init(timer0, 500);
+	MillisecondTimer debug_timer = MillisecondTimer_init(timer0, 1000);
 	while (true) {
-		// Read physical button staates
-		// uint8_t button_state_bytes[2] = { 0 };
-		// ShiftRegister_read(&step_buttons_shift_reg, button_state_bytes, 2);
+		// Read physical button states
+		uint8_t button_state_bytes[2] = { 0 };
+		ShiftRegister_read(&step_buttons_shift_reg, button_state_bytes, 2);
 
-		// // Update logical buttons
-		// for (int i = 0; i < 8; i++) {
-		// 	Button_update(&step_buttons[i], (button_state_bytes[0] >> i) & 0x1, Time_now_ms(timer0));
-		// }
-		// for (int i = 8; i < 16; i++) {
-		// 	Button_update(&step_buttons[i], (button_state_bytes[1] >> i) & 0x1, Time_now_ms(timer0));
+		// if (MillisecondTimer_elapsed(&debug_timer)) {
+		// 	MillisecondTimer_reset(&debug_timer);
+		// 	LOG_INFO("%x\n", button_state_bytes[1]);
 		// }
 
-		// // Update logical LEDs
-		// for (int i = 0; i < 16; i++) {
-		// 	if (Button_just_pressed(&step_buttons[i])) {
-		// 		step_leds[i] = !step_leds[i];
-		// 	}
-		// }
+		// Update logical buttons
+		for (int i = 0; i < 8; i++) {
+			Button_update(&step_buttons[i], (button_state_bytes[0] >> i) & 0x1, Time_now_ms(timer0));
+		}
+		for (int i = 0; i < 8; i++) {
+			Button_update(&step_buttons[8 + i], (button_state_bytes[1] >> i) & 0x1, Time_now_ms(timer0));
+		}
+
+		// Update logical LEDs
+		for (int i = 0; i < 16; i++) {
+			if (Button_just_pressed(&step_buttons[i])) {
+				step_leds[i] = !step_leds[i];
+			}
+		}
 
 		// Write physical LEDs
 		uint8_t led_state_bytes[2] = { 0 };
