@@ -78,8 +78,8 @@ static void globally_enable_interrupts(void) {
 	sei();
 }
 
-static UserInterfaceInput read_ui_input(InterfaceDevices* interface_devices) {
-	return (UserInterfaceInput) {
+static UserInterfaceEvents get_ui_events(InterfaceDevices* interface_devices) {
+	return (UserInterfaceEvents) {
 		.rotary_encoder_diff = RotaryEncoder_read(&interface_devices->rotary_encoder),
 	};
 }
@@ -87,9 +87,9 @@ static UserInterfaceInput read_ui_input(InterfaceDevices* interface_devices) {
 #define MICROSECONDS_PER_SECOND 1e6
 #define BPM_PER_HZ 60
 
-static void set_playback_tempo(BeatClock* beat_clock, Timer1 timer1, uint16_t new_tempo_deci_bpm) {
-	beat_clock->tempo_deci_bpm = new_tempo_deci_bpm;
-	const uint32_t usec_per_pulse = MICROSECONDS_PER_SECOND * BPM_PER_HZ / ((BEAT_CLOCK_SEQUENCER_PPQN * (new_tempo_deci_bpm / 10)));
+static void set_playback_tempo(BeatClock* beat_clock, Timer1 timer1, uint16_t set_new_tempo_deci_bpm) {
+	beat_clock->tempo_deci_bpm = set_new_tempo_deci_bpm;
+	const uint32_t usec_per_pulse = MICROSECONDS_PER_SECOND * BPM_PER_HZ / ((BEAT_CLOCK_SEQUENCER_PPQN * (set_new_tempo_deci_bpm / 10)));
 	const uint16_t ticks_per_pulse = usec_per_pulse / TIMER1_USEC_PER_TICK;
 	Timer1_set_period(timer1, ticks_per_pulse);
 }
@@ -119,20 +119,20 @@ static uint8_t maybe_read_midi_byte(SoftwareSerial sw_serial) {
 	return byte;
 }
 
-static void handle_ui_events(Timer1 timer1, StepSequencer* step_sequencer, const UserInterfaceEvents* ui_events) {
-	if (ui_events->new_tempo_deci_bpm) {
-		set_playback_tempo(&step_sequencer->beat_clock, timer1, ui_events->new_tempo_deci_bpm);
+static void run_ui_commands(Timer1 timer1, StepSequencer* step_sequencer, const UserInterfaceCommands* commands) {
+	if (commands->set_new_tempo_deci_bpm) {
+		set_playback_tempo(&step_sequencer->beat_clock, timer1, commands->set_new_tempo_deci_bpm);
 	}
-	if (ui_events->start_playback) {
+	if (commands->start_playback) {
 		start_playback(&step_sequencer->beat_clock, timer1);
 	}
-	if (ui_events->stop_playback) {
+	if (commands->stop_playback) {
 		stop_playback(&step_sequencer->beat_clock, timer1);
 	}
 }
 
-static void handle_midi_control_events(Timer1 timer1, StepSequencer* step_sequencer, const MidiControlEvents* midi_events) {
-	if (midi_events->switch_to_external_clock) {
+static void run_midi_control_commands(Timer1 timer1, StepSequencer* step_sequencer, const MidiControlCommands* commands) {
+	if (commands->switch_to_external_clock) {
 		if (step_sequencer->beat_clock.source == BEAT_CLOCK_SOURCE_INTERNAL) {
 			LOG_INFO("Switched to external beat clock\n");
 			step_sequencer->beat_clock.source = BEAT_CLOCK_SOURCE_EXTERNAL;
@@ -140,7 +140,7 @@ static void handle_midi_control_events(Timer1 timer1, StepSequencer* step_sequen
 		}
 	}
 
-	if (midi_events->switch_to_internal_clock) {
+	if (commands->switch_to_internal_clock) {
 		if (step_sequencer->beat_clock.source == BEAT_CLOCK_SOURCE_EXTERNAL) {
 			LOG_INFO("Switched to internal beat clock\n");
 			step_sequencer->beat_clock.source = BEAT_CLOCK_SOURCE_INTERNAL;
@@ -264,14 +264,14 @@ int main(void) {
 		ShiftRegister_write(&step_leds_shift_reg, led_state_bytes, 2);
 
 		/* User Interface */
-		const UserInterfaceInput ui_input = read_ui_input(&interface_devices);
-		const UserInterfaceEvents ui_events = UserInterface_update(&user_interface, &ui_input, &step_sequencer);
-		handle_ui_events(timer1, &step_sequencer, &ui_events);
+		const UserInterfaceEvents ui_events = get_ui_events(&interface_devices);
+		const UserInterfaceCommands ui_cmds = UserInterface_update(&user_interface, &ui_events, &step_sequencer);
+		run_ui_commands(timer1, &step_sequencer, &ui_cmds);
 
 		/* MIDI Control */
 		const uint8_t midi_byte = maybe_read_midi_byte(sw_serial);
-		const MidiControlEvents midi_events = MidiControl_update(&midi_control, midi_byte);
-		handle_midi_control_events(timer1, &step_sequencer, &midi_events);
+		const MidiControlCommands midi_cmds = MidiControl_update(&midi_control, midi_byte);
+		run_midi_control_commands(timer1, &step_sequencer, &midi_cmds);
 
 		/* Interface Devices */
 		update_segment_display(&interface_devices.segment_display, &user_interface);
