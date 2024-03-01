@@ -53,9 +53,9 @@ void SegmentDisplay_output_next_char(SegmentDisplay* display) {
 	GpioPin_set(display->latch_pin);
 	GpioPin_clear(display->latch_pin);
 
-	// cycle next index, index > 7 outputs no digit which dims the display
+	// cycle next index, index > 4 outputs no digit which dims the display
 	// since the characters now have a duty cycle less than 100 %
-	display->current_character = (display->current_character + 1) % 5;
+	display->current_character = (display->current_character + 1) % 7;
 }
 
 void SegmentDisplay_set_char(SegmentDisplay* display, uint8_t position, char character) {

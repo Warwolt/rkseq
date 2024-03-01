@@ -1,4 +1,5 @@
 #include "data/ring_buffer.h"
+#include "data/serialize.h"
 #include "debug/logging.h"
 #include "hardware/gpio.h"
 #include "hardware/hardware_serial.h"
@@ -155,7 +156,7 @@ void on_time_tick(OnTimeTickContext* ctx) {
 
 	if (ctx->segment_display) {
 		ctx->last_update++;
-		if (ctx->last_update > 5) {
+		if (ctx->last_update > 1) {
 			ctx->last_update = 0;
 			SegmentDisplay_output_next_char(ctx->segment_display);
 		}
@@ -203,12 +204,10 @@ int main(void) {
 	Timer1 timer1 = Timer1_init();
 	HardwareSerial_init(9600); // uses PD0 and PD1
 	SoftwareSerial sw_serial = SoftwareSerial_init(31250, midi_rx_pin, midi_tx_pin);
-	Spi spi = Spi_init(SPI_DATA_ORDER_MSB_FIRST); // uses PB3, PB4 and PB5
+	Spi spi = Spi_init(SPI_DATA_ORDER_MSB_FIRST); // uses PB3 (MOSI), PB4 (MISO), and PB5 (SCK)
 
 	ShiftRegister step_buttons_shift_reg = ShiftRegister_init(spi, step_buttons_latch_pin);
 	ShiftRegister step_leds_shift_reg = ShiftRegister_init(spi, step_leds_latch_pin);
-	UNUSED(step_buttons_shift_reg);
-	UNUSED(step_leds_shift_reg);
 	InterfaceDevices interface_devices = {
 		.rotary_encoder = RotaryEncoder_init(encoder_a_pin, encoder_b_pin),
 		.segment_display = SegmentDisplay_init(display_clock_pin, display_latch_pin, display_data_pin),
@@ -216,6 +215,8 @@ int main(void) {
 	StepSequencer step_sequencer = StepSequencer_init();
 	MidiControl midi_control = MidiControl_init(timer0);
 	UserInterface user_interface = UserInterface_init();
+	Button step_buttons[16] = { 0 };
+	bool step_leds[16] = { 0 };
 
 	/* Setup timer based interrupts */
 	{
@@ -236,9 +237,31 @@ int main(void) {
 
 	/* Run */
 	LOG_INFO("Program Start\n");
+
 	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_TEMPO);
 	start_playback(&step_sequencer.beat_clock, timer1); // HACK, start playback immediately
 	while (true) {
+		// Read physical button states
+		uint16_t button_state_bytes = 0;
+		ShiftRegister_read(&step_buttons_shift_reg, (uint8_t*)&button_state_bytes, 2);
+
+		// Update logical buttons
+		for (int i = 0; i < 16; i++) {
+			Button_update(&step_buttons[i], (button_state_bytes >> i) & 0x1, Time_now_ms(timer0));
+		}
+
+		// Update logical LEDs
+		for (int i = 0; i < 16; i++) {
+			if (Button_just_pressed(&step_buttons[i])) {
+				step_leds[i] = !step_leds[i];
+			}
+		}
+
+		// Write physical LEDs
+		uint8_t led_state_bytes[2] = { 0 };
+		Serialize_pack_bits_into_bytes(step_leds, 16, led_state_bytes, 2, BIT_ORDERING_LSB_FIRST);
+		ShiftRegister_write(&step_leds_shift_reg, led_state_bytes, 2);
+
 		/* User Interface */
 		const UserInterfaceEvents ui_events = get_ui_events(&interface_devices);
 		const UserInterfaceCommands ui_cmds = UserInterface_update(&user_interface, &ui_events, &step_sequencer);
