@@ -215,6 +215,8 @@ int main(void) {
 	StepSequencer step_sequencer = StepSequencer_init();
 	MidiControl midi_control = MidiControl_init(timer0);
 	UserInterface user_interface = UserInterface_init();
+	Button step_buttons[16] = { 0 };
+	bool step_leds[16] = { 0 };
 
 	/* Setup timer based interrupts */
 	{
@@ -237,31 +239,16 @@ int main(void) {
 	LOG_INFO("Program Start\n");
 
 	// logical buttons & leds
-	Button step_buttons[16] = { 0 };
-	bool step_leds[16] = { 0 };
-
-	step_leds[0] = 1;
-	step_leds[8] = 1;
-
 	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_TEMPO);
 	start_playback(&step_sequencer.beat_clock, timer1); // HACK, start playback immediately
-	MillisecondTimer debug_timer = MillisecondTimer_init(timer0, 1000);
 	while (true) {
 		// Read physical button states
-		uint8_t button_state_bytes[2] = { 0 };
-		ShiftRegister_read(&step_buttons_shift_reg, button_state_bytes, 2);
-
-		// if (MillisecondTimer_elapsed(&debug_timer)) {
-		// 	MillisecondTimer_reset(&debug_timer);
-		// 	LOG_INFO("%x\n", button_state_bytes[1]);
-		// }
+		uint16_t button_state_bytes = 0;
+		ShiftRegister_read(&step_buttons_shift_reg, (uint8_t*)&button_state_bytes, 2);
 
 		// Update logical buttons
-		for (int i = 0; i < 8; i++) {
-			Button_update(&step_buttons[i], (button_state_bytes[0] >> i) & 0x1, Time_now_ms(timer0));
-		}
-		for (int i = 0; i < 8; i++) {
-			Button_update(&step_buttons[8 + i], (button_state_bytes[1] >> i) & 0x1, Time_now_ms(timer0));
+		for (int i = 0; i < 16; i++) {
+			Button_update(&step_buttons[i], (button_state_bytes >> i) & 0x1, Time_now_ms(timer0));
 		}
 
 		// Update logical LEDs
