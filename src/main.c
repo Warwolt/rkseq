@@ -238,7 +238,6 @@ int main(void) {
 	/* Run */
 	LOG_INFO("Program Start\n");
 
-	// logical buttons & leds
 	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_TEMPO);
 	start_playback(&step_sequencer.beat_clock, timer1); // HACK, start playback immediately
 	while (true) {
