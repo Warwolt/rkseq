@@ -28,7 +28,12 @@
 #include <util/delay.h>
 
 typedef struct {
+	// Input
 	RotaryEncoder rotary_encoder;
+	Button step_buttons[16];
+	Button control_buttons[8];
+	bool step_leds[16];
+	// Output
 	SegmentDisplay segment_display;
 } UserInterfaceDevices;
 
@@ -211,13 +216,13 @@ int main(void) {
 	UserInterfaceDevices ui_devices = {
 		.rotary_encoder = RotaryEncoder_init(encoder_a_pin, encoder_b_pin),
 		.segment_display = SegmentDisplay_init(display_clock_pin, display_latch_pin, display_data_pin),
+		.step_buttons = { 0 },
+		.control_buttons = { 0 },
+		.step_leds = { 0 },
 	};
 	StepSequencer step_sequencer = StepSequencer_init();
 	MidiControl midi_control = MidiControl_init(timer0);
 	UserInterface user_interface = UserInterface_init();
-	Button step_buttons[16] = { 0 };
-	Button control_buttons[8] = { 0 };
-	bool step_leds[16] = { 0 };
 
 	/* Setup timer based interrupts */
 	{
@@ -249,22 +254,22 @@ int main(void) {
 		// Update logical buttons
 		const uint32_t time_now = Time_now_ms(timer0);
 		for (int i = 0; i < 16; i++) {
-			Button_update(&step_buttons[i], (button_state_bytes[i / 8] >> (i % 8)) & 0x1, time_now);
+			Button_update(&ui_devices.step_buttons[i], (button_state_bytes[i / 8] >> (i % 8)) & 0x1, time_now);
 		}
 		for (int i = 0; i < 8; i++) {
-			Button_update(&control_buttons[i], (button_state_bytes[2] >> (i % 8)) & 0x1, time_now);
+			Button_update(&ui_devices.control_buttons[i], (button_state_bytes[2] >> (i % 8)) & 0x1, time_now);
 		}
 
 		// Update logical LEDs
 		for (int i = 0; i < 16; i++) {
-			if (Button_just_pressed(&step_buttons[i])) {
-				step_leds[i] = !step_leds[i];
+			if (Button_just_pressed(&ui_devices.step_buttons[i])) {
+				ui_devices.step_leds[i] = !ui_devices.step_leds[i];
 			}
 		}
 
 		// Write physical LEDs
 		uint8_t led_state_bytes[2] = { 0 };
-		Serialize_pack_bits_into_bytes(step_leds, 16, led_state_bytes, 2, BIT_ORDERING_LSB_FIRST);
+		Serialize_pack_bits_into_bytes(ui_devices.step_leds, 16, led_state_bytes, 2, BIT_ORDERING_LSB_FIRST);
 		ShiftRegister_write(&step_leds_shift_reg, led_state_bytes, 2);
 
 		/* User Interface */
