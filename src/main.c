@@ -30,10 +30,12 @@
 typedef struct {
 	// Input
 	RotaryEncoder rotary_encoder;
+	ShiftRegister step_buttons_shift_reg;
 	Button step_buttons[16];
 	Button control_buttons[8];
 	// Output
 	SegmentDisplay segment_display;
+	ShiftRegister step_leds_shift_reg;
 } UserInterfaceDevices;
 
 typedef struct {
@@ -94,6 +96,14 @@ static void read_buttons(const ShiftRegister* step_buttons_shift_reg, uint32_t t
 	}
 }
 
+static uint8_t read_midi_byte(SoftwareSerial sw_serial) {
+	uint8_t byte = 0;
+	if (SoftwareSerial_available_bytes(sw_serial) > 0) {
+		SoftwareSerial_read(sw_serial, &byte);
+	}
+	return byte;
+}
+
 static UserInterfaceEvents get_ui_events(UserInterfaceDevices* ui_devices) {
 	return (UserInterfaceEvents) {
 		.rotary_encoder_diff = RotaryEncoder_read(&ui_devices->rotary_encoder),
@@ -131,14 +141,6 @@ static void write_segment_display(SegmentDisplay* segment_display, const UserInt
 		SegmentDisplay_set_char(segment_display, i, user_interface->segment_display_chars[i]);
 		SegmentDisplay_set_period(segment_display, i, user_interface->segment_display_period_enabled[i]);
 	}
-}
-
-static uint8_t maybe_read_midi_byte(SoftwareSerial sw_serial) {
-	uint8_t byte = 0;
-	if (SoftwareSerial_available_bytes(sw_serial) > 0) {
-		SoftwareSerial_read(sw_serial, &byte);
-	}
-	return byte;
 }
 
 static void run_ui_commands(Timer1 timer1, StepSequencer* step_sequencer, const UserInterfaceCommands* commands) {
@@ -210,7 +212,9 @@ void on_tempo_tick(OnTempoTickContext* ctx) {
 }
 
 int main(void) {
-	/* Setup */
+	globally_enable_interrupts();
+
+	/* Pins */
 	const GpioPin midi_rx_pin = GpioPin_init(&PORTD, 2);
 	const GpioPin midi_tx_pin = GpioPin_init(&PORTD, 3);
 	const GpioPin encoder_a_pin = GpioPin_init(&PORTD, 4);
@@ -221,21 +225,24 @@ int main(void) {
 	const GpioPin step_buttons_latch_pin = GpioPin_init(&PORTB, 1);
 	const GpioPin step_leds_latch_pin = GpioPin_init(&PORTB, 2);
 
-	globally_enable_interrupts();
+	/* Hardware */
 	Timer0 timer0 = Timer0_init();
 	Timer1 timer1 = Timer1_init();
 	HardwareSerial_init(9600); // uses PD0 and PD1
 	SoftwareSerial sw_serial = SoftwareSerial_init(31250, midi_rx_pin, midi_tx_pin);
 	Spi spi = Spi_init(SPI_DATA_ORDER_MSB_FIRST); // uses PB3 (MOSI), PB4 (MISO), and PB5 (SCK)
-
-	ShiftRegister step_buttons_shift_reg = ShiftRegister_init(spi, step_buttons_latch_pin);
-	ShiftRegister step_leds_shift_reg = ShiftRegister_init(spi, step_leds_latch_pin);
 	UserInterfaceDevices ui_devices = {
+		// Input
 		.rotary_encoder = RotaryEncoder_init(encoder_a_pin, encoder_b_pin),
-		.segment_display = SegmentDisplay_init(display_clock_pin, display_latch_pin, display_data_pin),
+		.step_buttons_shift_reg = ShiftRegister_init(spi, step_buttons_latch_pin),
 		.step_buttons = { 0 },
 		.control_buttons = { 0 },
+		// Output
+		.step_leds_shift_reg = ShiftRegister_init(spi, step_leds_latch_pin),
+		.segment_display = SegmentDisplay_init(display_clock_pin, display_latch_pin, display_data_pin),
 	};
+
+	/* Program state */
 	StepSequencer step_sequencer = StepSequencer_init();
 	MidiControl midi_control = MidiControl_init(timer0);
 	UserInterface user_interface = UserInterface_init();
@@ -264,7 +271,7 @@ int main(void) {
 	start_playback(&step_sequencer.beat_clock, timer1); // HACK, start playback immediately
 	while (true) {
 		const uint32_t time_now_ms = Time_now_ms(timer0);
-		read_buttons(&step_buttons_shift_reg, time_now_ms, ui_devices.step_buttons, ui_devices.control_buttons);
+		read_buttons(&ui_devices.step_buttons_shift_reg, time_now_ms, ui_devices.step_buttons, ui_devices.control_buttons);
 
 		// Update logical LEDs
 		for (int i = 0; i < 16; i++) {
@@ -279,12 +286,12 @@ int main(void) {
 		run_ui_commands(timer1, &step_sequencer, &ui_cmds);
 
 		/* MIDI Control */
-		const uint8_t midi_byte = maybe_read_midi_byte(sw_serial);
+		const uint8_t midi_byte = read_midi_byte(sw_serial);
 		const MidiControlCommands midi_cmds = MidiControl_update(&midi_control, midi_byte);
 		run_midi_control_commands(timer1, &step_sequencer, &midi_cmds);
 
 		/* Interface Devices */
 		write_segment_display(&ui_devices.segment_display, &user_interface);
-		write_step_leds(&step_leds_shift_reg, user_interface.step_leds);
+		write_step_leds(&ui_devices.step_leds_shift_reg, user_interface.step_leds);
 	}
 }
