@@ -30,7 +30,7 @@
 typedef struct {
 	RotaryEncoder rotary_encoder;
 	SegmentDisplay segment_display;
-} InterfaceDevices;
+} UserInterfaceDevices;
 
 typedef struct {
 	uint8_t last_update;
@@ -78,9 +78,9 @@ static void globally_enable_interrupts(void) {
 	sei();
 }
 
-static UserInterfaceEvents get_ui_events(InterfaceDevices* interface_devices) {
+static UserInterfaceEvents get_ui_events(UserInterfaceDevices* ui_devices) {
 	return (UserInterfaceEvents) {
-		.rotary_encoder_diff = RotaryEncoder_read(&interface_devices->rotary_encoder),
+		.rotary_encoder_diff = RotaryEncoder_read(&ui_devices->rotary_encoder),
 	};
 }
 
@@ -208,7 +208,7 @@ int main(void) {
 
 	ShiftRegister step_buttons_shift_reg = ShiftRegister_init(spi, step_buttons_latch_pin);
 	ShiftRegister step_leds_shift_reg = ShiftRegister_init(spi, step_leds_latch_pin);
-	InterfaceDevices interface_devices = {
+	UserInterfaceDevices ui_devices = {
 		.rotary_encoder = RotaryEncoder_init(encoder_a_pin, encoder_b_pin),
 		.segment_display = SegmentDisplay_init(display_clock_pin, display_latch_pin, display_data_pin),
 	};
@@ -216,6 +216,7 @@ int main(void) {
 	MidiControl midi_control = MidiControl_init(timer0);
 	UserInterface user_interface = UserInterface_init();
 	Button step_buttons[16] = { 0 };
+	Button control_buttons[8] = { 0 };
 	bool step_leds[16] = { 0 };
 
 	/* Setup timer based interrupts */
@@ -223,7 +224,7 @@ int main(void) {
 		g_timer0_ovf_callback_context = (OnTimeTickContext) {
 			.last_update = 0,
 			.timer0 = &timer0,
-			.segment_display = &interface_devices.segment_display,
+			.segment_display = &ui_devices.segment_display,
 		};
 		g_timer0_ovf_callback = &on_time_tick;
 
@@ -242,12 +243,16 @@ int main(void) {
 	start_playback(&step_sequencer.beat_clock, timer1); // HACK, start playback immediately
 	while (true) {
 		// Read physical button states
-		uint16_t button_state_bytes = 0;
-		ShiftRegister_read(&step_buttons_shift_reg, (uint8_t*)&button_state_bytes, 2);
+		uint8_t button_state_bytes[3] = { 0 };
+		ShiftRegister_read(&step_buttons_shift_reg, (uint8_t*)&button_state_bytes, 3);
 
 		// Update logical buttons
+		const uint32_t time_now = Time_now_ms(timer0);
 		for (int i = 0; i < 16; i++) {
-			Button_update(&step_buttons[i], (button_state_bytes >> i) & 0x1, Time_now_ms(timer0));
+			Button_update(&step_buttons[i], (button_state_bytes[i / 8] >> (i % 8)) & 0x1, time_now);
+		}
+		for (int i = 0; i < 8; i++) {
+			Button_update(&control_buttons[i], (button_state_bytes[2] >> (i % 8)) & 0x1, time_now);
 		}
 
 		// Update logical LEDs
@@ -263,7 +268,7 @@ int main(void) {
 		ShiftRegister_write(&step_leds_shift_reg, led_state_bytes, 2);
 
 		/* User Interface */
-		const UserInterfaceEvents ui_events = get_ui_events(&interface_devices);
+		const UserInterfaceEvents ui_events = get_ui_events(&ui_devices);
 		const UserInterfaceCommands ui_cmds = UserInterface_update(&user_interface, &ui_events, &step_sequencer);
 		run_ui_commands(timer1, &step_sequencer, &ui_cmds);
 
@@ -273,6 +278,6 @@ int main(void) {
 		run_midi_control_commands(timer1, &step_sequencer, &midi_cmds);
 
 		/* Interface Devices */
-		update_segment_display(&interface_devices.segment_display, &user_interface);
+		update_segment_display(&ui_devices.segment_display, &user_interface);
 	}
 }
