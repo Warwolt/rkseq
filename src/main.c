@@ -30,6 +30,7 @@
 typedef struct {
 	// Input
 	RotaryEncoder rotary_encoder;
+	int8_t rotary_encoder_diff;
 	ShiftRegister step_buttons_shift_reg;
 	Button step_buttons[16];
 	Button control_buttons[8];
@@ -94,6 +95,11 @@ static void read_buttons(const ShiftRegister* step_buttons_shift_reg, uint32_t t
 	for (int i = 0; i < 8; i++) {
 		Button_update(&control_buttons[i], (button_state_bytes[2] >> (i % 8)) & 0x1, time_now_ms);
 	}
+}
+
+static void read_user_interface_devices(UserInterfaceDevices* ui_devices, uint32_t time_now_ms) {
+	read_buttons(&ui_devices->step_buttons_shift_reg, time_now_ms, ui_devices->step_buttons, ui_devices->control_buttons);
+	ui_devices->rotary_encoder_diff = RotaryEncoder_read(&ui_devices->rotary_encoder);
 }
 
 static uint8_t read_midi_byte(SoftwareSerial sw_serial) {
@@ -271,7 +277,7 @@ int main(void) {
 	start_playback(&step_sequencer.beat_clock, timer1); // HACK, start playback immediately
 	while (true) {
 		const uint32_t time_now_ms = Time_now_ms(timer0);
-		read_buttons(&ui_devices.step_buttons_shift_reg, time_now_ms, ui_devices.step_buttons, ui_devices.control_buttons);
+		read_user_interface_devices(&ui_devices, time_now_ms);
 
 		// Update logical LEDs
 		for (int i = 0; i < 16; i++) {
