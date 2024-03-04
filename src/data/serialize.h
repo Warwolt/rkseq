@@ -10,6 +10,6 @@ typedef enum {
 	BIT_ORDERING_LSB_FIRST,
 } BitOrdering;
 
-void Serialize_pack_bits_into_bytes(bool* bits, size_t num_bits, uint8_t* bytes, size_t num_bytes, BitOrdering order);
+void Serialize_pack_bits_into_bytes(const bool* bits, size_t num_bits, uint8_t* bytes, size_t num_bytes, BitOrdering order);
 
 #endif /* SERIALIZE_H */

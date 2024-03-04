@@ -142,17 +142,22 @@ static void stop_playback(BeatClock* beat_clock, Timer1 timer1) {
 	Timer1_stop(timer1);
 }
 
-static void write_step_leds(const ShiftRegister* step_leds_shift_reg, bool step_leds[16]) {
+static void write_step_leds(const ShiftRegister* step_leds_shift_reg, const bool step_leds[16]) {
 	uint8_t led_state_bytes[2] = { 0 };
 	Serialize_pack_bits_into_bytes(step_leds, 16, led_state_bytes, 2, BIT_ORDERING_LSB_FIRST);
 	ShiftRegister_write(step_leds_shift_reg, led_state_bytes, 2);
 }
 
-static void write_segment_display(SegmentDisplay* segment_display, const UserInterface* user_interface) {
+static void write_segment_display(SegmentDisplay* segment_display, const char segment_display_chars[4], const bool segment_display_period_enabled[4]) {
 	for (int i = 0; i < 4; i++) {
-		SegmentDisplay_set_char(segment_display, i, user_interface->segment_display_chars[i]);
-		SegmentDisplay_set_period(segment_display, i, user_interface->segment_display_period_enabled[i]);
+		SegmentDisplay_set_char(segment_display, i, segment_display_chars[i]);
+		SegmentDisplay_set_period(segment_display, i, segment_display_period_enabled[i]);
 	}
+}
+
+static void write_user_interface_devices(UserInterfaceDevices* ui_devices, const UserInterface* user_interface) {
+	write_segment_display(&ui_devices->segment_display, user_interface->segment_display_chars, user_interface->segment_display_period_enabled);
+	write_step_leds(&ui_devices->step_leds_shift_reg, user_interface->step_leds);
 }
 
 static void run_ui_commands(Timer1 timer1, StepSequencer* step_sequencer, const UserInterfaceCommands* commands) {
@@ -282,21 +287,21 @@ int main(void) {
 	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_TEMPO);
 	start_playback(&step_sequencer.beat_clock, timer1); // HACK, start playback immediately
 	while (true) {
+		/* Input */
 		const uint32_t time_now_ms = Time_now_ms(timer0);
+		const uint8_t midi_byte = read_midi_byte(sw_serial);
 		read_user_interface_devices(&ui_devices, time_now_ms);
 
-		/* User Interface */
+		/* Update User Interface */
 		const UserInterfaceEvents ui_events = get_ui_events(&ui_devices);
 		const UserInterfaceCommands ui_cmds = UserInterface_update(&user_interface, &ui_events, &step_sequencer);
 		run_ui_commands(timer1, &step_sequencer, &ui_cmds);
 
-		/* MIDI Control */
-		const uint8_t midi_byte = read_midi_byte(sw_serial);
+		/* Update MIDI Control */
 		const MidiControlCommands midi_cmds = MidiControl_update(&midi_control, midi_byte);
 		run_midi_control_commands(timer1, &step_sequencer, &midi_cmds);
 
-		/* Interface Devices */
-		write_segment_display(&ui_devices.segment_display, &user_interface);
-		write_step_leds(&ui_devices.step_leds_shift_reg, user_interface.step_leds);
+		/* Output */
+		write_user_interface_devices(&ui_devices, &user_interface);
 	}
 }
