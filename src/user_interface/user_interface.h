@@ -9,10 +9,13 @@
 typedef struct {
 	char segment_display_chars[4];
 	bool segment_display_period_enabled[4];
+	bool step_leds[16];
 } UserInterface;
 
 typedef struct {
 	int8_t rotary_encoder_diff;
+	bool step_button_pressed[16];
+	bool control_button_pressed[8];
 } UserInterfaceEvents;
 
 typedef struct {

@@ -28,9 +28,16 @@
 #include <util/delay.h>
 
 typedef struct {
+	// Input
 	RotaryEncoder rotary_encoder;
+	int8_t rotary_encoder_diff;
+	ShiftRegister step_buttons_shift_reg;
+	Button step_buttons[16];
+	Button control_buttons[8];
+	// Output
 	SegmentDisplay segment_display;
-} InterfaceDevices;
+	ShiftRegister step_leds_shift_reg;
+} UserInterfaceDevices;
 
 typedef struct {
 	uint8_t last_update;
@@ -78,10 +85,41 @@ static void globally_enable_interrupts(void) {
 	sei();
 }
 
-static UserInterfaceEvents get_ui_events(InterfaceDevices* interface_devices) {
-	return (UserInterfaceEvents) {
-		.rotary_encoder_diff = RotaryEncoder_read(&interface_devices->rotary_encoder),
-	};
+static void read_buttons(const ShiftRegister* step_buttons_shift_reg, uint32_t time_now_ms, Button step_buttons[16], Button control_buttons[8]) {
+	uint8_t button_state_bytes[3] = { 0 };
+	ShiftRegister_read(step_buttons_shift_reg, (uint8_t*)&button_state_bytes, 3);
+
+	for (int i = 0; i < 16; i++) {
+		Button_update(&step_buttons[i], (button_state_bytes[i / 8] >> (i % 8)) & 0x1, time_now_ms);
+	}
+	for (int i = 0; i < 8; i++) {
+		Button_update(&control_buttons[i], (button_state_bytes[2] >> (i % 8)) & 0x1, time_now_ms);
+	}
+}
+
+static void read_user_interface_devices(UserInterfaceDevices* ui_devices, uint32_t time_now_ms) {
+	read_buttons(&ui_devices->step_buttons_shift_reg, time_now_ms, ui_devices->step_buttons, ui_devices->control_buttons);
+	ui_devices->rotary_encoder_diff = RotaryEncoder_read(&ui_devices->rotary_encoder);
+}
+
+static uint8_t read_midi_byte(SoftwareSerial sw_serial) {
+	uint8_t byte = 0;
+	if (SoftwareSerial_available_bytes(sw_serial) > 0) {
+		SoftwareSerial_read(sw_serial, &byte);
+	}
+	return byte;
+}
+
+static UserInterfaceEvents get_ui_events(const UserInterfaceDevices* ui_devices) {
+	UserInterfaceEvents ui_events;
+	ui_events.rotary_encoder_diff = ui_devices->rotary_encoder_diff;
+	for (int i = 0; i < 16; i++) {
+		ui_events.step_button_pressed[i] = Button_just_pressed(&ui_devices->step_buttons[i]);
+	}
+	for (int i = 0; i < 8; i++) {
+		ui_events.control_button_pressed[i] = Button_just_pressed(&ui_devices->control_buttons[i]);
+	}
+	return ui_events;
 }
 
 #define MICROSECONDS_PER_SECOND 1e6
@@ -104,19 +142,22 @@ static void stop_playback(BeatClock* beat_clock, Timer1 timer1) {
 	Timer1_stop(timer1);
 }
 
-static void update_segment_display(SegmentDisplay* segment_display, const UserInterface* user_interface) {
+static void write_step_leds(const ShiftRegister* step_leds_shift_reg, const bool step_leds[16]) {
+	uint8_t led_state_bytes[2] = { 0 };
+	Serialize_pack_bits_into_bytes(step_leds, 16, led_state_bytes, 2, BIT_ORDERING_LSB_FIRST);
+	ShiftRegister_write(step_leds_shift_reg, led_state_bytes, 2);
+}
+
+static void write_segment_display(SegmentDisplay* segment_display, const char segment_display_chars[4], const bool segment_display_period_enabled[4]) {
 	for (int i = 0; i < 4; i++) {
-		SegmentDisplay_set_char(segment_display, i, user_interface->segment_display_chars[i]);
-		SegmentDisplay_set_period(segment_display, i, user_interface->segment_display_period_enabled[i]);
+		SegmentDisplay_set_char(segment_display, i, segment_display_chars[i]);
+		SegmentDisplay_set_period(segment_display, i, segment_display_period_enabled[i]);
 	}
 }
 
-static uint8_t maybe_read_midi_byte(SoftwareSerial sw_serial) {
-	uint8_t byte = 0;
-	if (SoftwareSerial_available_bytes(sw_serial) > 0) {
-		SoftwareSerial_read(sw_serial, &byte);
-	}
-	return byte;
+static void write_user_interface_devices(UserInterfaceDevices* ui_devices, const UserInterface* user_interface) {
+	write_segment_display(&ui_devices->segment_display, user_interface->segment_display_chars, user_interface->segment_display_period_enabled);
+	write_step_leds(&ui_devices->step_leds_shift_reg, user_interface->step_leds);
 }
 
 static void run_ui_commands(Timer1 timer1, StepSequencer* step_sequencer, const UserInterfaceCommands* commands) {
@@ -188,7 +229,9 @@ void on_tempo_tick(OnTempoTickContext* ctx) {
 }
 
 int main(void) {
-	/* Setup */
+	globally_enable_interrupts();
+
+	/* Pins */
 	const GpioPin midi_rx_pin = GpioPin_init(&PORTD, 2);
 	const GpioPin midi_tx_pin = GpioPin_init(&PORTD, 3);
 	const GpioPin encoder_a_pin = GpioPin_init(&PORTD, 4);
@@ -199,31 +242,34 @@ int main(void) {
 	const GpioPin step_buttons_latch_pin = GpioPin_init(&PORTB, 1);
 	const GpioPin step_leds_latch_pin = GpioPin_init(&PORTB, 2);
 
-	globally_enable_interrupts();
+	/* Hardware */
 	Timer0 timer0 = Timer0_init();
 	Timer1 timer1 = Timer1_init();
 	HardwareSerial_init(9600); // uses PD0 and PD1
 	SoftwareSerial sw_serial = SoftwareSerial_init(31250, midi_rx_pin, midi_tx_pin);
 	Spi spi = Spi_init(SPI_DATA_ORDER_MSB_FIRST); // uses PB3 (MOSI), PB4 (MISO), and PB5 (SCK)
-
-	ShiftRegister step_buttons_shift_reg = ShiftRegister_init(spi, step_buttons_latch_pin);
-	ShiftRegister step_leds_shift_reg = ShiftRegister_init(spi, step_leds_latch_pin);
-	InterfaceDevices interface_devices = {
+	UserInterfaceDevices ui_devices = {
+		// Input
 		.rotary_encoder = RotaryEncoder_init(encoder_a_pin, encoder_b_pin),
+		.step_buttons_shift_reg = ShiftRegister_init(spi, step_buttons_latch_pin),
+		.step_buttons = { 0 },
+		.control_buttons = { 0 },
+		// Output
+		.step_leds_shift_reg = ShiftRegister_init(spi, step_leds_latch_pin),
 		.segment_display = SegmentDisplay_init(display_clock_pin, display_latch_pin, display_data_pin),
 	};
+
+	/* Program state */
 	StepSequencer step_sequencer = StepSequencer_init();
 	MidiControl midi_control = MidiControl_init(timer0);
 	UserInterface user_interface = UserInterface_init();
-	Button step_buttons[16] = { 0 };
-	bool step_leds[16] = { 0 };
 
 	/* Setup timer based interrupts */
 	{
 		g_timer0_ovf_callback_context = (OnTimeTickContext) {
 			.last_update = 0,
 			.timer0 = &timer0,
-			.segment_display = &interface_devices.segment_display,
+			.segment_display = &ui_devices.segment_display,
 		};
 		g_timer0_ovf_callback = &on_time_tick;
 
@@ -241,38 +287,21 @@ int main(void) {
 	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_TEMPO);
 	start_playback(&step_sequencer.beat_clock, timer1); // HACK, start playback immediately
 	while (true) {
-		// Read physical button states
-		uint16_t button_state_bytes = 0;
-		ShiftRegister_read(&step_buttons_shift_reg, (uint8_t*)&button_state_bytes, 2);
+		/* Input */
+		const uint32_t time_now_ms = Time_now_ms(timer0);
+		const uint8_t midi_byte = read_midi_byte(sw_serial);
+		read_user_interface_devices(&ui_devices, time_now_ms);
 
-		// Update logical buttons
-		for (int i = 0; i < 16; i++) {
-			Button_update(&step_buttons[i], (button_state_bytes >> i) & 0x1, Time_now_ms(timer0));
-		}
-
-		// Update logical LEDs
-		for (int i = 0; i < 16; i++) {
-			if (Button_just_pressed(&step_buttons[i])) {
-				step_leds[i] = !step_leds[i];
-			}
-		}
-
-		// Write physical LEDs
-		uint8_t led_state_bytes[2] = { 0 };
-		Serialize_pack_bits_into_bytes(step_leds, 16, led_state_bytes, 2, BIT_ORDERING_LSB_FIRST);
-		ShiftRegister_write(&step_leds_shift_reg, led_state_bytes, 2);
-
-		/* User Interface */
-		const UserInterfaceEvents ui_events = get_ui_events(&interface_devices);
+		/* Update User Interface */
+		const UserInterfaceEvents ui_events = get_ui_events(&ui_devices);
 		const UserInterfaceCommands ui_cmds = UserInterface_update(&user_interface, &ui_events, &step_sequencer);
 		run_ui_commands(timer1, &step_sequencer, &ui_cmds);
 
-		/* MIDI Control */
-		const uint8_t midi_byte = maybe_read_midi_byte(sw_serial);
+		/* Update MIDI Control */
 		const MidiControlCommands midi_cmds = MidiControl_update(&midi_control, midi_byte);
 		run_midi_control_commands(timer1, &step_sequencer, &midi_cmds);
 
-		/* Interface Devices */
-		update_segment_display(&interface_devices.segment_display, &user_interface);
+		/* Output */
+		write_user_interface_devices(&ui_devices, &user_interface);
 	}
 }

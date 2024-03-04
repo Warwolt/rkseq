@@ -9,7 +9,7 @@ static size_t lsb_index(size_t i) {
 	return (i / 8 + 1) * 8 - 1 - (i % 8);
 }
 
-void Serialize_pack_bits_into_bytes(bool* bits, size_t num_bits, uint8_t* bytes, size_t num_bytes, BitOrdering order) {
+void Serialize_pack_bits_into_bytes(const bool* bits, size_t num_bits, uint8_t* bytes, size_t num_bytes, BitOrdering order) {
 	for (size_t i = 0; (i < num_bits) && (i < 8 * num_bytes); i++) {
 		const size_t bit_index = order == BIT_ORDERING_LSB_FIRST ? lsb_index(i) : i;
 		bytes[i / 8] |= (bits[bit_index] & 0x1) << (i % 8);
