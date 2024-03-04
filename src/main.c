@@ -110,10 +110,16 @@ static uint8_t read_midi_byte(SoftwareSerial sw_serial) {
 	return byte;
 }
 
-static UserInterfaceEvents get_ui_events(UserInterfaceDevices* ui_devices) {
-	return (UserInterfaceEvents) {
-		.rotary_encoder_diff = RotaryEncoder_read(&ui_devices->rotary_encoder),
-	};
+static UserInterfaceEvents get_ui_events(const UserInterfaceDevices* ui_devices) {
+	UserInterfaceEvents ui_events;
+	ui_events.rotary_encoder_diff = ui_devices->rotary_encoder_diff;
+	for (int i = 0; i < 16; i++) {
+		ui_events.step_button_pressed[i] = Button_just_pressed(&ui_devices->step_buttons[i]);
+	}
+	for (int i = 0; i < 8; i++) {
+		ui_events.control_button_pressed[i] = Button_just_pressed(&ui_devices->control_buttons[i]);
+	}
+	return ui_events;
 }
 
 #define MICROSECONDS_PER_SECOND 1e6
@@ -278,13 +284,6 @@ int main(void) {
 	while (true) {
 		const uint32_t time_now_ms = Time_now_ms(timer0);
 		read_user_interface_devices(&ui_devices, time_now_ms);
-
-		// Update logical LEDs
-		for (int i = 0; i < 16; i++) {
-			if (Button_just_pressed(&ui_devices.step_buttons[i])) {
-				user_interface.step_leds[i] = !user_interface.step_leds[i];
-			}
-		}
 
 		/* User Interface */
 		const UserInterfaceEvents ui_events = get_ui_events(&ui_devices);

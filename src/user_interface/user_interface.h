@@ -14,6 +14,8 @@ typedef struct {
 
 typedef struct {
 	int8_t rotary_encoder_diff;
+	bool step_button_pressed[16];
+	bool control_button_pressed[8];
 } UserInterfaceEvents;
 
 typedef struct {

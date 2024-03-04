@@ -12,6 +12,19 @@ UserInterfaceCommands UserInterface_update(UserInterface* ui, const UserInterfac
 	UserInterfaceCommands commands = { 0 };
 	const BeatClockSource clock_source = step_sequencer->beat_clock.source;
 
+	/* Rhythm pattern */
+	// Temporary: just directly toggle LEDs using buttons to check things working
+	for (int i = 0; i < 16; i++) {
+		if (events->step_button_pressed[i]) {
+			ui->step_leds[i] = !ui->step_leds[i];
+		}
+	}
+	for (int i = 0; i < 8; i++) {
+		if (events->control_button_pressed[i]) {
+			ui->step_leds[i] = !ui->step_leds[i];
+		}
+	}
+
 	/* Set Tempo */
 	if (clock_source == BEAT_CLOCK_SOURCE_INTERNAL) {
 		commands.set_new_tempo_deci_bpm = clamp(step_sequencer->beat_clock.tempo_deci_bpm + 10 * events->rotary_encoder_diff, MIN_TEMPO, MAX_TEMPO);
