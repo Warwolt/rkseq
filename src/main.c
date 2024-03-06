@@ -212,18 +212,21 @@ void on_tempo_tick(OnTempoTickContext* ctx) {
 			MidiTransmit_send_message(*ctx->sw_serial, MIDI_MESSAGE_TIMING_CLOCK);
 		}
 
-		if (BeatClock_sixteenth_note_ready(&ctx->step_sequencer->beat_clock)) {
-			const uint8_t channel = 0;
-			const uint8_t note = 64;
-			const uint8_t velocity = 64;
+		const bool test_midi_messages = false;
+		if (test_midi_messages) {
+			if (BeatClock_sixteenth_note_ready(&ctx->step_sequencer->beat_clock)) {
+				const uint8_t channel = 0;
+				const uint8_t note = 64;
+				const uint8_t velocity = 64;
 
-			if (ctx->note_on) {
-				MidiTransmit_send_message(*ctx->sw_serial, MIDI_MESSAGE_NOTE_ON(channel, note, velocity));
-			} else {
-				MidiTransmit_send_message(*ctx->sw_serial, MIDI_MESSAGE_NOTE_OFF(channel, note));
+				if (ctx->note_on) {
+					MidiTransmit_send_message(*ctx->sw_serial, MIDI_MESSAGE_NOTE_ON(channel, note, velocity));
+				} else {
+					MidiTransmit_send_message(*ctx->sw_serial, MIDI_MESSAGE_NOTE_OFF(channel, note));
+				}
+
+				ctx->note_on = !ctx->note_on;
 			}
-
-			ctx->note_on = !ctx->note_on;
 		}
 	}
 }

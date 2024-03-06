@@ -6,7 +6,7 @@
 void MidiTransmit_send_message(SoftwareSerial sw_serial, MidiMessage msg) {
 	switch (msg.type) {
 		case MIDI_MESSAGE_TYPE_TIMING_CLOCK:
-			SoftwareSerial_write(sw_serial, 0xFA);
+			SoftwareSerial_write(sw_serial, 0xF8);
 
 		case MIDI_MESSAGE_TYPE_NOTE_ON:
 			SoftwareSerial_write(sw_serial, MIDI_NOTE_ON(msg.data.note_on.channel));
