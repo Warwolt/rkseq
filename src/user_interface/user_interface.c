@@ -19,11 +19,6 @@ UserInterfaceCommands UserInterface_update(UserInterface* ui, const UserInterfac
 			ui->step_leds[i] = !ui->step_leds[i];
 		}
 	}
-	for (int i = 0; i < 8; i++) {
-		if (events->control_button_pressed[i]) {
-			ui->step_leds[i] = !ui->step_leds[i];
-		}
-	}
 
 	/* Set Tempo */
 	if (clock_source == BEAT_CLOCK_SOURCE_INTERNAL) {
