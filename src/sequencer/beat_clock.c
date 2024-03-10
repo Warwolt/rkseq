@@ -13,7 +13,7 @@ BeatClock BeatClock_init(uint16_t tempo_deci_bpm) {
 	};
 }
 
-void BeatClock_on_pulse(BeatClock* beat_clock) {
+void BeatClock_count_pulse(BeatClock* beat_clock) {
 	beat_clock->beat_pulses = (beat_clock->beat_pulses + 1) % BEAT_CLOCK_SEQUENCER_PPQN;
 }
 

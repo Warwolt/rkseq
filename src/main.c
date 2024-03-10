@@ -160,7 +160,7 @@ static void write_user_interface_devices(UserInterfaceDevices* ui_devices, const
 	write_step_leds(&ui_devices->step_leds_shift_reg, user_interface->step_leds);
 }
 
-static void run_ui_commands(Timer1 timer1, StepSequencer* step_sequencer, const UserInterfaceCommands* commands) {
+static void execute_ui_commands(Timer1 timer1, StepSequencer* step_sequencer, const UserInterfaceCommands* commands) {
 	if (commands->set_new_tempo_deci_bpm) {
 		set_playback_tempo(&step_sequencer->beat_clock, timer1, commands->set_new_tempo_deci_bpm);
 	}
@@ -172,7 +172,7 @@ static void run_ui_commands(Timer1 timer1, StepSequencer* step_sequencer, const 
 	}
 }
 
-static void run_midi_control_commands(Timer1 timer1, StepSequencer* step_sequencer, const MidiControlCommands* commands) {
+static void execute_midi_control_commands(Timer1 timer1, StepSequencer* step_sequencer, const MidiControlCommands* commands) {
 	if (commands->switch_to_external_clock) {
 		if (step_sequencer->beat_clock.source == BEAT_CLOCK_SOURCE_INTERNAL) {
 			LOG_INFO("Switched to external beat clock\n");
@@ -206,7 +206,7 @@ void on_time_tick(OnTimeTickContext* ctx) {
 
 void on_tempo_tick(OnTempoTickContext* ctx) {
 	if (ctx->step_sequencer && ctx->sw_serial) {
-		BeatClock_on_pulse(&ctx->step_sequencer->beat_clock);
+		BeatClock_count_pulse(&ctx->step_sequencer->beat_clock);
 
 		if (BeatClock_midi_pulse_ready(&ctx->step_sequencer->beat_clock)) {
 			MidiTransmit_send_message(*ctx->sw_serial, MIDI_MESSAGE_TIMING_CLOCK);
@@ -298,11 +298,11 @@ int main(void) {
 		/* Update User Interface */
 		const UserInterfaceEvents ui_events = get_ui_events(&ui_devices);
 		const UserInterfaceCommands ui_cmds = UserInterface_update(&user_interface, &ui_events, &step_sequencer);
-		run_ui_commands(timer1, &step_sequencer, &ui_cmds);
+		execute_ui_commands(timer1, &step_sequencer, &ui_cmds);
 
 		/* Update MIDI Control */
 		const MidiControlCommands midi_cmds = MidiControl_update(&midi_control, midi_byte);
-		run_midi_control_commands(timer1, &step_sequencer, &midi_cmds);
+		execute_midi_control_commands(timer1, &step_sequencer, &midi_cmds);
 
 		/* Output */
 		write_user_interface_devices(&ui_devices, &user_interface);

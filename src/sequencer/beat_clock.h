@@ -24,7 +24,7 @@ typedef struct {
 } BeatClock;
 
 BeatClock BeatClock_init(uint16_t tempo_deci_bpm);
-void BeatClock_on_pulse(BeatClock* beat_clock);
+void BeatClock_count_pulse(BeatClock* beat_clock);
 void BeatClock_start(BeatClock* beat_clock);
 void BeatClock_stop(BeatClock* beat_clock);
 bool BeatClock_sixteenth_note_ready(const BeatClock* beat_clock);
