@@ -1,5 +1,6 @@
 #include "user_interface/user_interface.h"
 
+#include "util/array.h"
 #include "util/math.h"
 
 #define digit_to_string(digit) ('0' + digit)
@@ -7,6 +8,7 @@
 typedef enum {
 	START_BUTTON = 0,
 	STOP_BUTTON = 1,
+	CLEAR_BUTTON = 2,
 } ControlButton;
 
 UserInterface
@@ -28,10 +30,14 @@ UserInterfaceCommands UserInterface_update(UserInterface* ui, const UserInterfac
 	/* Rhythm pattern */
 	// Toggle pattern using buttons
 	for (int i = 0; i < 16; i++) {
-		if (events->step_button_pressed[i]) {
-			commands.new_step_pattern[i] = !step_sequencer->step_patterns[0][i];
+		if (events->control_button_pressed[CLEAR_BUTTON]) {
+			clear_array(commands.new_step_pattern);
 		} else {
-			commands.new_step_pattern[i] = step_sequencer->step_patterns[0][i];
+			if (events->step_button_pressed[i]) {
+				commands.new_step_pattern[i] = !step_sequencer->step_patterns[0][i];
+			} else {
+				commands.new_step_pattern[i] = step_sequencer->step_patterns[0][i];
+			}
 		}
 	}
 	// Display pattern on LEDs
