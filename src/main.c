@@ -46,7 +46,7 @@ typedef struct {
 } OnTimeTickContext;
 
 typedef struct {
-	bool note_on;
+	bool sent_note_on_prev_step;
 	SoftwareSerial* sw_serial;
 	StepSequencer* step_sequencer;
 } OnTempoTickContext;
@@ -206,27 +206,34 @@ void on_time_tick(OnTimeTickContext* ctx) {
 
 void on_tempo_tick(OnTempoTickContext* ctx) {
 	if (ctx->step_sequencer && ctx->sw_serial) {
-		BeatClock_count_pulse(&ctx->step_sequencer->beat_clock);
+		StepSequencer* step_sequencer = ctx->step_sequencer;
+		SoftwareSerial* sw_serial = ctx->sw_serial;
+		BeatClock_count_pulse(&step_sequencer->beat_clock);
 
-		if (BeatClock_midi_pulse_ready(&ctx->step_sequencer->beat_clock)) {
-			MidiTransmit_send_message(*ctx->sw_serial, MIDI_MESSAGE_TIMING_CLOCK);
+		if (BeatClock_midi_pulse_ready(&step_sequencer->beat_clock)) {
+			MidiTransmit_send_message(*sw_serial, MIDI_MESSAGE_TIMING_CLOCK);
 		}
 
-		const bool test_midi_messages = false;
-		if (test_midi_messages) {
-			if (BeatClock_sixteenth_note_ready(&ctx->step_sequencer->beat_clock)) {
-				const uint8_t channel = 0;
-				const uint8_t note = 64;
-				const uint8_t velocity = 64;
+		if (BeatClock_sixteenth_note_ready(&step_sequencer->beat_clock)) {
+			const uint8_t channel = 0;
+			const uint8_t note = 64;
+			const uint8_t velocity = 64;
 
-				if (ctx->note_on) {
-					MidiTransmit_send_message(*ctx->sw_serial, MIDI_MESSAGE_NOTE_ON(channel, note, velocity));
-				} else {
-					MidiTransmit_send_message(*ctx->sw_serial, MIDI_MESSAGE_NOTE_OFF(channel, note));
-				}
-
-				ctx->note_on = !ctx->note_on;
+			// send note off for previous note
+			if (ctx->sent_note_on_prev_step) {
+				MidiTransmit_send_message(*sw_serial, MIDI_MESSAGE_NOTE_OFF(channel, note));
 			}
+
+			// if note active, send note on
+			if (step_sequencer->step_pattern[step_sequencer->step_index]) {
+				MidiTransmit_send_message(*sw_serial, MIDI_MESSAGE_NOTE_ON(channel, note, velocity));
+				ctx->sent_note_on_prev_step = true;
+			} else {
+				ctx->sent_note_on_prev_step = false;
+			}
+
+			// step to next note
+			step_sequencer->step_index = (step_sequencer->step_index + 1) % 16;
 		}
 	}
 }
@@ -277,7 +284,7 @@ int main(void) {
 		g_timer0_ovf_callback = &on_time_tick;
 
 		g_timer1_compa_callback_context = (OnTempoTickContext) {
-			.note_on = true,
+			.sent_note_on_prev_step = false,
 			.step_sequencer = &step_sequencer,
 			.sw_serial = &sw_serial,
 		};
@@ -294,6 +301,14 @@ int main(void) {
 		const uint32_t time_now_ms = Time_now_ms(timer0);
 		const uint8_t midi_byte = read_midi_byte(sw_serial);
 		read_user_interface_devices(&ui_devices, time_now_ms);
+
+		if (Button_just_pressed(&ui_devices.control_buttons[0])) {
+			start_playback(&step_sequencer.beat_clock, timer1);
+		}
+		if (Button_just_pressed(&ui_devices.control_buttons[1])) {
+			stop_playback(&step_sequencer.beat_clock, timer1);
+			step_sequencer.step_index = 0;
+		}
 
 		/* Update User Interface */
 		const UserInterfaceEvents ui_events = get_ui_events(&ui_devices);
