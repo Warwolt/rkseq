@@ -132,17 +132,23 @@ static void set_playback_tempo(BeatClock* beat_clock, Timer1 timer1, uint16_t se
 	Timer1_set_period(timer1, ticks_per_pulse);
 }
 
-static void start_playback(StepSequencer* step_sequencer, Timer1 timer1) {
+static void start_playback(StepSequencer* step_sequencer, SoftwareSerial sw_serial, Timer1 timer1) {
 	step_sequencer->playback_is_active = true;
 	BeatClock_start(&step_sequencer->beat_clock);
 	Timer1_start(timer1);
+	MidiTransmit_send_message(sw_serial, MIDI_MESSAGE_START);
 }
 
-static void stop_playback(StepSequencer* step_sequencer, Timer1 timer1) {
+static void stop_playback(StepSequencer* step_sequencer, SoftwareSerial sw_serial, Timer1 timer1) {
 	step_sequencer->playback_is_active = false;
 	step_sequencer->current_step = 0;
 	BeatClock_stop(&step_sequencer->beat_clock);
 	Timer1_stop(timer1);
+	MidiTransmit_send_message(sw_serial, MIDI_MESSAGE_STOP);
+	// hack, send note off for all active notes
+	const uint8_t channel = 0;
+	const uint8_t note = 64;
+	MidiTransmit_send_message(sw_serial, MIDI_MESSAGE_NOTE_OFF(channel, note));
 }
 
 static void write_step_leds(const ShiftRegister* step_leds_shift_reg, const bool step_leds[16]) {
@@ -163,15 +169,15 @@ static void write_user_interface_devices(UserInterfaceDevices* ui_devices, const
 	write_step_leds(&ui_devices->step_leds_shift_reg, user_interface->step_leds);
 }
 
-static void execute_ui_commands(Timer1 timer1, StepSequencer* step_sequencer, const UserInterfaceCommands* commands) {
+static void execute_ui_commands(Timer1 timer1, SoftwareSerial sw_serial, StepSequencer* step_sequencer, const UserInterfaceCommands* commands) {
 	if (commands->set_new_tempo_deci_bpm) {
 		set_playback_tempo(&step_sequencer->beat_clock, timer1, commands->set_new_tempo_deci_bpm);
 	}
 	if (commands->start_playback) {
-		start_playback(step_sequencer, timer1);
+		start_playback(step_sequencer, sw_serial, timer1);
 	}
 	if (commands->stop_playback) {
-		stop_playback(step_sequencer, timer1);
+		stop_playback(step_sequencer, sw_serial, timer1);
 	}
 	for (int i = 0; i < 16; i++) {
 		step_sequencer->step_patterns[0][i] = commands->new_step_pattern[i];
@@ -308,7 +314,7 @@ int main(void) {
 		/* Update User Interface */
 		const UserInterfaceEvents ui_events = get_ui_events(&ui_devices);
 		const UserInterfaceCommands ui_cmds = UserInterface_update(&user_interface, &ui_events, &step_sequencer);
-		execute_ui_commands(timer1, &step_sequencer, &ui_cmds);
+		execute_ui_commands(timer1, sw_serial, &step_sequencer, &ui_cmds);
 
 		/* Update MIDI Control */
 		const MidiControlCommands midi_cmds = MidiControl_update(&midi_control, midi_byte);
