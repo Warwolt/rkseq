@@ -13,7 +13,7 @@ UserInterfaceCommands UserInterface_update(UserInterface* ui, const UserInterfac
 	const BeatClockSource clock_source = step_sequencer->beat_clock.source;
 
 	/* Rhythm pattern */
-	// toggle pattern using buttons
+	// Toggle pattern using buttons
 	for (int i = 0; i < 16; i++) {
 		if (events->step_button_pressed[i]) {
 			commands.new_step_pattern[i] = !step_sequencer->step_pattern[i];
@@ -21,9 +21,14 @@ UserInterfaceCommands UserInterface_update(UserInterface* ui, const UserInterfac
 			commands.new_step_pattern[i] = step_sequencer->step_pattern[i];
 		}
 	}
-	// display pattern on LEDs
+	// Display pattern on LEDs
 	for (int i = 0; i < 16; i++) {
-		ui->step_leds[i] = commands.new_step_pattern[i];
+		const bool invert_step = step_sequencer->playback_is_active && step_sequencer->step_index == i;
+		if (invert_step) {
+			ui->step_leds[i] = !commands.new_step_pattern[i];
+		} else {
+			ui->step_leds[i] = commands.new_step_pattern[i];
+		}
 	}
 
 	/* Set Tempo */

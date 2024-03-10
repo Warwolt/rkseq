@@ -3,9 +3,11 @@
 
 #include "sequencer/beat_clock.h"
 
+#include <stdbool.h>
 #include <stddef.h>
 
 typedef struct {
+	bool playback_is_active;
 	size_t step_index;
 	bool step_pattern[16];
 	BeatClock beat_clock;
