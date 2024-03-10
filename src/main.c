@@ -46,7 +46,7 @@ typedef struct {
 } OnTimeTickContext;
 
 typedef struct {
-	bool sent_note_on_prev_step;
+	bool sent_note_previous_step;
 	SoftwareSerial* sw_serial;
 	StepSequencer* step_sequencer;
 } OnTempoTickContext;
@@ -140,7 +140,7 @@ static void start_playback(StepSequencer* step_sequencer, Timer1 timer1) {
 
 static void stop_playback(StepSequencer* step_sequencer, Timer1 timer1) {
 	step_sequencer->playback_is_active = false;
-	step_sequencer->step_index = 0;
+	step_sequencer->current_step = 0;
 	BeatClock_stop(&step_sequencer->beat_clock);
 	Timer1_stop(timer1);
 }
@@ -214,7 +214,7 @@ void on_tempo_tick(OnTempoTickContext* ctx) {
 	if (ctx->step_sequencer && ctx->sw_serial) {
 		StepSequencer* step_sequencer = ctx->step_sequencer;
 		SoftwareSerial* sw_serial = ctx->sw_serial;
-		BeatClock_count_pulse(&step_sequencer->beat_clock);
+		BeatClock_count_pulse(&step_sequencer->beat_clock); // 24 pulses per 16th note
 
 		if (BeatClock_midi_pulse_ready(&step_sequencer->beat_clock)) {
 			MidiTransmit_send_message(*sw_serial, MIDI_MESSAGE_TIMING_CLOCK);
@@ -224,22 +224,19 @@ void on_tempo_tick(OnTempoTickContext* ctx) {
 			const uint8_t channel = 0;
 			const uint8_t note = 64;
 			const uint8_t velocity = 64;
+			const uint8_t pattern = 0;
 
-			// send note off for previous note
-			if (ctx->sent_note_on_prev_step) {
+			if (ctx->sent_note_previous_step) {
 				MidiTransmit_send_message(*sw_serial, MIDI_MESSAGE_NOTE_OFF(channel, note));
+				ctx->sent_note_previous_step = false;
 			}
 
-			// if note active, send note on
-			if (step_sequencer->step_patterns[0][step_sequencer->step_index]) {
+			if (StepSequencer_current_step_in_pattern_is_active(step_sequencer, pattern)) {
 				MidiTransmit_send_message(*sw_serial, MIDI_MESSAGE_NOTE_ON(channel, note, velocity));
-				ctx->sent_note_on_prev_step = true;
-			} else {
-				ctx->sent_note_on_prev_step = false;
+				ctx->sent_note_previous_step = true;
 			}
 
-			// step to next note
-			step_sequencer->step_index = (step_sequencer->step_index + 1) % 16;
+			StepSequencer_increment_step(step_sequencer);
 		}
 	}
 }
@@ -293,7 +290,7 @@ int main(void) {
 		g_timer0_ovf_callback = &on_time_tick;
 
 		g_timer1_compa_callback_context = (OnTempoTickContext) {
-			.sent_note_on_prev_step = false,
+			.sent_note_previous_step = false,
 			.step_sequencer = &step_sequencer,
 			.sw_serial = &sw_serial,
 		};

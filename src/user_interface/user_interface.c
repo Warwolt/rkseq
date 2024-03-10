@@ -36,7 +36,7 @@ UserInterfaceCommands UserInterface_update(UserInterface* ui, const UserInterfac
 	}
 	// Display pattern on LEDs
 	for (int i = 0; i < 16; i++) {
-		const bool invert_step = step_sequencer->playback_is_active && step_sequencer->step_index == i;
+		const bool invert_step = step_sequencer->playback_is_active && step_sequencer->current_step == i;
 		if (invert_step) {
 			ui->step_leds[i] = !commands.new_step_pattern[i];
 		} else {
