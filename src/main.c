@@ -280,6 +280,9 @@ int main(void) {
 	MidiControl midi_control = MidiControl_init(timer0);
 	UserInterface user_interface = UserInterface_init();
 
+	// Initialize program state
+	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_TEMPO);
+
 	/* Setup timer based interrupts */
 	{
 		g_timer0_ovf_callback_context = (OnTimeTickContext) {
@@ -299,22 +302,11 @@ int main(void) {
 
 	/* Run */
 	LOG_INFO("Program Start\n");
-
-	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_TEMPO);
-	start_playback(&step_sequencer, timer1); // HACK, start playback immediately
 	while (true) {
 		/* Input */
 		const uint32_t time_now_ms = Time_now_ms(timer0);
 		const uint8_t midi_byte = read_midi_byte(sw_serial);
 		read_user_interface_devices(&ui_devices, time_now_ms);
-
-		// TODO move into UI
-		if (Button_just_pressed(&ui_devices.control_buttons[0])) {
-			start_playback(&step_sequencer, timer1);
-		}
-		if (Button_just_pressed(&ui_devices.control_buttons[1])) {
-			stop_playback(&step_sequencer, timer1);
-		}
 
 		/* Update User Interface */
 		const UserInterfaceEvents ui_events = get_ui_events(&ui_devices);

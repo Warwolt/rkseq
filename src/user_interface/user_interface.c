@@ -4,13 +4,26 @@
 
 #define digit_to_string(digit) ('0' + digit)
 
-UserInterface UserInterface_init(void) {
+typedef enum {
+	START_BUTTON = 0,
+	STOP_BUTTON = 1,
+} ControlButton;
+
+UserInterface
+UserInterface_init(void) {
 	return (UserInterface) { 0 };
 }
 
 UserInterfaceCommands UserInterface_update(UserInterface* ui, const UserInterfaceEvents* events, const StepSequencer* step_sequencer) {
 	UserInterfaceCommands commands = { 0 };
 	const BeatClockSource clock_source = step_sequencer->beat_clock.source;
+
+	/* Playback control */
+	if (events->control_button_pressed[START_BUTTON]) {
+		commands.start_playback = true;
+	} else if (events->control_button_pressed[STOP_BUTTON]) {
+		commands.stop_playback = true;
+	}
 
 	/* Rhythm pattern */
 	// Toggle pattern using buttons
