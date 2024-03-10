@@ -170,6 +170,9 @@ static void execute_ui_commands(Timer1 timer1, StepSequencer* step_sequencer, co
 	if (commands->stop_playback) {
 		stop_playback(&step_sequencer->beat_clock, timer1);
 	}
+	for (int i = 0; i < 16; i++) {
+		step_sequencer->step_pattern[i] = commands->new_step_pattern[i];
+	}
 }
 
 static void execute_midi_control_commands(Timer1 timer1, StepSequencer* step_sequencer, const MidiControlCommands* commands) {

@@ -21,6 +21,7 @@ typedef struct {
 typedef struct {
 	bool start_playback;
 	bool stop_playback;
+	bool new_step_pattern[16];
 	uint16_t set_new_tempo_deci_bpm;
 } UserInterfaceCommands;
 

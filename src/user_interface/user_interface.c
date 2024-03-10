@@ -13,11 +13,17 @@ UserInterfaceCommands UserInterface_update(UserInterface* ui, const UserInterfac
 	const BeatClockSource clock_source = step_sequencer->beat_clock.source;
 
 	/* Rhythm pattern */
-	// Temporary: just directly toggle LEDs using buttons to check things working
+	// toggle pattern using buttons
 	for (int i = 0; i < 16; i++) {
 		if (events->step_button_pressed[i]) {
-			ui->step_leds[i] = !ui->step_leds[i];
+			commands.new_step_pattern[i] = !step_sequencer->step_pattern[i];
+		} else {
+			commands.new_step_pattern[i] = step_sequencer->step_pattern[i];
 		}
+	}
+	// display pattern on LEDs
+	for (int i = 0; i < 16; i++) {
+		ui->step_leds[i] = commands.new_step_pattern[i];
 	}
 
 	/* Set Tempo */
