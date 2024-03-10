@@ -29,9 +29,9 @@ UserInterfaceCommands UserInterface_update(UserInterface* ui, const UserInterfac
 	// Toggle pattern using buttons
 	for (int i = 0; i < 16; i++) {
 		if (events->step_button_pressed[i]) {
-			commands.new_step_pattern[i] = !step_sequencer->step_pattern[i];
+			commands.new_step_pattern[i] = !step_sequencer->step_patterns[0][i];
 		} else {
-			commands.new_step_pattern[i] = step_sequencer->step_pattern[i];
+			commands.new_step_pattern[i] = step_sequencer->step_patterns[0][i];
 		}
 	}
 	// Display pattern on LEDs

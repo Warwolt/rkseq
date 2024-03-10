@@ -174,7 +174,7 @@ static void execute_ui_commands(Timer1 timer1, StepSequencer* step_sequencer, co
 		stop_playback(step_sequencer, timer1);
 	}
 	for (int i = 0; i < 16; i++) {
-		step_sequencer->step_pattern[i] = commands->new_step_pattern[i];
+		step_sequencer->step_patterns[0][i] = commands->new_step_pattern[i];
 	}
 }
 
@@ -231,7 +231,7 @@ void on_tempo_tick(OnTempoTickContext* ctx) {
 			}
 
 			// if note active, send note on
-			if (step_sequencer->step_pattern[step_sequencer->step_index]) {
+			if (step_sequencer->step_patterns[0][step_sequencer->step_index]) {
 				MidiTransmit_send_message(*sw_serial, MIDI_MESSAGE_NOTE_ON(channel, note, velocity));
 				ctx->sent_note_on_prev_step = true;
 			} else {

@@ -9,7 +9,7 @@
 typedef struct {
 	bool playback_is_active;
 	size_t step_index;
-	bool step_pattern[16];
+	bool step_patterns[1][16];
 	BeatClock beat_clock;
 } StepSequencer;
 
