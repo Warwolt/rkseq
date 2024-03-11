@@ -11,8 +11,7 @@ typedef enum {
 	CLEAR_BUTTON = 2,
 } ControlButton;
 
-UserInterface
-UserInterface_init(void) {
+UserInterface UserInterface_init(void) {
 	return (UserInterface) { 0 };
 }
 
@@ -28,11 +27,11 @@ UserInterfaceCommands UserInterface_update(UserInterface* ui, const UserInterfac
 	}
 
 	/* Rhythm pattern */
-	// Toggle pattern using buttons
-	for (int i = 0; i < 16; i++) {
-		if (events->control_button_pressed[CLEAR_BUTTON]) {
-			clear_array(commands.new_step_pattern);
-		} else {
+	if (events->control_button_pressed[CLEAR_BUTTON]) {
+		clear_array(commands.new_step_pattern);
+	} else {
+		// Toggle pattern using buttons
+		for (int i = 0; i < 16; i++) {
 			if (events->step_button_pressed[i]) {
 				commands.new_step_pattern[i] = !step_sequencer->step_patterns[0][i];
 			} else {
@@ -40,6 +39,7 @@ UserInterfaceCommands UserInterface_update(UserInterface* ui, const UserInterfac
 			}
 		}
 	}
+
 	// Display pattern on LEDs
 	for (int i = 0; i < 16; i++) {
 		const bool invert_step = step_sequencer->playback_is_active && step_sequencer->current_step == i;
