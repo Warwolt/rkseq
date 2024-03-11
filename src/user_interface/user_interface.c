@@ -1,8 +1,15 @@
 #include "user_interface/user_interface.h"
 
+#include "util/array.h"
 #include "util/math.h"
 
 #define digit_to_string(digit) ('0' + digit)
+
+typedef enum {
+	START_BUTTON = 0,
+	STOP_BUTTON = 1,
+	CLEAR_BUTTON = 2,
+} ControlButton;
 
 UserInterface UserInterface_init(void) {
 	return (UserInterface) { 0 };
@@ -12,11 +19,34 @@ UserInterfaceCommands UserInterface_update(UserInterface* ui, const UserInterfac
 	UserInterfaceCommands commands = { 0 };
 	const BeatClockSource clock_source = step_sequencer->beat_clock.source;
 
+	/* Playback control */
+	if (events->control_button_pressed[START_BUTTON]) {
+		commands.start_playback = true;
+	} else if (events->control_button_pressed[STOP_BUTTON]) {
+		commands.stop_playback = true;
+	}
+
 	/* Rhythm pattern */
-	// Temporary: just directly toggle LEDs using buttons to check things working
+	if (events->control_button_pressed[CLEAR_BUTTON]) {
+		clear_array(commands.new_step_pattern);
+	} else {
+		// Toggle pattern using buttons
+		for (int i = 0; i < 16; i++) {
+			if (events->step_button_pressed[i]) {
+				commands.new_step_pattern[i] = !step_sequencer->step_patterns[0][i];
+			} else {
+				commands.new_step_pattern[i] = step_sequencer->step_patterns[0][i];
+			}
+		}
+	}
+
+	// Display pattern on LEDs
 	for (int i = 0; i < 16; i++) {
-		if (events->step_button_pressed[i]) {
-			ui->step_leds[i] = !ui->step_leds[i];
+		const bool invert_step = step_sequencer->playback_is_active && step_sequencer->current_step == i;
+		if (invert_step) {
+			ui->step_leds[i] = !commands.new_step_pattern[i];
+		} else {
+			ui->step_leds[i] = commands.new_step_pattern[i];
 		}
 	}
 

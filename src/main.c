@@ -46,7 +46,7 @@ typedef struct {
 } OnTimeTickContext;
 
 typedef struct {
-	bool note_on;
+	bool sent_note_previous_step;
 	SoftwareSerial* sw_serial;
 	StepSequencer* step_sequencer;
 } OnTempoTickContext;
@@ -132,14 +132,23 @@ static void set_playback_tempo(BeatClock* beat_clock, Timer1 timer1, uint16_t se
 	Timer1_set_period(timer1, ticks_per_pulse);
 }
 
-static void start_playback(BeatClock* beat_clock, Timer1 timer1) {
-	BeatClock_start(beat_clock);
+static void start_playback(StepSequencer* step_sequencer, SoftwareSerial sw_serial, Timer1 timer1) {
+	step_sequencer->playback_is_active = true;
+	BeatClock_start(&step_sequencer->beat_clock);
 	Timer1_start(timer1);
+	MidiTransmit_send_message(sw_serial, MIDI_MESSAGE_START);
 }
 
-static void stop_playback(BeatClock* beat_clock, Timer1 timer1) {
-	BeatClock_stop(beat_clock);
+static void stop_playback(StepSequencer* step_sequencer, SoftwareSerial sw_serial, Timer1 timer1) {
+	step_sequencer->playback_is_active = false;
+	step_sequencer->current_step = 0;
+	BeatClock_stop(&step_sequencer->beat_clock);
 	Timer1_stop(timer1);
+	MidiTransmit_send_message(sw_serial, MIDI_MESSAGE_STOP);
+	// hack, send note off for all active notes
+	const uint8_t channel = 0;
+	const uint8_t note = 64;
+	MidiTransmit_send_message(sw_serial, MIDI_MESSAGE_NOTE_OFF(channel, note));
 }
 
 static void write_step_leds(const ShiftRegister* step_leds_shift_reg, const bool step_leds[16]) {
@@ -160,15 +169,18 @@ static void write_user_interface_devices(UserInterfaceDevices* ui_devices, const
 	write_step_leds(&ui_devices->step_leds_shift_reg, user_interface->step_leds);
 }
 
-static void execute_ui_commands(Timer1 timer1, StepSequencer* step_sequencer, const UserInterfaceCommands* commands) {
+static void execute_ui_commands(Timer1 timer1, SoftwareSerial sw_serial, StepSequencer* step_sequencer, const UserInterfaceCommands* commands) {
 	if (commands->set_new_tempo_deci_bpm) {
 		set_playback_tempo(&step_sequencer->beat_clock, timer1, commands->set_new_tempo_deci_bpm);
 	}
 	if (commands->start_playback) {
-		start_playback(&step_sequencer->beat_clock, timer1);
+		start_playback(step_sequencer, sw_serial, timer1);
 	}
 	if (commands->stop_playback) {
-		stop_playback(&step_sequencer->beat_clock, timer1);
+		stop_playback(step_sequencer, sw_serial, timer1);
+	}
+	for (int i = 0; i < 16; i++) {
+		step_sequencer->step_patterns[0][i] = commands->new_step_pattern[i];
 	}
 }
 
@@ -206,27 +218,31 @@ void on_time_tick(OnTimeTickContext* ctx) {
 
 void on_tempo_tick(OnTempoTickContext* ctx) {
 	if (ctx->step_sequencer && ctx->sw_serial) {
-		BeatClock_count_pulse(&ctx->step_sequencer->beat_clock);
+		StepSequencer* step_sequencer = ctx->step_sequencer;
+		SoftwareSerial* sw_serial = ctx->sw_serial;
+		BeatClock_count_pulse(&step_sequencer->beat_clock); // 24 pulses per 16th note
 
-		if (BeatClock_midi_pulse_ready(&ctx->step_sequencer->beat_clock)) {
-			MidiTransmit_send_message(*ctx->sw_serial, MIDI_MESSAGE_TIMING_CLOCK);
+		if (BeatClock_midi_pulse_ready(&step_sequencer->beat_clock)) {
+			MidiTransmit_send_message(*sw_serial, MIDI_MESSAGE_TIMING_CLOCK);
 		}
 
-		const bool test_midi_messages = false;
-		if (test_midi_messages) {
-			if (BeatClock_sixteenth_note_ready(&ctx->step_sequencer->beat_clock)) {
-				const uint8_t channel = 0;
-				const uint8_t note = 64;
-				const uint8_t velocity = 64;
+		if (BeatClock_sixteenth_note_ready(&step_sequencer->beat_clock)) {
+			const uint8_t channel = 0;
+			const uint8_t note = 64;
+			const uint8_t velocity = 64;
+			const uint8_t pattern = 0;
 
-				if (ctx->note_on) {
-					MidiTransmit_send_message(*ctx->sw_serial, MIDI_MESSAGE_NOTE_ON(channel, note, velocity));
-				} else {
-					MidiTransmit_send_message(*ctx->sw_serial, MIDI_MESSAGE_NOTE_OFF(channel, note));
-				}
-
-				ctx->note_on = !ctx->note_on;
+			if (ctx->sent_note_previous_step) {
+				MidiTransmit_send_message(*sw_serial, MIDI_MESSAGE_NOTE_OFF(channel, note));
+				ctx->sent_note_previous_step = false;
 			}
+
+			if (StepSequencer_current_step_in_pattern_is_active(step_sequencer, pattern)) {
+				MidiTransmit_send_message(*sw_serial, MIDI_MESSAGE_NOTE_ON(channel, note, velocity));
+				ctx->sent_note_previous_step = true;
+			}
+
+			StepSequencer_increment_step(step_sequencer);
 		}
 	}
 }
@@ -267,6 +283,9 @@ int main(void) {
 	MidiControl midi_control = MidiControl_init(timer0);
 	UserInterface user_interface = UserInterface_init();
 
+	// Initialize program state
+	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_TEMPO);
+
 	/* Setup timer based interrupts */
 	{
 		g_timer0_ovf_callback_context = (OnTimeTickContext) {
@@ -277,7 +296,7 @@ int main(void) {
 		g_timer0_ovf_callback = &on_time_tick;
 
 		g_timer1_compa_callback_context = (OnTempoTickContext) {
-			.note_on = true,
+			.sent_note_previous_step = false,
 			.step_sequencer = &step_sequencer,
 			.sw_serial = &sw_serial,
 		};
@@ -286,9 +305,6 @@ int main(void) {
 
 	/* Run */
 	LOG_INFO("Program Start\n");
-
-	set_playback_tempo(&step_sequencer.beat_clock, timer1, DEFAULT_TEMPO);
-	start_playback(&step_sequencer.beat_clock, timer1); // HACK, start playback immediately
 	while (true) {
 		/* Input */
 		const uint32_t time_now_ms = Time_now_ms(timer0);
@@ -298,7 +314,7 @@ int main(void) {
 		/* Update User Interface */
 		const UserInterfaceEvents ui_events = get_ui_events(&ui_devices);
 		const UserInterfaceCommands ui_cmds = UserInterface_update(&user_interface, &ui_events, &step_sequencer);
-		execute_ui_commands(timer1, &step_sequencer, &ui_cmds);
+		execute_ui_commands(timer1, sw_serial, &step_sequencer, &ui_cmds);
 
 		/* Update MIDI Control */
 		const MidiControlCommands midi_cmds = MidiControl_update(&midi_control, midi_byte);
